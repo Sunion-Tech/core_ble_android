@@ -677,6 +677,145 @@ Exception
 | -------- | -------- |
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
+### LockTokenUseCase
+#### Query token array
+```
+queryTokenArray(): Flow<List<Int>>
+```
+
+Example
+```
+lockTokenUseCase.queryTokenArray()
+    .map { tokenArray ->
+        // return useful token array index
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Query token
+```
+queryToken(index: Int): Flow<DeviceToken.PermanentToken>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query token array index    |
+
+Example
+```
+lockTokenUseCase.queryToken(index)
+    .map { deviceToken ->
+        if(deviceToken.isPermanent){
+            // return permanent token
+        } else {
+            // return one time token
+        }
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add one time token
+```
+addOneTimeToken(permission: String, name: String): Flow<AddUserResponse>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| permission | String     | A: All , L: Limit    |
+| name       | String     | Token name    |
+
+Example
+```
+lockTokenUseCase.addOneTimeToken(permission, name)
+    .map { result ->
+        // return add user response
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Edit token
+```
+editToken(index: Int, permission: String, name: String): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index      | Int        | Edit token array index    |
+| permission | String     | "A": All , "L": Limit    |
+| name       | String     | Token name    |
+
+Example
+```
+lockTokenUseCase.editToken(index, permission, name)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Delete token
+```
+deleteToken(index: Int, code: String = ""): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete token array index    |
+| code     | String  | Only delete permanent token need admin code    |
+
+Example
+```
+lockTokenUseCase.deleteToken(index, code)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
 ## Models
 ### QRCodeContent
 

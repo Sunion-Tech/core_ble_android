@@ -816,6 +816,145 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
+### LockAccessCodeUseCase
+#### Get access code array
+```
+getAccessCodeArray(): Flow<List<Boolean>>
+```
+
+Example
+```
+lockAccessCodeUseCase.getAccessCodeArray()
+    .map { accessCodeArray ->
+        // return accessCodeArray
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Query access code
+```
+queryAccessCode(index: Int): Flow<AccessCode>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query access code array index    |
+
+Example
+```
+lockAccessCodeUseCase.queryAccessCode(index)
+    .map { accessCode ->
+        // return accessCode info
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add access code
+```
+addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Access code enable    |
+| name         | String                  | Access code name    |
+| code         | String                  | Access code   |
+| scheduleType | AccessCodeScheduleType  | All: Permanent <br> None: None <br> SingleEntry: Single entry <br> ScheduleEntry: Scheduled entry <br> ValidTimeRange: Valid time range |
+
+Example
+```
+lockAccessCodeUseCase.addAccessCode(index, isEnabled, name, code, scheduleType)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Edit access code
+```
+editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Access code enable    |
+| name         | String                  | Access code name    |
+| code         | String                  | Access code   |
+| scheduleType | AccessCodeScheduleType  | All: Permanent <br> None: None <br> SingleEntry: Single entry <br> ScheduleEntry: Scheduled entry <br> ValidTimeRange: Valid time range |
+
+Example
+```
+lockAccessCodeUseCase.editAccessCode(index, isEnabled, name, code, scheduleType)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Delete access code
+```
+deleteAccessCode(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete access code array index    |
+
+Example
+```
+lockAccessCodeUseCase.deleteAccessCode(index)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
 ## Models
 ### QRCodeContent
 

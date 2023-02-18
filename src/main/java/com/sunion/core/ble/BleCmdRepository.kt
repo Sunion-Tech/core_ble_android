@@ -168,6 +168,7 @@ class BleCmdRepository @Inject constructor(){
             0xD9 -> cmd_d9(serialIncrementAndGet(), key, data)
             0xE0 -> cmd_e0(serialIncrementAndGet(), key)
             0xE1 -> cmd_e1(serialIncrementAndGet(), key, data)
+            0xE2 -> cmd_e2(serialIncrementAndGet(), key, data)
             0xE4 -> cmd_e4(serialIncrementAndGet(), key)
             0xE5 -> cmd_e5(serialIncrementAndGet(), key, data)
             0xE6 -> cmd_e6(serialIncrementAndGet(), key, data)
@@ -502,6 +503,24 @@ class BleCmdRepository @Inject constructor(){
         sendByte[1] = 0x01.toByte() // function
         sendByte[2] = index.first() // function
         return encrypt(aesKeyTwo, pad(serial + sendByte))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [E2] data command. Delete the event log at specific index.
+     *
+     * @param bytes Index of the event log
+     * @return An encoded byte array of [E2] command.
+     * */
+    fun cmd_e2(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        bytes: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xE2.toByte() // function
+        sendByte[1] = bytes.size.toByte() // function
+        return encrypt(aesKeyTwo, pad(serial + sendByte + bytes))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
 
@@ -1147,6 +1166,27 @@ class BleCmdRepository @Inject constructor(){
                 } else {
                     throw IllegalArgumentException("Return function byte is not [E1]")
                 }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [E2] The result of deleting a log.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent token.
+     *
+     * */
+    fun resolveE2(aesKeyTwo: ByteArray, notification: ByteArray): Boolean {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xE2) {
+                when {
+                    decrypted.component5().unSignedInt() == 0x01 -> true
+                    decrypted.component5().unSignedInt() == 0x00 -> false
+                    else -> throw IllegalArgumentException("Unknown data")
+                }
+            } else {
+                throw IllegalArgumentException("Return function byte is not [E2]")
             }
         } ?: throw IllegalArgumentException("Error when decryption")
     }

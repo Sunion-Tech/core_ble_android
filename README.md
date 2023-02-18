@@ -955,6 +955,83 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
+### LockEventLogUseCase
+#### Get event quantity
+```
+getEventQuantity(): Flow<Int>
+```
+
+Example
+```
+lockEventLogUseCase.getEventQuantity()
+    .map { result ->
+        // return event quantity
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Get event
+```
+getEvent(index: Int): Flow<EventLog>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Get event log at index in array |
+
+Example
+```
+lockEventLogUseCase.getEvent(index)
+    .map{ eventLog ->
+        // return eventLog
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Delete Event
+```
+deleteEvent(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete event log at index in array |
+
+Example
+```
+lockEventLogUseCase.deleteEvent(index)
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
 ## Models
 ### QRCodeContent
 

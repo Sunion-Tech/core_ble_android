@@ -1,4 +1,4 @@
-# Sunion BLE communication SDK fro Android
+# Sunion BLE communication SDK for Android
 ## System requirements
 * Android 8.0 (API level 26) or higher
 * Bluetooth 4.2 or higher
@@ -11,9 +11,30 @@ include ':core_ble_android'
 ```
 * In app/build.gradle, add:
 ```
+plugins {
+    ...
+    id 'kotlin-kapt'
+    id 'com.google.dagger.hilt.android'
+    ...
+}
+
 dependencies {
     ...
     implementation project(':core_ble_android')
+    
+    // timber
+    implementation "com.jakewharton.timber:timber:$timber_version"
+    
+    // hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+    kapt "androidx.hilt:hilt-compiler:1.0.0"
+    
+    // RxAndroidBLE
+    implementation "com.polidea.rxandroidble2:rxandroidble:1.16.0"
+    
+    // Qrcode
+    implementation "com.journeyapps:zxing-android-embedded:4.3.0"
     ...
 }
 ```
@@ -85,6 +106,61 @@ object BleModule {
         abstract fun bindRxStatefulConnection(reactiveStatefulConnection: ReactiveStatefulConnection): StatefulConnection
     }
 }
+```
+* Creating a module class AppModule in your project with following content:
+```
+import com.sunion.core.ble.AppSchedulers
+import com.sunion.core.ble.Scheduler
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@InstallIn(SingletonComponent::class)
+@Module(includes = [AppModule.Bind::class])
+object AppModule {
+    @InstallIn(SingletonComponent::class)
+    @Module
+    abstract class Bind {
+        @Binds
+        abstract fun bindScheduler(appSchedulers: AppSchedulers): Scheduler
+    }
+}
+```
+* Creating a Application class HiltApplication in your project with following content:
+```
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+import timber.log.Timber
+
+@HiltAndroidApp
+class HiltApplication: Application(){
+    override fun onCreate() {
+        super.onCreate()
+
+        if(BuildConfig.DEBUG){
+            Timber.plant(Timber.DebugTree())
+        }
+    }
+}
+```
+* In MainActivity, add:
+```
+...
+import dagger.hilt.android.AndroidEntryPoint
+
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    ...
+}
+```
+* In AndroidManifest, add:
+```
+<application
+    android:name=".HiltApplication"
+    ...
+    >
 ```
 ## Quick start
 ### Pairing with lock
@@ -708,7 +784,7 @@ queryToken(index: Int): Flow<DeviceToken.PermanentToken>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query token array index    |
+| index     | Int     | Query token at index in array    |
 
 Example
 ```
@@ -739,7 +815,7 @@ addOneTimeToken(permission: String, name: String): Flow<AddUserResponse>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| permission | String     | A: All , L: Limit    |
+| permission | String     | "A": All , "L": Limit    |
 | name       | String     | Token name    |
 
 Example
@@ -767,7 +843,7 @@ editToken(index: Int, permission: String, name: String): Flow<Boolean>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index      | Int        | Edit token array index    |
+| index      | Int        | Edit token at index in array     |
 | permission | String     | "A": All , "L": Limit    |
 | name       | String     | Token name    |
 
@@ -796,7 +872,7 @@ deleteToken(index: Int, code: String = ""): Flow<Boolean>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index    | Int     | Delete token array index    |
+| index    | Int     | Delete token at index in array     |
 | code     | String  | Only delete permanent token need admin code    |
 
 Example
@@ -847,7 +923,7 @@ queryAccessCode(index: Int): Flow<AccessCode>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access code array index    |
+| index     | Int     | Query access code at index in array     |
 
 Example
 ```
@@ -878,7 +954,7 @@ Parameter
 | isEnabled    | Boolean                 | Access code enable    |
 | name         | String                  | Access code name    |
 | code         | String                  | Access code   |
-| scheduleType | AccessCodeScheduleType  | All: Permanent <br> None: None <br> SingleEntry: Single entry <br> ScheduleEntry: Scheduled entry <br> ValidTimeRange: Valid time range |
+| scheduleType | AccessCodeScheduleType  | Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType) |
 
 Example
 ```
@@ -905,11 +981,11 @@ editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, sched
 Parameter
 | Parameter | Type | Description |
 | --------  | -------- | -------- |
-| index        | Int                     | Add index    |
+| index        | Int                     | Edit index    |
 | isEnabled    | Boolean                 | Access code enable    |
 | name         | String                  | Access code name    |
 | code         | String                  | Access code   |
-| scheduleType | AccessCodeScheduleType  | All: Permanent <br> None: None <br> SingleEntry: Single entry <br> ScheduleEntry: Scheduled entry <br> ValidTimeRange: Valid time range |
+| scheduleType | AccessCodeScheduleType  | Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType)|
 
 Example
 ```
@@ -936,7 +1012,7 @@ deleteAccessCode(index: Int): Flow<Boolean>
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index    | Int     | Delete access code array index    |
+| index    | Int     | Delete access code at index in array    |
 
 Example
 ```
@@ -1077,3 +1153,56 @@ Exception
 |latitude|Double|Latitude of lock location|
 |longitude|Double|Longitude of lock location|
 
+### PermanentToken
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|isValid|Boolean|true<br>false|
+|isPermanent|Boolean|true<br>false|
+|token|String|Token|
+|isOwner|Boolean|true<br>false|
+|name|String|Token name|
+|permission|String|A: All , L: Limit |
+
+### OneTimeToken
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|token|String|Token|
+
+### AddUserResponse
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|isSuccessful|Boolean|true<br>false|
+|tokenIndexInDevice|Int|Token index |
+|token|String|Token|
+|content|String|Default empty string|
+|lockName|String|Default empty string|
+
+### AccessCode
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|index|Int|AccessCode index |
+|isEnable|Boolean|true<br>false|
+|code|String|AccessCode|
+|scheduleType|String|Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType)|
+|weekDays|Int|Default null|
+|from|Int|Default null|
+|to|Int|Default null|
+|scheduleFrom|Int|Default null|
+|scheduleTo|Int|Default null|
+|name|String|AccessCode name|
+
+### AccessCodeScheduleType
+| Name | Description |
+| -------- | -------- |
+|All|Permanent|
+|None|None|
+|SingleEntry|Single Entry|
+|ValidTimeRange (from: Long, to: Long)|Valid Time Range|
+|ScheduleEntry (weekdayBits: Int, from: Int, to: Int)|ScheduleEntry|
+
+### EventLog
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|eventTimeStamp|Long|The time when the event log occurred|
+|event|Int|0: Auto lock close success<br>1: Auto lock close fail<br>2: App lock close success<br>3: App lock close fail<br>4: Physical button close success<br>5: Physical button close fail<br>6: Close the door manually success<br>7: Close the door manually fail<br>8: App lock open success<br>9: App lock open fail<br>10: Physical button open success<br>11: Physical button open fail<br>12: Open the door manually success<br>13: Open the door manually fail<br>64: Add token<br>65: Edit token<br>66: Delete token<br>80: Add access code<br>81: Edit access code<br>82: Delete access code<br>128: Wrong password<br>129: Connection error<br>130: At wrong time enter correct password<br>131: At vacation mode enter not admin password|
+|name|String|Event log name <br>With 64~66 & 80~82 is named operator &#124; operated|

@@ -48,10 +48,10 @@ class DeviceStatusD6UseCase @Inject constructor(
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD7,
             key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
-            if (desiredState == LockState.UNLOCKED) byteArrayOf(0x01) else byteArrayOf(0x00)
+            if (desiredState == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)
         )
         statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
+            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusD6UseCase.setLockState")
             .filter { notification ->
                 bleCmdRepository.decrypt(
                     hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
@@ -71,7 +71,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockNameUseCase.setLockName exception $e")
+                Timber.e("DeviceStatusD6UseCase.setLockState exception $e")
                 throw e
             }
             .single()

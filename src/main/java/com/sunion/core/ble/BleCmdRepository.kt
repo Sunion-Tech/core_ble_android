@@ -1074,8 +1074,8 @@ class BleCmdRepository @Inject constructor(){
                                 isGuidingCodeOn = bytes[D6Features.GUIDING_CODE.byte].unSignedInt() == 0x01
                             ),
                             lockState = when (bytes[D6Features.LOCK_STATE.byte].unSignedInt()) {
-                                0 -> LockState.LOCKED
-                                1 -> LockState.UNLOCKED
+                                0 -> LockState.UNLOCKED
+                                1 -> LockState.LOCKED
                                 else -> LockState.UNKNOWN
                             },
                             battery = bytes[D6Features.BATTERY.byte].unSignedInt(),

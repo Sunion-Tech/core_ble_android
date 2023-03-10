@@ -53,7 +53,7 @@ class LockConfigD4UseCase @Inject constructor(
 
     private suspend fun updateConfig(lockConfigD4: LockConfigD4): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = bleCmdRepository.settingBytes(lockConfigD4)
+        val bytes = bleCmdRepository.settingBytesD4(lockConfigD4)
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD5,
             key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),

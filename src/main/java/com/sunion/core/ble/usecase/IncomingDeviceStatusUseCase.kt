@@ -26,7 +26,11 @@ class IncomingDeviceStatusUseCase @Inject constructor(
                     bleCmdRepository.decrypt(
                         hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
                     )?.let { decrypted ->
-                        decrypted.component3().unSignedInt() == 0xD6
+                        when(decrypted.component3().unSignedInt()){
+                            0xD6 -> true
+                            0xA2 -> true
+                            else -> false
+                        }
                     } ?: false
                 } else
                     false
@@ -39,6 +43,12 @@ class IncomingDeviceStatusUseCase @Inject constructor(
                     when (decrypted.component3().unSignedInt()) {
                         0xD6 -> {
                             result = bleCmdRepository.resolveD6(
+                                hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                                notification
+                            )
+                        }
+                        0xA2 -> {
+                            result = bleCmdRepository.resolveA2(
                                 hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
                                 notification
                             )

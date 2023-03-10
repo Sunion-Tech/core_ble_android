@@ -256,10 +256,12 @@ _bleDeviceStatusListener = incomingDeviceStatusUseCase()
         when (deviceStatus) {
             is DeviceStatus.DeviceStatusD6 -> {
             }
+            is DeviceStatus.DeviceStatusA2 -> {
+            }
             else -> { _currentDeviceStatus = DeviceStatus.UNKNOWN }
         }
     }
-    .catch { e -> Timber.e("Incoming DeviceStatusD6 exception $e") }
+    .catch { e -> Timber.e("Incoming DeviceStatus exception $e") }
     .flowOn(Dispatchers.IO)
     .launchIn(viewModelScope)
 ```
@@ -295,11 +297,11 @@ Parameter
 
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| desiredState     | Int     | 0: Locked ,<BR> 1: Unlocked     |
+| desiredState     | Int     | 0: Unlocked ,<BR> 1: Locked     |
 
 Example
 ```
-deviceStatusD6UseCase.setLockState(1)
+deviceStatusD6UseCase.setLockState(desiredState)
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -315,6 +317,87 @@ Exceptions
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | IllegalArgumentException     | Unknown desired lock state.     |
+
+### DeviceStatusA2UseCase
+#### Query device status from lock
+```
+operator fun invoke(): Flow<DeviceStatus.DeviceStatusA2>
+```
+Example
+```
+deviceStatusA2UseCase()
+    .map { deviceStatus ->
+        updateStatus(deviceStatus)
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timber.e(it) }
+    .launchIn(viewModelScope)
+```
+Exceptions
+
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Set LockState
+```
+setLockState(state: Int): Flow<DeviceStatus.DeviceStatusA2>
+```
+Parameter
+
+
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| state     | Int     | 0: Unlocked ,<BR> 1: Locked     |
+
+Example
+```
+deviceStatusA2UseCase.setLockState(state)
+    .map { deviceStatus ->
+        updateStatus(deviceStatus)
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timber.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exceptions
+
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| IllegalArgumentException     | Unknown desired lock state.     |
+
+#### Set SecurityBolt
+```
+setSecurityBolt(state: Int): Flow<DeviceStatus.DeviceStatusA2>
+```
+Parameter
+
+
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| state     | Int     | 0: NotProtrue ,<BR> 1: Protrude     |
+
+Example
+```
+deviceStatusA2UseCase.setSecurityBolt(state)
+    .map { deviceStatus ->
+        updateStatus(deviceStatus)
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timber.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exceptions
+
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
 
 ### AdminCodeUseCase
 #### Check if admin code has been set
@@ -393,14 +476,24 @@ Exceptions
 ### LockDirectionUseCase
 LockDirectionUseCase requests lock to determine LockDirection. 
 ```
-operator fun invoke(): Flow<DeviceStatus.DeviceStatusD6>
+operator fun invoke(): Flow<DeviceStatus.DeviceStatus>
 ```
 
 Example
 ```
 lockDirectionUseCase()
     .map { deviceStatus ->
-        updateStatus(deviceStatus)
+        when (deviceStatus) {
+            is DeviceStatus.DeviceStatusD6 -> {
+                updateStatus(deviceStatus)
+            }
+            is DeviceStatus.DeviceStatusA2 -> {
+                if(deviceStatus.direction == BleV2Lock.Direction.NOT_SUPPORT.value) {
+                    throw LockStatusException.LockFunctionNotSupportException()
+                }
+                updateStatus(deviceStatus)
+            }
+        }
     }
     .flowOn(Dispatchers.IO)
     .catch { Timber.e(it) }
@@ -412,6 +505,7 @@ Exceptions
 | -------- | -------- |
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException <BR>(for DeviceStatusA2)     | Lock function not support.|
 
 ### LockTimeUseCase
 #### Get time of lock
@@ -703,6 +797,328 @@ Exception
 | -------- | -------- |
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
+
+### LockConfigA0UseCase
+#### Query lock config
+Please refer to [LockConfigA0](###LockConfigA0)
+
+```
+query(): Flow<LockConfigA0>
+```
+
+Example
+```
+lockConfigA0UseCase.query()
+    .map { lockConfig ->
+        // return lock config
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Set lock location
+```
+setLocation(latitude: Double, longitude: Double): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| latitude     | Double     | Latitude of lock location    |
+| longitude    | Double     | Longitude of lock location   |
+
+Example
+```
+lockConfigA0UseCase.setLocation(latitude = latitude, longitude = longitude)
+    .map { result ->
+        // return true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Turn on/off guiding code
+```
+setGuidingCode(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.guidingCode != BleV2Lock.GuidingCode.NOT_SUPPORT.value) {
+    val isGuidingCodeOn = configA0.guidingCode == BleV2Lock.GuidingCode.CLOSE.value
+        lockConfigA0UseCase.setGuidingCode(isGuidingCodeOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off virtual code
+```
+setVirtualCode(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.virtualCode != BleV2Lock.VirtualCode.NOT_SUPPORT.value) {
+    val isVirtualCodeOn = configA0.virtualCode == BleV2Lock.VirtualCode.CLOSE.value
+        lockConfigA0UseCase.setVirtualCode(isVirtualCodeOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off 2FA
+```
+setTwoFA(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.twoFA != BleV2Lock.TwoFA.NOT_SUPPORT.value) {
+    val isTwoFAOn = configA0.twoFA == BleV2Lock.TwoFA.CLOSE.value
+        lockConfigA0UseCase.setTwoFA(isTwoFAOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off vacation mode
+```
+setVacationMode(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.vacationMode != BleV2Lock.VacationMode.NOT_SUPPORT.value) {
+    val isVacationModeOn = configA0.vacationMode == BleV2Lock.VacationMode.CLOSE.value
+    lockConfigA0UseCase.setVacationMode(isVacationModeOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off auto lock
+```
+setAutoLock(isOn: Boolean, autoLockTime: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+| autoLockTime     | Int     | Auto lock delay time, between autoLockTimeUpperLimit and autoLockTimeLowerLimit. <br>0xFFFF: Not support |
+
+Example
+```
+if (configA0.autoLock != BleV2Lock.AutoLock.NOT_SUPPORT.value) {
+    val isAutoLock = configA0.autoLock == BleV2Lock.AutoLock.CLOSE.value
+    if (autoLockTime < configA0.autoLockTimeUpperLimit || autoLockTime > configA0.autoLockTimeLowerLimit) {
+        Timer.d("Set auto lock will fail because autoLockTime is not support value")
+    }
+    lockConfigA0UseCase.setAutoLock(isAutoLock, autoLockTime)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| IllegalArgumentException     | Auto lock time illegal argument.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off operating sound
+```
+setOperatingSound(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.operatingSound != BleV2Lock.OperatingSound.NOT_SUPPORT.value) {
+    val isOperatingSoundOn = configA0.operatingSound == BleV2Lock.OperatingSound.CLOSE.value
+        lockConfigA0UseCase.setOperatingSound(isOperatingSoundOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off key press beep
+```
+setSoundValue(soundType: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| soundType     | Int     | Please refer to [Sound](###Sound)    |
+
+
+Example
+```
+if (configA0.soundType != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+    lockConfigA0UseCase.setSoundValue(configA0.soundType)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Turn on/off show fast track mode
+```
+setShowFastTrackMode(isOn: Boolean): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| isOn     | Boolean     | true<br>false    |
+
+Example
+```
+if (configA0.showFastTrackMode != BleV2Lock.ShowFastTrackMode.NOT_SUPPORT.value) {
+    val isShowFastTrackModeOn = configA0.showFastTrackMode == BleV2Lock.ShowFastTrackMode.CLOSE.value
+        lockConfigA0UseCase.setShowFastTrackMode(isShowFastTrackModeOn)
+        .map { result ->
+            // return true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
 
 ### LockUtilityUseCase
 #### Factory reset
@@ -1136,10 +1552,22 @@ Exception
 | Name | Type | Description |
 | -------- | -------- | -------- |
 |config|LockConfigD4|Please refer to [LockConfigD4](###LockConfigD4)|
-|lockState|Int|0: Locked<br>1: Unlocked|
+|lockState|Int|0: Unlocked<br>1: Locked|
 |battery|Int|Percentage of battery power|
 |batteryState|Int|0: Battery good<br>1: Battery low<br>2: Battery alert|
 |timestamp|Long|Time of lock|
+
+### DeviceStatusA2
+| Name | Type | Description |
+| -------- | -------- | -------- |
+|direction|Int|0xA0: Right<br>0xA1: Left<br>0xA2: Unknown<br>0xFF: Not support|
+|vacationMode|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|deadBolt|Int|0: Not protrude<br>1: protrude<br>0xFF: Not support|
+|doorState|Int|0: Open<br>1: Close<br>0xFF: Not support|
+|lockState|Int|0: Unlocked<br>1: Locked<br>2: Unknown|
+|securityBolt|Int|0: Not protrude<br>1: protrude<br>0xFF: Not support|
+|battery|Int|Percentage of battery power|
+|batteryState|Int|0: Normal<br>1: Weak current<br>2: Dangerous|
 
 ### LockConfigD4
 | Name | Type | Value |
@@ -1152,6 +1580,36 @@ Exception
 |isPreamble|Boolean|true<br>false|
 |latitude|Double|Latitude of lock location|
 |longitude|Double|Longitude of lock location|
+
+### LockConfigA0
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|latitude|Double|Latitude of lock location|
+|longitude|Double|Longitude of lock location|
+|direction|Int|0xA0: Right<br>0xA1: Left<br>0xA2: Unknown<br>0xFF: Not support|
+|guidingCode|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|virtualCode|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|twoFA|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|vacationMode|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|autoLock|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|autoLockTime|Int|Auto lock delay time, between autoLockTimeUpperLimit and autoLockTimeLowerLimit. <br>0xFFFF: Not support|
+|autoLockTimeUpperLimit|Int|Automatic lock upper limit time. <br>0xFFFF: Not support|
+|autoLockTimeLowerLimit|Int|Automatic lock lower limit time. <br>0xFFFF: Not support|
+|operatingSound|Int|0: Close<br>1: Open<br>0xFF: Not support|
+|soundType|Int|Please refer to [Sound](###Sound)|
+|soundValue|Int|Please refer to [Sound](###Sound)|
+|showFastTrackMode|Int|0: Close<br>1: Open<br>0xFF: Not support|
+
+### Sound
+
+Lock only supports one of the types
+
+|  Type  | soundType | soundValue                   |
+|:------ |:-------:|:------------------------- |
+| on/off |  0x01   | 0: Close <br>100: Open          |
+| level  |  0x02   | 0: Close <br>50: Low voice <br>100: High voice|
+| percentage |  0x03   | 0 ~ 100                   |
+| not support |  0xFF   | 0xFF                   |
 
 ### PermanentToken
 | Name | Type | Value |

@@ -12,4 +12,22 @@ sealed class LockConfig {
         val latitude: Double? = null,
         val longitude: Double? = null
     ) : LockConfig()
+
+    data class LockConfigA0(
+        val latitude: Double,
+        val longitude: Double,
+        val direction: Int,
+        val guidingCode: Int,
+        val virtualCode: Int,
+        val twoFA: Int,
+        val vacationMode: Int,
+        val autoLock: Int,
+        val autoLockTime: Int,
+        val autoLockTimeUpperLimit: Int,
+        val autoLockTimeLowerLimit: Int,
+        val operatingSound: Int,
+        val soundType: Int,
+        val soundValue: Int,
+        val showFastTrackMode: Int
+    ): LockConfig()
 }

@@ -1,6 +1,6 @@
 package com.sunion.core.ble.entity
 
-sealed class DeviceStatus {
+sealed class DeviceStatus: SunionBleNotification() {
     object UNKNOWN : DeviceStatus()
     data class DeviceStatusD6(
         val config: LockConfig.LockConfigD4,
@@ -13,10 +13,10 @@ sealed class DeviceStatus {
     data class DeviceStatusA2(
         val direction: Int,
         val vacationMode: Int,
-        val deadBolt : Int,
-        val doorState : Int,
-        val lockState : Int,
-        val securityBolt : Int,
+        val deadBolt: Int,
+        val doorState: Int,
+        val lockState: Int,
+        val securityBolt: Int,
         val battery: Int,
         val batteryState: Int,
     ) : DeviceStatus()

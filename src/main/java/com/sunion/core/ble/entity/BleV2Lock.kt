@@ -21,7 +21,9 @@ data class BleV2Lock(
     val operatingSound: OperatingSound,
     val soundType: SoundType,
     val soundValue: SoundValue,
-    val showFastTrackMode: ShowFastTrackMode
+    val showFastTrackMode: ShowFastTrackMode,
+    /** A4 **/
+    val supportedUnlockType: SupportedUnlockType,
 ) {
     enum class Direction(val value: Int) {
         RIGHT(0xA0),
@@ -132,5 +134,37 @@ data class BleV2Lock(
         CLOSE(0x00),
         OPEN(0x01),
         NOT_SUPPORT(0xFF)
+    }
+
+    enum class AccessCodeQuantity(val value: Int) {
+        NOT_SUPPORT(0xFFFF)
+    }
+
+    enum class AccessCardQuantity(val value: Int) {
+        NOT_SUPPORT(0xFFFF)
+    }
+
+    enum class FingerprintQuantity(val value: Int) {
+        NOT_SUPPORT(0xFFFF)
+    }
+
+    enum class FaceQuantity(val value: Int) {
+        NOT_SUPPORT(0xFFFF)
+    }
+
+    data class SupportedUnlockType(
+        val accessCodeQuantity: Int,
+        val accessCardQuantity: Int,
+        val fingerprintQuantity: Int,
+        val faceQuantity: Int,
+    )
+
+    enum class AlertType(val value: Int) {
+        ERROR_ACCESS_CODE(0),
+        CURRENT_ACCESS_CODE_AT_WRONG_TIME(1),
+        CURRENT_ACCESS_CODE_BUT_AT_VACATION_MODE(2),
+        MANY_ERROR_KEY_LOCKED(20),
+        LOCK_BREAK_ALERT(40),
+        UNKNOWN_ALERT_TYPE(-1),
     }
 }

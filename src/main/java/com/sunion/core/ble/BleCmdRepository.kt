@@ -233,6 +233,7 @@ class BleCmdRepository @Inject constructor(){
             0xA1 -> cmd_a1(serialIncrementAndGet(), key, data)
             0xA2 -> cmd_a2(serialIncrementAndGet(), key)
             0xA3 -> cmd_a3(serialIncrementAndGet(), key, data)
+            0xA4 -> cmd_a4(serialIncrementAndGet(), key)
             else -> throw IllegalArgumentException("Unknown function")
         }
     }
@@ -908,6 +909,21 @@ class BleCmdRepository @Inject constructor(){
         sendByte[2] = state.component1()
         sendByte[3] = state.component2()
         Timber.d(sendByte.toHex())
+        return encrypt(aesKeyTwo, pad(serial + sendByte))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [A4] data command. Get lock supported unlock types.
+     *
+     * @return An encoded byte array of [A4] command.
+     * */
+    fun cmd_a4(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA4.toByte() // function
         return encrypt(aesKeyTwo, pad(serial + sendByte))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -1874,6 +1890,70 @@ class BleCmdRepository @Inject constructor(){
                     }
                 } else {
                     throw IllegalArgumentException("Return function byte is not [A2]")
+                }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [A4] get lock supported unlock types.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent supported unlock types.
+     *
+     * */
+    fun resolveA4(aesKeyTwo: ByteArray, notification: ByteArray): BleV2Lock.SupportedUnlockType {
+        return aesKeyTwo.let { keyTwo ->
+            decrypt(keyTwo, notification)?.let { decrypted ->
+                if (decrypted.component3().unSignedInt() == 0xA4) {
+                    val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                    Timber.d("[A4] ${data.toHex()}")
+                    val accessCodeQuantity  = data.copyOfRange(0, 2)
+                    val accessCardQuantity  = data.copyOfRange(2, 4)
+                    val fingerprintQuantity  = data.copyOfRange(4, 6)
+                    val faceQuantity  = data.copyOfRange(6, 8)
+                    val response = BleV2Lock.SupportedUnlockType(
+                        byteArrayToInt(accessCodeQuantity),
+                        byteArrayToInt(accessCardQuantity),
+                        byteArrayToInt(fingerprintQuantity),
+                        byteArrayToInt(faceQuantity)
+                    )
+                    Timber.d("BleV2Lock.SupportedUnlockType response: $response")
+                    return response
+                } else {
+                    throw IllegalArgumentException("Return function byte is not [A4]")
+                }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [AF] alert notification.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent alert notification.
+     *
+     * */
+    fun resolveAF(aesKeyTwo: ByteArray, notification: ByteArray): Alert.AlertAF {
+        return aesKeyTwo.let { keyTwo ->
+            decrypt(keyTwo, notification)?.let { decrypted ->
+                if (decrypted.component3().unSignedInt() == 0xAF) {
+                    decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { byteArray ->
+                        val alertType = Alert.AlertAF(
+                            alertType = when (byteArrayToInt(byteArray)) {
+                                0 -> BleV2Lock.AlertType.ERROR_ACCESS_CODE.value
+                                1 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_AT_WRONG_TIME.value
+                                2 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_BUT_AT_VACATION_MODE.value
+                                20 -> BleV2Lock.AlertType.MANY_ERROR_KEY_LOCKED.value
+                                40 -> BleV2Lock.AlertType.LOCK_BREAK_ALERT.value
+                                else -> BleV2Lock.AlertType.UNKNOWN_ALERT_TYPE.value
+                            }
+                        )
+                        Timber.d("resolveAF: $alertType")
+                        return alertType
+                    }
+                } else {
+                    throw IllegalArgumentException("Return function byte is not [AF]")
                 }
             }
         } ?: throw IllegalArgumentException("Error when decryption")

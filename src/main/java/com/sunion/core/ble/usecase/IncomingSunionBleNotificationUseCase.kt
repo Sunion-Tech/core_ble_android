@@ -3,7 +3,7 @@ package com.sunion.core.ble.usecase
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.ReactiveStatefulConnection
-import com.sunion.core.ble.entity.DeviceStatus
+import com.sunion.core.ble.entity.SunionBleNotification
 import com.sunion.core.ble.entity.hexToBytes
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.flow.*
@@ -12,11 +12,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class IncomingDeviceStatusUseCase @Inject constructor(
+class IncomingSunionBleNotificationUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    operator fun invoke(): Flow<DeviceStatus> {
+    operator fun invoke(): Flow<SunionBleNotification> {
         return statefulConnection.rxBleConnection!!
             .setupNotification(NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
@@ -29,6 +29,7 @@ class IncomingDeviceStatusUseCase @Inject constructor(
                         when(decrypted.component3().unSignedInt()){
                             0xD6 -> true
                             0xA2 -> true
+                            0xAF -> true
                             else -> false
                         }
                     } ?: false
@@ -36,7 +37,7 @@ class IncomingDeviceStatusUseCase @Inject constructor(
                     false
             }
             .map { notification ->
-                var result: DeviceStatus = DeviceStatus.UNKNOWN
+                var result: SunionBleNotification = SunionBleNotification.UNKNOWN
                 bleCmdRepository.decrypt(
                     hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
                 )?.let { decrypted ->
@@ -49,6 +50,12 @@ class IncomingDeviceStatusUseCase @Inject constructor(
                         }
                         0xA2 -> {
                             result = bleCmdRepository.resolveA2(
+                                hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                                notification
+                            )
+                        }
+                        0xAF -> {
+                            result = bleCmdRepository.resolveAF(
                                 hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
                                 notification
                             )

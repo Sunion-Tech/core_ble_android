@@ -245,23 +245,28 @@ statefulConnection.establishConnection(
 )
 ```
 ## UseCases
-### IncomingDeviceStatusUseCase
-IncomingDeviceStatusUseCase collects device status notified by lock. You can setup the observer when lock connection is ready:
+### IncomingSunionBleNotificationUseCase
+IncomingSunionBleNotificationUseCase collects device status notified by lock. You can setup the observer when lock connection is ready:
 ```
 private var _bleDeviceStatusListener: Job? = null
 // Setup incoming device status observer
-_bleDeviceStatusListener?.cancel()
-_bleDeviceStatusListener = incomingDeviceStatusUseCase()
-    .map { deviceStatus ->
-        when (deviceStatus) {
+_bleSunionBleNotificationListener?.cancel()
+_bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
+    .map { sunionBleNotification ->
+        when (sunionBleNotification) {
             is DeviceStatus.DeviceStatusD6 -> {
             }
             is DeviceStatus.DeviceStatusA2 -> {
             }
-            else -> { _currentDeviceStatus = DeviceStatus.UNKNOWN }
+            is Alert.AlertAF -> {
+            }
+            else -> { 
+                _currentDeviceStatus = DeviceStatus.UNKNOWN 
+                _currentAlert = Alert.UNKNOWN
+            }
         }
     }
-    .catch { e -> Timber.e("Incoming DeviceStatus exception $e") }
+    .catch { e -> Timber.e("Incoming SunionBleNotification exception $e") }
     .flowOn(Dispatchers.IO)
     .launchIn(viewModelScope)
 ```
@@ -474,7 +479,7 @@ Exceptions
 | IllegalArgumentException     | Admin code must be 4-8 digits.     |
 
 ### LockDirectionUseCase
-LockDirectionUseCase requests lock to determine LockDirection. 
+LockDirectionUseCase requests lock to determine LockDirection.
 ```
 operator fun invoke(): Flow<DeviceStatus.DeviceStatus>
 ```
@@ -1169,6 +1174,28 @@ Exception
 | -------- | -------- |
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
+#### Get lock supported unlock types
+```
+getLockSupportedUnlockTypes(): Flow<BleV2Lock.SupportedUnlockType>
+```
+
+Example
+```
+lockUtilityUseCase.getLockSupportedUnlockTypes()
+    .map { result ->
+        // supported unlock type
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
 ### LockTokenUseCase
 #### Query token array
 ```
@@ -1569,6 +1596,11 @@ Exception
 |battery|Int|Percentage of battery power|
 |batteryState|Int|0: Normal<br>1: Weak current<br>2: Dangerous|
 
+### AlertAF
+| Name | Type | Description |
+| -------- | -------- | -------- |
+|alertType|Int|0: Error access code<br>1: Current access code at wrong time<br>2: Current access code but at vacation mode<br>20: Many error key locked<br>40: Lock break alert|
+
 ### LockConfigD4
 | Name | Type | Value |
 | -------- | -------- | -------- |
@@ -1634,6 +1666,14 @@ Lock only supports one of the types
 |token|String|Token|
 |content|String|Default empty string|
 |lockName|String|Default empty string|
+
+### SupportedUnlockType
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|accessCodeQuantity|Int|Access code quantity<br>0xFFFF: Not support|
+|accessCardQuantity|Int|Access card quantity<br>0xFFFF: Not support |
+|fingerprintQuantity|Int|Finger print quantity<br>0xFFFF: Not support|
+|faceQuantity|Int|Face quantity<br>0xFFFF: Not support|
 
 ### AccessCode
 | Name | Type | Value |

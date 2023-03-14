@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.hexToBytes
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
@@ -61,5 +62,38 @@ class LockUtilityUseCase @Inject constructor(
             statefulConnection.rxBleConnection!!.readCharacteristic(UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb")).toObservable().asFlow().single()
         }.getOrNull() ?: throw IllegalStateException("null version")
         emit(String(versionByteArray))
+    }
+
+    fun getLockSupportedUnlockTypes(): Flow<BleV2Lock.SupportedUnlockType> = flow {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0xA4,
+            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+        )
+        statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.getSupportedUnlockTypes")
+            .filter { notification ->
+                bleCmdRepository.decrypt(
+                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                )?.let { decrypted ->
+                    if (decrypted.component3().unSignedInt() == 0xEF) {
+                        throw LockStatusException.AdminCodeNotSetException()
+                    } else decrypted.component3().unSignedInt() == 0xA4
+                } ?: false
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolveA4(
+                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    notification
+                )
+                emit(result)
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.getSupportedUnlockTypes exception $e")
+                throw e
+            }
+            .single()
     }
 }

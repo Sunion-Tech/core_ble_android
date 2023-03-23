@@ -60,7 +60,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EB **/
-    fun queryAccessCode(index: Int): Flow<AccessCode> = flow {
+    fun queryAccessCode(index: Int): Flow<Access.AccessCode> = flow {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xEB,
@@ -95,7 +95,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EC **/
-    fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean> = flow {
+    fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean> = flow {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
             index = index,
@@ -137,7 +137,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** ED **/
-    fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean> = flow {
+    fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean> = flow {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
             index = index,

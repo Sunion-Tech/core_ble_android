@@ -234,6 +234,12 @@ class BleCmdRepository @Inject constructor(){
             0xA2 -> cmd_a2(serialIncrementAndGet(), key)
             0xA3 -> cmd_a3(serialIncrementAndGet(), key, data)
             0xA4 -> cmd_a4(serialIncrementAndGet(), key)
+            0xA5 -> cmd_a5(serialIncrementAndGet(), key, data)
+            0xA6 -> cmd_a6(serialIncrementAndGet(), key, data)
+            0xA7 -> cmd_a7(serialIncrementAndGet(), key, data)
+            0xA8 -> cmd_a8(serialIncrementAndGet(), key, data)
+            0xA9 -> cmd_a9(serialIncrementAndGet(), key, data)
+            0xAA -> cmd_aa(serialIncrementAndGet(), key, data)
             else -> throw IllegalArgumentException("Unknown function")
         }
     }
@@ -702,7 +708,7 @@ class BleCmdRepository @Inject constructor(){
         isEnabled: Boolean,
         name: String,
         code: String,
-        scheduleType: AccessCodeScheduleType
+        scheduleType: AccessScheduleType
     ): ByteArray {
         val isEnabledByte = byteArrayOf(if (isEnabled) 0x01.toByte() else 0x00.toByte())
         val nameByte = name.toByteArray()
@@ -711,7 +717,7 @@ class BleCmdRepository @Inject constructor(){
         scheduleByte[0] = scheduleType.getByteOfType()
 
         when (scheduleType) {
-            is AccessCodeScheduleType.ValidTimeRange -> {
+            is AccessScheduleType.ValidTimeRange -> {
                 Timber.d("ValidTimeRange from: ${scheduleType.from.toInt()}, to: ${scheduleType.to.toInt()}")
 
                 val fromTimeByteArray = intToLittleEndianBytes(scheduleType.from.toInt())
@@ -720,7 +726,7 @@ class BleCmdRepository @Inject constructor(){
                 val toTimeByteArray = intToLittleEndianBytes(scheduleType.to.toInt())
                 for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
             }
-            is AccessCodeScheduleType.ScheduleEntry -> {
+            is AccessScheduleType.ScheduleEntry -> {
                 Timber.d("ScheduleEntry weekdays: ${scheduleType.weekdayBits}, ${Integer.toBinaryString(scheduleType.weekdayBits)}, from: ${scheduleType.from}, to: ${scheduleType.to}")
                 val weekBuffer = ByteBuffer.allocate(1)
                 weekBuffer.order(ByteOrder.LITTLE_ENDIAN)
@@ -925,6 +931,159 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xA4.toByte() // function
         return encrypt(aesKeyTwo, pad(serial + sendByte))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [A5] data command. Query access array.
+     *
+     * @return An encoded byte array of [A5] command.
+     * */
+    fun cmd_a5(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA5.toByte() // function
+        sendByte[1] = 0x01.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [A6] data command. Query access.
+     *
+     * @return An encoded byte array of [A6] command.
+     * */
+    fun cmd_a6(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA6.toByte() // function
+        sendByte[1] = 0x03.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    fun combineAccessA7Command(
+        accessA7Cmd: Access.AccessA7Cmd
+    ): ByteArray {
+        val typeByte = byteArrayOf(accessA7Cmd.type.toByte())
+        val indexByte = intToLittleEndianBytesU16(accessA7Cmd.index)
+        val isEnabledByte = byteArrayOf(if (accessA7Cmd.isEnable) 0x01.toByte() else 0x00.toByte())
+        val scheduleByte = ByteArray(12)
+        scheduleByte[0] = accessA7Cmd.scheduleType.getByteOfType()
+        val nameLenByte = accessA7Cmd.nameLen.toByte()
+        val nameByte = accessA7Cmd.name.toByteArray()
+        val codeByte = stringCodeToHex(accessA7Cmd.code)
+
+        when (accessA7Cmd.scheduleType) {
+            is AccessScheduleType.ValidTimeRange -> {
+                Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from.toInt()}, to: ${accessA7Cmd.scheduleType.to.toInt()}")
+
+                val fromTimeByteArray = intToLittleEndianBytes(accessA7Cmd.scheduleType.from.toInt())
+                for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
+
+                val toTimeByteArray = intToLittleEndianBytes(accessA7Cmd.scheduleType.to.toInt())
+                for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
+            }
+            is AccessScheduleType.ScheduleEntry -> {
+                Timber.d("ScheduleEntry weekdays: ${accessA7Cmd.scheduleType.weekdayBits}, ${Integer.toBinaryString(accessA7Cmd.scheduleType.weekdayBits)}, from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
+                val weekBuffer = ByteBuffer.allocate(1)
+                weekBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                weekBuffer.put(accessA7Cmd.scheduleType.weekdayBits.toByte())
+                weekBuffer.flip()
+                scheduleByte[1] = weekBuffer.get()
+
+                val fromBuffer = ByteBuffer.allocate(1)
+                fromBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                fromBuffer.put(accessA7Cmd.scheduleType.from.toByte())
+                fromBuffer.flip()
+                scheduleByte[2] = fromBuffer.get()
+
+                val toBuffer = ByteBuffer.allocate(1)
+                toBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                toBuffer.put(accessA7Cmd.scheduleType.to.toByte())
+                toBuffer.flip()
+                scheduleByte[3] = toBuffer.get()
+            }
+            else -> {}
+        }
+        val data = typeByte + indexByte + isEnabledByte + scheduleByte + nameLenByte + nameByte + codeByte
+        Timber.d("Schedule: ${data.toHex()}")
+        return data
+    }
+
+    /**
+     * ByteArray [A7] data command. Add access.
+     *
+     * @return An encoded byte array of [A7] command.
+     * */
+    fun cmd_a7(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA7.toByte() // function
+        sendByte[1] = (data.size).toByte() // len
+        Timber.d("a7: ${(serial + sendByte + data).toHex()}")
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [A8] data command. Modify access.
+     *
+     * @return An encoded byte array of [A8] command.
+     * */
+    fun cmd_a8(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA8.toByte() // function
+        sendByte[1] = (data.size).toByte() // len
+        Timber.d("a8: ${(serial + sendByte + data).toHex()}")
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [A9] data command. Device get access.
+     *
+     * @return An encoded byte array of [A9] command.
+     * */
+    fun cmd_a9(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xA9.toByte() // function
+        sendByte[1] = 0x04.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [AA] data command. Delete access.
+     *
+     * @return An encoded byte array of [AA] command.
+     * */
+    fun cmd_aa(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        data: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xAA.toByte() // function
+        sendByte[1] = 0x03.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + data))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
 
@@ -1512,7 +1671,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent a user code setting.
      *
      * */
-    fun resolveEb(aesKeyTwo: ByteArray, notification: ByteArray): AccessCode {
+    fun resolveEb(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessCode {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xEB) {
@@ -1534,7 +1693,7 @@ class BleCmdRepository @Inject constructor(){
                         Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(4, 8)).int)
                     val scheduleTo =
                         Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(8, 12)).int)
-                    val userCode = AccessCode(
+                    val userCode = Access.AccessCode(
                         index = 999,
                         isEnable = data.component1().unSignedInt() == 0x01,
                         code = code,
@@ -1928,6 +2087,191 @@ class BleCmdRepository @Inject constructor(){
     }
 
     /**
+     * Resolve [A5] Get the access array.
+     * The bit in each byte indicates that whether the position contains a pin code or not,
+     * and in the following order [7, 6, 5, 4, 3, 2, 1, 0]、[15, 14, 13, 12, 11...], etc.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent whether the lock has admin code or not.
+     *
+     * */
+    fun resolveA5(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA5 {
+        return aesKeyTwo.let { keyTwo ->
+            decrypt(keyTwo, notification)?.let { decrypted ->
+                if (decrypted.component3().unSignedInt() == 0xA5) {
+                    val dataLen = decrypted.component4().unSignedInt()
+                    val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                    Timber.d("[A5] dataLen: $dataLen, data: ${data.toHex()}")
+                    val type = data.component1().unSignedInt()
+                    val transferComplete = data.component2().unSignedInt()
+                    val dataByteArray = data.copyOfRange(2, dataLen)
+                    val accessA5 = Access.AccessA5(type, transferComplete, dataByteArray)
+                    Timber.d("[A5] read access from device: $accessA5")
+                    accessA5
+                } else {
+                    throw IllegalArgumentException("Return function byte is not [A5]")
+                }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [A6] Get the access at specific index.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent a accessA6.
+     *
+     * */
+    fun resolveA6(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA6 {
+        return aesKeyTwo.let { keyTwo ->
+            decrypt(keyTwo, notification)?.let { decrypted ->
+                if (decrypted.component3().unSignedInt() == 0xA6) {
+                    val dataLen = decrypted.component4().unSignedInt()
+                    val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                    Timber.d("[A6] dataLen: $dataLen data: ${data.toHex()}")
+                    val type = data.component1().unSignedInt()
+                    val index = byteArrayToInt(data.copyOfRange(1, 3))
+                    val isEnable = data.component4().unSignedInt() == 0x01
+                    val scheduleData = data.copyOfRange(4, 16)
+                    val nameLen = data[16].unSignedInt()
+                    val name = String(data.copyOfRange(17, 17 + nameLen))
+                    val accessCode = data.copyOfRange(17 + nameLen, dataLen)
+                    val code = accessCode.map { it.unSignedInt().toString() }
+                        .joinToString(separator = "") { it }
+                    val scheduleType = String(byteArrayOf(scheduleData.component1()))
+                    val weekdays = scheduleData.component2().unSignedInt()
+                    val fromTime = scheduleData.component3().unSignedInt()
+                    val toTime = scheduleData.component4().unSignedInt()
+                    val scheduleFrom =
+                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(4, 8)).int)
+                    val scheduleTo =
+                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(8, 12)).int)
+                    val accessA6 = Access.AccessA6(
+                        type = type,
+                        index = index,
+                        isEnable = isEnable,
+                        scheduleType = scheduleType,
+                        weekDays = weekdays,
+                        from = fromTime,
+                        to = toTime,
+                        scheduleFrom = scheduleFrom,
+                        scheduleTo = scheduleTo,
+                        nameLen = nameLen,
+                        name = name,
+                        code = code,
+                    )
+                    Timber.d("[A6] read access from device: $accessA6")
+                    accessA6
+                } else {
+                    throw IllegalArgumentException("Return function byte is not [A6]")
+                }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [A7] The result of adding a access.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent accessA7.
+     *
+     * */
+    fun resolveA7(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xA7) {
+                decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
+                    Timber.d("[A7] ${bytes.toHex()}")
+                    val type = bytes.component1().unSignedInt()
+                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val isSuccess = bytes.component4().unSignedInt() == 0x01
+                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    Timber.d("[A7] read access from device: $accessA7")
+                    accessA7
+                }
+            } else {
+                throw IllegalArgumentException("Return function byte is not [A7]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [A8] The result of modifying a access.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent accessA7.
+     *
+     * */
+    fun resolveA8(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xA8) {
+                decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
+                    Timber.d("[A8] ${bytes.toHex()}")
+                    val type = bytes.component1().unSignedInt()
+                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val isSuccess = bytes.component4().unSignedInt() == 0x01
+                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    Timber.d("[A8] read access from device: $accessA7")
+                    accessA7
+                }
+            } else {
+                throw IllegalArgumentException("Return function byte is not [A8]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [A9] The result of device get access.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent accessA9.
+     *
+     * */
+    fun resolveA9(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA9 {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xA9) {
+                val dataLen = decrypted.component4().unSignedInt()
+                val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                Timber.d("[A9] dataLen: $dataLen data: ${data.toHex()}")
+                val type = data.component1().unSignedInt()
+                val state = data.component2().unSignedInt()
+                val index = byteArrayToInt(data.copyOfRange(2, 4))
+                val status = data.component5().unSignedInt() == 0x01
+                val dataInfo = data.copyOfRange(5, dataLen).map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
+                val accessA9 = Access.AccessA9(type, state, index, status, dataInfo)
+                Timber.d("[A9] read access from device: $accessA9")
+                accessA9
+            } else {
+                throw IllegalArgumentException("Return function byte is not [A9]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [AA] The result of deleting a access.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent AccessA7.
+     *
+     * */
+    fun resolveAA(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xAA) {
+                decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
+                    Timber.d("[AA] ${bytes.toHex()}")
+                    val type = bytes.component1().unSignedInt()
+                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val isSuccess = bytes.component4().unSignedInt() == 0x01
+                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    Timber.d("[AA] read access from device: $accessA7")
+                    accessA7
+                }
+            } else {
+                throw IllegalArgumentException("Return function byte is not [AA]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
      * Resolve [AF] alert notification.
      *
      * @param notification Data return from device.
@@ -1944,6 +2288,7 @@ class BleCmdRepository @Inject constructor(){
                                 0 -> BleV2Lock.AlertType.ERROR_ACCESS_CODE.value
                                 1 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_AT_WRONG_TIME.value
                                 2 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_BUT_AT_VACATION_MODE.value
+                                3 -> BleV2Lock.AlertType.ACTIVELY_PRESS_THE_CLEAR_KEY.value
                                 20 -> BleV2Lock.AlertType.MANY_ERROR_KEY_LOCKED.value
                                 40 -> BleV2Lock.AlertType.LOCK_BREAK_ALERT.value
                                 else -> BleV2Lock.AlertType.UNKNOWN_ALERT_TYPE.value

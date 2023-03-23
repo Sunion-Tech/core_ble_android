@@ -260,9 +260,11 @@ _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
             }
             is Alert.AlertAF -> {
             }
+            is Access.AccessA9 -> {             
+            }
             else -> { 
                 _currentDeviceStatus = DeviceStatus.UNKNOWN 
-                _currentAlert = Alert.UNKNOWN
+                _currentSunionBleNotification = SunionBleNotification.UNKNOWN
             }
         }
     }
@@ -1387,7 +1389,7 @@ Exception
 
 #### Add access code
 ```
-addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean>
+addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean>
 ```
 
 Parameter
@@ -1397,7 +1399,7 @@ Parameter
 | isEnabled    | Boolean                 | Access code enable    |
 | name         | String                  | Access code name    |
 | code         | String                  | Access code   |
-| scheduleType | AccessCodeScheduleType  | Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType) |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
 
 Example
 ```
@@ -1418,7 +1420,7 @@ Exception
 
 #### Edit access code
 ```
-editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessCodeScheduleType): Flow<Boolean>
+editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean>
 ```
 
 Parameter
@@ -1428,7 +1430,7 @@ Parameter
 | isEnabled    | Boolean                 | Access code enable    |
 | name         | String                  | Access code name    |
 | code         | String                  | Access code   |
-| scheduleType | AccessCodeScheduleType  | Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType)|
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
 
 Example
 ```
@@ -1473,6 +1475,738 @@ Exception
 | -------- | -------- |
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
+
+### LockAccessUseCase
+#### Get access code array
+```
+getAccessCodeArray(): Flow<List<Boolean>>
+```
+
+Example
+```
+if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.getAccessCodeArray()
+        .map { accessCodeArray ->
+            // return accessCodeArray
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Query access code
+```
+queryAccessCode(index: Int): Flow<Access.AccessA6>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query access code at index in array     |
+
+Example
+```
+lockAccessUseCase.queryAccessCode(index)
+    .map { accessCode ->
+        // return accessCode info
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add access code
+```
+addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Access code enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
+| name         | String                  | Access code name    |
+| code         | String                  | Access code   |
+
+Example
+```
+if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.addAccessCode(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = Access.AccessA7
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Edit access code
+```
+editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Edit index    |
+| isEnabled    | Boolean                 | Access code enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
+| name         | String                  | Access code name    |
+| code         | String                  | Access code   |
+
+Example
+```
+if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.editAccessCode(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Delete access code
+```
+deleteAccessCode(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete access code at index in array    |
+
+Example
+```
+if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.deleteAccessCode(index)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Get access card array
+```
+getAccessCardArray(): Flow<List<Boolean>>
+```
+
+Example
+```
+if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.getAccessCardArray()
+        .map { accessCardArray ->
+            // return accessCardArray
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Query access card
+```
+queryAccessCard(index: Int): Flow<Access.AccessA6>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query access card at index in array     |
+
+Example
+```
+lockAccessUseCase.queryAccessCard(index)
+    .map { accessCard ->
+        // return accessCard info
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add access card
+```
+addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Access card enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
+| name         | String                  | Access card name    |
+| code         | String                  | Access card   |
+
+Example
+```
+if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.addAccessCard(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = Access.AccessA7
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Edit access card
+```
+editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Edit index    |
+| isEnabled    | Boolean                 | Access code enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
+| name         | String                  | Access code name    |
+| code         | String                  | Access code   |
+
+Example
+```
+if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.editAccessCard(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Delete access card
+```
+deleteAccessCode(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete access code at index in array    |
+
+Example
+```
+if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.deleteAccessCard(index)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Device get access card
+```
+deviceGetAccessCard(state:Int, index: Int): Flow<Access.AccessA9>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| state    | Int     | 0: Exit <br> 1: Start    |
+| index    | Int     | Read access card code index    |
+
+Example
+```
+if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.deviceGetAccessCard(state, index)
+        .map { result ->
+            result = Access.AccessA9
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Get fingerprint array
+```
+getFingerprintArray(): Flow<List<Boolean>>
+```
+
+Example
+```
+if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.getFingerprintArray()
+        .map { fingerprintArray ->
+            // return fingerprintArray
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Query fingerprint
+```
+queryFingerprint(index: Int): Flow<Access.AccessA6>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query fingerprint at index in array     |
+
+Example
+```
+lockAccessUseCase.queryFingerprint(index)
+    .map { fingerprint ->
+        // return fingerprint info
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add fingerprint
+```
+addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Fingerprint enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
+| name         | String                  | Fingerprint name    |
+| code         | String                  | Fingerprint   |
+
+Example
+```
+if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.addFingerprint(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = Access.AccessA7
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Edit fingerprint
+```
+editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Edit index    |
+| isEnabled    | Boolean                 | Fingerprint enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
+| name         | String                  | Fingerprint name    |
+| code         | String                  | Fingerprint   |
+
+Example
+```
+if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.editFingerprint(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Delete fingerprint
+```
+deleteFingerprint(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete fingerprint at index in array    |
+
+Example
+```
+if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.deleteFingerprint(index)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Device get fingerprint
+```
+deviceGetFingerprint(state:Int, index: Int): Flow<Access.AccessA9>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| state    | Int     | 0: Exit <br> 1: Start    |
+| index    | Int     | Read fingerprint code index    |
+
+Example
+```
+if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.deviceGetFingerprint(state, index)
+        .map { result ->
+            result = Access.AccessA9
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Get face array
+```
+getFaceArray(): Flow<List<Boolean>>
+```
+
+Example
+```
+if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.getFaceArray()
+        .map { faceArray ->
+            // return faceArray
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Query face
+```
+queryFace(index: Int): Flow<Access.AccessA6>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index     | Int     | Query face at index in array     |
+
+Example
+```
+lockAccessUseCase.queryFace(index)
+    .map { face ->
+        // return face info
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+
+#### Add face
+```
+addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Add index    |
+| isEnabled    | Boolean                 | Face enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
+| name         | String                  | Face name    |
+| code         | String                  | Face   |
+
+Example
+```
+if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.addFace(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = Access.AccessA7
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Edit face
+```
+editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| --------  | -------- | -------- |
+| index        | Int                     | Edit index    |
+| isEnabled    | Boolean                 | Face enable    |
+| scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
+| name         | String                  | Face name    |
+| code         | String                  | Face   |
+
+Example
+```
+if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+    lockAccessUseCase.editFace(index, isEnabled, scheduleType, name, code)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Delete face
+```
+deleteFace(index: Int): Flow<Boolean>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| index    | Int     | Delete face at index in array    |
+
+Example
+```
+if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
+    lockAccessUseCase.deleteFace(index)
+        .map { result ->
+            result = true when succeed
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
+
+#### Device get face
+```
+deviceGetFace(state:Int, index: Int): Flow<Access.AccessA9>
+```
+
+Parameter
+| Parameter | Type | Description |
+| -------- | -------- | -------- |
+| state    | Int     | 0: Exit <br> 1: Start    |
+| index    | Int     | Read face code index    |
+
+Example
+```
+if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
+    lockAccessUseCase.deviceGetFace(state, index)
+        .map { result ->
+            result = Access.AccessA9
+        }
+        .flowOn(Dispatchers.IO)
+        .catch { Timer.e(it) }
+        .launchIn(viewModelScope)
+} else {
+    throw LockStatusException.LockFunctionNotSupportException()
+}
+```
+
+Exception
+| Exception | Description |
+| -------- | -------- |
+| NotConnectedException     | Mobile APP is not connected with lock.     |
+| AdminCodeNotSetException     | Admin code has not been set.     |
+| LockFunctionNotSupportException | Lock function not support.|
 
 ### LockEventLogUseCase
 #### Get event quantity
@@ -1596,11 +2330,6 @@ Exception
 |battery|Int|Percentage of battery power|
 |batteryState|Int|0: Normal<br>1: Weak current<br>2: Dangerous|
 
-### AlertAF
-| Name | Type | Description |
-| -------- | -------- | -------- |
-|alertType|Int|0: Error access code<br>1: Current access code at wrong time<br>2: Current access code but at vacation mode<br>20: Many error key locked<br>40: Lock break alert|
-
 ### LockConfigD4
 | Name | Type | Value |
 | -------- | -------- | -------- |
@@ -1681,7 +2410,7 @@ Lock only supports one of the types
 |index|Int|AccessCode index |
 |isEnable|Boolean|true<br>false|
 |code|String|AccessCode|
-|scheduleType|String|Please refer to [AccessCodeScheduleType](###AccessCodeScheduleType)|
+|scheduleType|String|Please refer to [AccessScheduleType](###AccessScheduleType)|
 |weekDays|Int|Default null|
 |from|Int|Default null|
 |to|Int|Default null|
@@ -1689,7 +2418,39 @@ Lock only supports one of the types
 |scheduleTo|Int|Default null|
 |name|String|AccessCode name|
 
-### AccessCodeScheduleType
+### AccessA6
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|type|Int|0: Access code <br> 1: Access card <br> 2: Fingerprint <br> 3: Face |
+|index|Int|Access index |
+|isEnable|Boolean|true<br>false|
+|code|String|Access Code|
+|scheduleType|String|Please refer to [AccessScheduleType](###AccessScheduleType)|
+|weekDays|Int|Default null|
+|from|Int|Default null|
+|to|Int|Default null|
+|scheduleFrom|Int|Default null|
+|scheduleTo|Int|Default null|
+|name|String|Access name|
+|nameLen|Int|Access name length|
+
+### AccessA7
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|type|Int|0: Access code <br> 1: Access card <br> 2: Fingerprint <br> 3: Face |
+|index|Int|Access index |
+|isSuccess|Boolean|true<br>false|
+
+### AccessA9
+| Name | Type | Value |
+| -------- | -------- | -------- |
+|type|Int|1: Access card <br> 2: Fingerprint <br> 3: Face |
+|state|Int|0: Exit <br> 1: Start <br> 2: Update|
+|index|Int|Read data with a empty access index |
+|status|Boolean|true<br>false|
+|data|String|Access Card: Card number <br> Fingerprint/Face: Percentage |
+
+### AccessScheduleType
 | Name | Description |
 | -------- | -------- |
 |All|Permanent|
@@ -1697,6 +2458,11 @@ Lock only supports one of the types
 |SingleEntry|Single Entry|
 |ValidTimeRange (from: Long, to: Long)|Valid Time Range|
 |ScheduleEntry (weekdayBits: Int, from: Int, to: Int)|ScheduleEntry|
+
+### AlertAF
+| Name | Type | Description |
+| -------- | -------- | -------- |
+|alertType|Int|0: Error access code<br>1: Current access code at wrong time<br>2: Current access code but at vacation mode<br>3: Actively press the clear key<br>20: Many error key locked<br>40: Lock break alert|
 
 ### EventLog
 | Name | Type | Value |

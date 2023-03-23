@@ -2,8 +2,6 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
-import com.sunion.core.ble.entity.AccessCodeScheduleType
-import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.LockConfig
 import com.sunion.core.ble.entity.hexToBytes
 import com.sunion.core.ble.exception.LockStatusException

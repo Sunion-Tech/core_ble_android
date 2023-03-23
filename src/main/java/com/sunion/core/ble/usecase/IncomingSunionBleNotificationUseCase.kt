@@ -30,6 +30,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                             0xD6 -> true
                             0xA2 -> true
                             0xAF -> true
+                            0xA9 -> true
                             else -> false
                         }
                     } ?: false
@@ -56,6 +57,12 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                         }
                         0xAF -> {
                             result = bleCmdRepository.resolveAF(
+                                hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                                notification
+                            )
+                        }
+                        0xA9 -> {
+                            result = bleCmdRepository.resolveA9(
                                 hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
                                 notification
                             )

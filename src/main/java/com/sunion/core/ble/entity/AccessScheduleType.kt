@@ -1,11 +1,11 @@
 package com.sunion.core.ble.entity
 
-sealed class AccessCodeScheduleType {
-    object All : AccessCodeScheduleType()
-    object None : AccessCodeScheduleType()
-    object SingleEntry : AccessCodeScheduleType()
-    data class ValidTimeRange(val from: Long, val to: Long) : AccessCodeScheduleType()
-    data class ScheduleEntry(val weekdayBits: Int = 0, val from: Int, val to: Int) : AccessCodeScheduleType()
+sealed class AccessScheduleType {
+    object All : AccessScheduleType()
+    object None : AccessScheduleType()
+    object SingleEntry : AccessScheduleType()
+    data class ValidTimeRange(val from: Long, val to: Long) : AccessScheduleType()
+    data class ScheduleEntry(val weekdayBits: Int = 0, val from: Int, val to: Int) : AccessScheduleType()
 
     fun getByteOfType() = when (this) {
         is All -> "A".toByteArray().component1()

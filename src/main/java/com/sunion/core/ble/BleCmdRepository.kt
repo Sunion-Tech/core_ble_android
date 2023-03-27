@@ -2348,4 +2348,12 @@ class BleCmdRepository @Inject constructor(){
         }
     }
 
+    fun isValidNotification(key:ByteArray, notification: ByteArray, function:Int): Boolean {
+        return decrypt(key, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xEF) {
+                throw LockStatusException.AdminCodeNotSetException()
+            } else decrypted.component3().unSignedInt() == function
+        } ?: false
+    }
+
 }

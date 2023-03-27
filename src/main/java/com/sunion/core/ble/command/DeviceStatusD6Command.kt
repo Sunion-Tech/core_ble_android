@@ -2,9 +2,7 @@ package com.sunion.core.ble.command
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.entity.*
-import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.hexToByteArray
-import com.sunion.core.ble.unSignedInt
 
 class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
     BleCommand<Unit, DeviceStatus.DeviceStatusD6> {
@@ -26,12 +24,6 @@ class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
 
     /** receive D6 or EF **/
     override fun match(key: String, data: ByteArray): Boolean {
-        return bleCmdRepository.decrypt(
-            key.hexToByteArray(), data
-        )?.let { decrypted ->
-            if (decrypted.component3().unSignedInt() == 0xEF) {
-                throw LockStatusException.AdminCodeNotSetException()
-            } else decrypted.component3().unSignedInt() == 0xD6
-        } ?: false
+        return bleCmdRepository.isValidNotification(key.hexToByteArray(), data, function)
     }
 }

@@ -4,7 +4,6 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MAX
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MIN
-import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
 import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
@@ -23,7 +22,7 @@ class AdminCodeUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xEF,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.isAdminCodeExists")
@@ -37,7 +36,7 @@ class AdminCodeUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveEf(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)
@@ -56,22 +55,18 @@ class AdminCodeUseCase @Inject constructor(
         val adminCode = bleCmdRepository.stringCodeToHex(code)
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC7,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             adminCode
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.createAdminCode")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    decrypted.component3().unSignedInt() == 0xC7
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xC7)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveC7(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)
@@ -93,24 +88,18 @@ class AdminCodeUseCase @Inject constructor(
         val sendBytes = byteArrayOf(oldBytes.size.toByte()) + oldBytes + byteArrayOf(newBytes.size.toByte()) + newBytes
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC8,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             sendBytes
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.updateAdminCode")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xC8
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xC8)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveC8(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)

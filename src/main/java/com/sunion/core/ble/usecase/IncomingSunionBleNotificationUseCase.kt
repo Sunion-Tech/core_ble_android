@@ -4,7 +4,6 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.SunionBleNotification
-import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.rx2.asFlow
@@ -24,7 +23,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
             .filter { notification ->
                 if (!statefulConnection.lockConnectionInfo.keyTwo.isNullOrEmpty()) {
                     bleCmdRepository.decrypt(
-                        statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
+                        statefulConnection.key(), notification
                     )?.let { decrypted ->
                         when(decrypted.component3().unSignedInt()){
                             0xD6 -> true
@@ -40,30 +39,30 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
             .map { notification ->
                 var result: SunionBleNotification = SunionBleNotification.UNKNOWN
                 bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
+                    statefulConnection.key(), notification
                 )?.let { decrypted ->
                     when (decrypted.component3().unSignedInt()) {
                         0xD6 -> {
                             result = bleCmdRepository.resolveD6(
-                                statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                                statefulConnection.key(),
                                 notification
                             )
                         }
                         0xA2 -> {
                             result = bleCmdRepository.resolveA2(
-                                statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                                statefulConnection.key(),
                                 notification
                             )
                         }
                         0xAF -> {
                             result = bleCmdRepository.resolveAF(
-                                statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                                statefulConnection.key(),
                                 notification
                             )
                         }
                         0xA9 -> {
                             result = bleCmdRepository.resolveA9(
-                                statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                                statefulConnection.key(),
                                 notification
                             )
                         }

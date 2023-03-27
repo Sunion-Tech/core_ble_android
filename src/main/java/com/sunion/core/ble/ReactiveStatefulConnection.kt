@@ -430,4 +430,8 @@ class ReactiveStatefulConnection @Inject constructor(
                     .map(RxBleDeviceServices::getBluetoothGattServices)
             }
         }
+
+    fun key(): ByteArray {
+        return lockConnectionInfo.keyTwo!!.hexToByteArray()
+    }
 }

@@ -3,10 +3,7 @@ package com.sunion.core.ble.usecase
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.LockConfig
-import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
-import com.sunion.core.ble.hexToByteArray
-import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -22,23 +19,17 @@ class LockConfigA0UseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA0,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray()
+            key = statefulConnection.key()
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigA0UseCase.query")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xA0
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA0)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA0(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)
@@ -56,24 +47,18 @@ class LockConfigA0UseCase @Inject constructor(
         val bytes = bleCmdRepository.settingBytesA1(LockConfigA0)
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA1,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             bytes
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigA0UseCase.set")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xA1
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA1)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA1(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 result

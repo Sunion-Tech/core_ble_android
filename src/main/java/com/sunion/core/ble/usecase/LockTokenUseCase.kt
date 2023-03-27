@@ -4,9 +4,7 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.AddUserResponse
 import com.sunion.core.ble.entity.DeviceToken
-import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
-import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -25,23 +23,17 @@ class LockTokenUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE4,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryTokenArray")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xE4
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE4)
             }
             .take(1)
             .map { notification ->
                 bleCmdRepository.resolveE4(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
             }
@@ -63,25 +55,19 @@ class LockTokenUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE5,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             byteArrayOf(index.toByte())
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryToken")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xE5
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE5)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveUser(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)
@@ -99,25 +85,19 @@ class LockTokenUseCase @Inject constructor(
         val bytes = permission.toByteArray() + name.toByteArray()
         val command = bleCmdRepository.createCommand(
             function = 0xE6,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             data = bytes
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "addOneTimeToken")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xE6
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE6)
             }
             .take(1)
             .map { notification ->
                 val addUserResponse = bleCmdRepository.resolveE6(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(addUserResponse)
@@ -135,25 +115,19 @@ class LockTokenUseCase @Inject constructor(
         val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.toByteArray()
         val command = bleCmdRepository.createCommand(
             function = 0xE7,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             data = bytes
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "editToken")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xE7
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE7)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveE7(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 ).isSuccessful
                 emit(result)
@@ -175,25 +149,19 @@ class LockTokenUseCase @Inject constructor(
 
         val command = bleCmdRepository.createCommand(
             function = 0xE8,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             sendBytes
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteToken")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    if (decrypted.component3().unSignedInt() == 0xEF) {
-                        throw LockStatusException.AdminCodeNotSetException()
-                    } else decrypted.component3().unSignedInt() == 0xE8
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE8)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveE8(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)

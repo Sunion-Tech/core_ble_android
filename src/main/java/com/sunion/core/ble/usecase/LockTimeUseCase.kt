@@ -21,22 +21,18 @@ class LockTimeUseCase @Inject constructor(
         val bytes = timeStamp.toInt().toLittleEndianByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD3,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             bytes
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.setTime")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    decrypted.component3().unSignedInt() == 0xD3
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD3)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveD3(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)
@@ -53,21 +49,17 @@ class LockTimeUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD2,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.getTime")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    decrypted.component3().unSignedInt() == 0xD2
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD2)
             }
             .take(1)
             .map { notification ->
                 val ret = bleCmdRepository.resolveD2(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(ret)
@@ -90,22 +82,18 @@ class LockTimeUseCase @Inject constructor(
         val bytes = offsetByte + offsetSecondsBytes
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD9,
-            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            key = statefulConnection.key(),
             data = bytes
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.setTimeZone")
             .filter { notification ->
-                bleCmdRepository.decrypt(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
-                )?.let { decrypted ->
-                    decrypted.component3().unSignedInt() == 0xD9
-                } ?: false
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD9)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveD9(
-                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+                    statefulConnection.key(),
                     notification
                 )
                 emit(result)

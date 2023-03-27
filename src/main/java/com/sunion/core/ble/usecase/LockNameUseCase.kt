@@ -2,8 +2,8 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
-import com.sunion.core.ble.entity.hexToBytes
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -20,13 +20,13 @@ class LockNameUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD0,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.getLockName")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     decrypted.component3().unSignedInt() == 0xD0
                 } ?: false
@@ -34,7 +34,7 @@ class LockNameUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveD0(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -52,14 +52,14 @@ class LockNameUseCase @Inject constructor(
         if (name.toByteArray().size > 20) throw IllegalArgumentException("Limit of lock name length is 20 bytes.")
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD1,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             name.toByteArray()
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     decrypted.component3().unSignedInt() == 0xD1
                 } ?: false
@@ -67,7 +67,7 @@ class LockNameUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveD1(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)

@@ -5,7 +5,7 @@ import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.command.DeviceStatusD6Command
 import com.sunion.core.ble.entity.DeviceStatus
 import com.sunion.core.ble.entity.LockState
-import com.sunion.core.ble.entity.hexToBytes
+import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
 import com.sunion.core.ble.unSignedInt
@@ -47,14 +47,14 @@ class DeviceStatusD6UseCase @Inject constructor(
         if (desiredState!=LockState.LOCKED && desiredState!=LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD7,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             if (desiredState == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusD6UseCase.setLockState")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -64,7 +64,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveD6(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)

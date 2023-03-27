@@ -106,13 +106,13 @@ class BleCmdRepository @Inject constructor(){
 
     @SuppressLint("GetInstance")
     fun encrypt(key: ByteArray, data: ByteArray): ByteArray? {
-        Timber.d("key:\n${key.toHex()}")
+        Timber.d("key:\n${key.toHexPrint()}")
         return try {
             val cipher: Cipher = Cipher.getInstance(CIPHER_MODE)
             val keySpec = SecretKeySpec(key, "AES")
             cipher.init(Cipher.ENCRYPT_MODE, keySpec)
             val encrypted: ByteArray = cipher.doFinal(data)
-            Timber.d("encrypted:\n${encrypted.toHex()}")
+            Timber.d("encrypted:\n${encrypted.toHexPrint()}")
             encrypted
         } catch (exception: Exception) {
             Timber.d(exception)
@@ -122,13 +122,13 @@ class BleCmdRepository @Inject constructor(){
 
     @SuppressLint("GetInstance")
     fun decrypt(key: ByteArray, data: ByteArray): ByteArray? {
-//        Timber.d("key:\n${key.toHex()}")
+//        Timber.d("key:\n${key.toHexPrint()}")
         return try {
             val cipher: Cipher = Cipher.getInstance(CIPHER_MODE)
             val keySpec = SecretKeySpec(key, "AES")
             cipher.init(Cipher.DECRYPT_MODE, keySpec)
             val original: ByteArray = cipher.doFinal(data)
-//            Timber.d("decrypted: \n${original.toHex()}")
+//            Timber.d("decrypted: \n${original.toHexPrint()}")
             original
         } catch (exception: Exception) {
             Timber.d(exception)
@@ -140,7 +140,7 @@ class BleCmdRepository @Inject constructor(){
         if (data.isEmpty()) throw IllegalArgumentException("Invalid command.")
         val padNumber = 16 - (data.size) % 16
         val padBytes = if (padZero) ByteArray(padNumber) else Random.nextBytes(padNumber)
-//        println(padBytes.toHex())
+//        println(padBytes.toHexPrint())
         return if (data.size % 16 == 0) {
             data
         } else {
@@ -165,7 +165,7 @@ class BleCmdRepository @Inject constructor(){
         return if (byteArray.component1().unSignedInt() == 0) {
             throw ConnectionTokenException.IllegalTokenException()
         } else {
-            Timber.d("[E5]: ${byteArray.toHex()}")
+            Timber.d("[E5]: ${byteArray.toHexPrint()}")
             val isValid = byteArray.component1().unSignedInt() == 1
             val isPermanentToken = byteArray.component2().unSignedInt() == 1
             val isOwnerToken = byteArray.component3().unSignedInt() == 1
@@ -256,7 +256,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xC0.toByte() // function
         sendByte[1] = 0x10 // len
-        Timber.d("c0: ${(serial + sendByte).toHex()}")
+        Timber.d("c0: ${(serial + sendByte).toHexPrint()}")
         return encrypt(aesKeyOne, pad(serial + sendByte + generateRandomBytes(0x10)))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -273,7 +273,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xC1.toByte() // function
         sendByte[1] = 0x08 // len=8
-//        Timber.d("c1: ${(serial + sendByte).toHex()}")
+//        Timber.d("c1: ${(serial + sendByte).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + token)) ?: throw IllegalArgumentException(
             "bytes cannot be null"
         )
@@ -287,7 +287,7 @@ class BleCmdRepository @Inject constructor(){
         sendByte[0] = 0xC7.toByte() // function
         sendByte[1] = (code.size + 1).toByte() // len
         sendByte[2] = (code.size).toByte() // code size
-//        Timber.d("c7: ${(serial + sendByte + code).toHex()}")
+//        Timber.d("c7: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -305,7 +305,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xC8.toByte() // function
         sendByte[1] = (code.size).toByte() // len
-        Timber.d("c8: ${(serial + sendByte + code).toHex()}")
+        Timber.d("c8: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -339,7 +339,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xCE.toByte() // function
         sendByte[1] = (code.size).toByte() // len
-//        Timber.d("ce: ${(serial + sendByte + code).toHex()}")
+//        Timber.d("ce: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -418,18 +418,18 @@ class BleCmdRepository @Inject constructor(){
         settingBytes[ConfigD4.GUIDING_CODE.byte] = (if (setting.isGuidingCodeOn) 0x01.toByte() else 0x00.toByte())
 
         val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude ?: 0.0)
-        val latitudeIntPartBytes = intToLittleEndianBytes(latitudeBigDecimal.toInt())
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
         for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_INTEGER.byte + i] = latitudeIntPartBytes[i]
         val latitudeDecimalInt = latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
-        val latitudeDecimalPartBytes = intToLittleEndianBytes(latitudeDecimalInt)
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
         for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_DECIMAL.byte + i] = latitudeDecimalPartBytes[i]
         Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
 
         val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude ?: 0.0)
-        val longitudeIntPartBytes = intToLittleEndianBytes(longitudeBigDecimal.toInt())
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
         for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_INTEGER.byte + i] = longitudeIntPartBytes[i]
         val longitudeDecimalInt = longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
-        val longitudeDecimalPartBytes = intToLittleEndianBytes(longitudeDecimalInt)
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
         for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_DECIMAL.byte + i] = longitudeDecimalPartBytes[i]
         Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
 
@@ -630,7 +630,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xE6.toByte() // function
         sendByte[1] = bytes.size.toByte() // function
-        Timber.d("[e6] send bytes: ${(sendByte + bytes).toHex()}")
+        Timber.d("[e6] send bytes: ${(sendByte + bytes).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + bytes))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -720,10 +720,10 @@ class BleCmdRepository @Inject constructor(){
             is AccessScheduleType.ValidTimeRange -> {
                 Timber.d("ValidTimeRange from: ${scheduleType.from.toInt()}, to: ${scheduleType.to.toInt()}")
 
-                val fromTimeByteArray = intToLittleEndianBytes(scheduleType.from.toInt())
+                val fromTimeByteArray = scheduleType.from.toInt().toLittleEndianByteArray()
                 for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
 
-                val toTimeByteArray = intToLittleEndianBytes(scheduleType.to.toInt())
+                val toTimeByteArray = scheduleType.to.toInt().toLittleEndianByteArray()
                 for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
             }
             is AccessScheduleType.ScheduleEntry -> {
@@ -749,7 +749,7 @@ class BleCmdRepository @Inject constructor(){
             else -> {}
         }
         val bytes = byteArrayOf(index.toByte()) + isEnabledByte + codeByte.size.toByte() + codeByte + scheduleByte + nameByte
-        Timber.d("Schedule: ${bytes.toHex()}")
+        Timber.d("Schedule: ${bytes.toHexPrint()}")
         return bytes
     }
 
@@ -766,7 +766,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xEC.toByte() // function
         sendByte[1] = (code.size).toByte() // len
-        Timber.d("ec: ${(serial + sendByte + code).toHex()}")
+        Timber.d("ec: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -784,7 +784,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xED.toByte() // function
         sendByte[1] = (code.size).toByte() // len
-        Timber.d("ed: ${(serial + sendByte + code).toHex()}")
+        Timber.d("ed: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -830,7 +830,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xF0.toByte() // function
         sendByte[1] = (code.size).toByte() // len
-        Timber.d("f0: ${(serial + sendByte + code).toHex()}")
+        Timber.d("f0: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -914,7 +914,7 @@ class BleCmdRepository @Inject constructor(){
         sendByte[1] = 0x02.toByte() // len
         sendByte[2] = state.component1()
         sendByte[3] = state.component2()
-        Timber.d(sendByte.toHex())
+        Timber.d(sendByte.toHexPrint())
         return encrypt(aesKeyTwo, pad(serial + sendByte))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -972,7 +972,7 @@ class BleCmdRepository @Inject constructor(){
         accessA7Cmd: Access.AccessA7Cmd
     ): ByteArray {
         val typeByte = byteArrayOf(accessA7Cmd.type.toByte())
-        val indexByte = intToLittleEndianBytesU16(accessA7Cmd.index)
+        val indexByte = accessA7Cmd.index.toLittleEndianByteArrayInt16()
         val isEnabledByte = byteArrayOf(if (accessA7Cmd.isEnable) 0x01.toByte() else 0x00.toByte())
         val scheduleByte = ByteArray(12)
         scheduleByte[0] = accessA7Cmd.scheduleType.getByteOfType()
@@ -984,10 +984,10 @@ class BleCmdRepository @Inject constructor(){
             is AccessScheduleType.ValidTimeRange -> {
                 Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from.toInt()}, to: ${accessA7Cmd.scheduleType.to.toInt()}")
 
-                val fromTimeByteArray = intToLittleEndianBytes(accessA7Cmd.scheduleType.from.toInt())
+                val fromTimeByteArray = accessA7Cmd.scheduleType.from.toInt().toLittleEndianByteArray()
                 for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
 
-                val toTimeByteArray = intToLittleEndianBytes(accessA7Cmd.scheduleType.to.toInt())
+                val toTimeByteArray = accessA7Cmd.scheduleType.to.toInt().toLittleEndianByteArray()
                 for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
             }
             is AccessScheduleType.ScheduleEntry -> {
@@ -1013,7 +1013,7 @@ class BleCmdRepository @Inject constructor(){
             else -> {}
         }
         val data = typeByte + indexByte + isEnabledByte + scheduleByte + nameLenByte + nameByte + codeByte
-        Timber.d("Schedule: ${data.toHex()}")
+        Timber.d("Schedule: ${data.toHexPrint()}")
         return data
     }
 
@@ -1030,7 +1030,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xA7.toByte() // function
         sendByte[1] = (data.size).toByte() // len
-        Timber.d("a7: ${(serial + sendByte + data).toHex()}")
+        Timber.d("a7: ${(serial + sendByte + data).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + data))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -1048,7 +1048,7 @@ class BleCmdRepository @Inject constructor(){
         val sendByte = ByteArray(2)
         sendByte[0] = 0xA8.toByte() // function
         sendByte[1] = (data.size).toByte() // len
-        Timber.d("a8: ${(serial + sendByte + data).toHex()}")
+        Timber.d("a8: ${(serial + sendByte + data).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + data))
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
@@ -1106,7 +1106,7 @@ class BleCmdRepository @Inject constructor(){
 
     fun resolveC0(keyOne: ByteArray, notification: ByteArray): ByteArray {
         return decrypt(keyOne, notification)?.let { decrypted ->
-//            Timber.d("[C0] decrypted: ${decrypted.toHex()}")
+//            Timber.d("[C0] decrypted: ${decrypted.toHexPrint()}")
             if (decrypted.component3().unSignedInt() == 0xC0) {
                 return decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
             } else {
@@ -1116,7 +1116,7 @@ class BleCmdRepository @Inject constructor(){
     }
     fun resolveC1(aesKeyTwo: ByteArray, notification: ByteArray): ByteArray {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
-//            Timber.d("[C1] decrypted: ${decrypted.toHex()}")
+//            Timber.d("[C1] decrypted: ${decrypted.toHexPrint()}")
             if (decrypted.component3().unSignedInt() == 0xC1) {
                 return decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
             } else {
@@ -1273,7 +1273,7 @@ class BleCmdRepository @Inject constructor(){
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xD4) {
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                        Timber.d("[D4] ${bytes.toHex()}")
+                        Timber.d("[D4] ${bytes.toHexPrint()}")
 
                         val latIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigD4.LATITUDE_INTEGER.byte, ConfigD4.LATITUDE_DECIMAL.byte)).int)
                         Timber.d("latIntPart: $latIntPart")
@@ -1445,7 +1445,7 @@ class BleCmdRepository @Inject constructor(){
                 if (decrypted.component3().unSignedInt() == 0xE1) {
                     val dataLength = decrypted.component4().unSignedInt()
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[E1] dataLength: $dataLength, ${data.toHex()}")
+                    Timber.d("[E1] dataLength: $dataLength, ${data.toHexPrint()}")
 
                     val timestamp =
                         Integer.reverseBytes(ByteBuffer.wrap(data.copyOfRange(0, 4)).int).toLong()
@@ -1563,11 +1563,11 @@ class BleCmdRepository @Inject constructor(){
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xE6) {
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[E6] ${data.toHex()}")
+                    Timber.d("[E6] ${data.toHexPrint()}")
                     val isSuccessful = data.component1().unSignedInt() == 0x01
                     val tokenIndexInDevice = data.component2().unSignedInt()
                     val tokenBytes = data.copyOfRange(2, data.size)
-                    Timber.d("token bytes: ${tokenBytes.toHex()}")
+                    Timber.d("token bytes: ${tokenBytes.toHexPrint()}")
                     val token = Base64.encodeToString(tokenBytes, Base64.DEFAULT)
                     val response = AddUserResponse(
                         isSuccessful,
@@ -1603,7 +1603,7 @@ class BleCmdRepository @Inject constructor(){
                     val permission = String(data.copyOfRange(3, 4))
                     val tokenBytes = data.copyOfRange(4, 12)
                     val name = String(data.copyOfRange(12, data.size))
-                    Timber.d("token bytes: ${tokenBytes.toHex()}")
+                    Timber.d("token bytes: ${tokenBytes.toHexPrint()}")
                     val token = Base64.encodeToString(tokenBytes, Base64.DEFAULT)
                     val response = UpdateTokenResponse(
                         isSuccessful,
@@ -1677,7 +1677,7 @@ class BleCmdRepository @Inject constructor(){
                 if (decrypted.component3().unSignedInt() == 0xEB) {
                     val dataLength = decrypted.component4().unSignedInt()
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[EB] dataLength: $dataLength, ${data.toHex()}")
+                    Timber.d("[EB] dataLength: $dataLength, ${data.toHexPrint()}")
                     val pinCodeLength = data.component2().unSignedInt()
                     val pinCode = data.copyOfRange(2, 2 + pinCodeLength)
                     val code = pinCode.map { it.unSignedInt().toString() }
@@ -1787,7 +1787,7 @@ class BleCmdRepository @Inject constructor(){
     fun resolveEf(aesKeyTwo: ByteArray, notification: ByteArray): Boolean {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
-                Timber.d("<-- de:${decrypted.toHex()} hasAdminCodeBeenSetByBle")
+                Timber.d("<-- de:${decrypted.toHexPrint()} hasAdminCodeBeenSetByBle")
                 if (decrypted.component3().unSignedInt() == 0xEF) {
                     when {
                         decrypted.component5().unSignedInt() == 0x01 -> true
@@ -1813,13 +1813,13 @@ class BleCmdRepository @Inject constructor(){
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA0) {
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                        Timber.d("[A0] ${bytes.toHex()}")
+                        Timber.d("[A0] ${bytes.toHexPrint()}")
 
-                        val autoLockTimeInt = byteArrayToInt(bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY.byte,ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte))
+                        val autoLockTimeInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY.byte,ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
                         Timber.d("autoLockTimeInt: $autoLockTimeInt")
-                        val autoLockTimeUpperLimitInt = byteArrayToInt(bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte,ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte))
+                        val autoLockTimeUpperLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte,ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
                         Timber.d("autoLockTimeUpperLimitInt: $autoLockTimeUpperLimitInt")
-                        val autoLockTimeLowerLimitInt = byteArrayToInt(bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.OPERATING_SOUND.byte))
+                        val autoLockTimeLowerLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.OPERATING_SOUND.byte).toInt()
                         Timber.d("autoLockTimeLowerLimitInt: $autoLockTimeLowerLimitInt")
 
                         val latIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigA0.LATITUDE_INTEGER.byte, ConfigA0.LATITUDE_DECIMAL.byte)).int)
@@ -1931,25 +1931,25 @@ class BleCmdRepository @Inject constructor(){
         val settingBytes = ByteArray(ConfigA1.SIZE.byte)
 
         val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude ?: 0.0)
-        val latitudeIntPartBytes = intToLittleEndianBytes(latitudeBigDecimal.toInt())
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
         for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_INTEGER.byte + i] =
             latitudeIntPartBytes[i]
         val latitudeDecimalInt =
             latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
                 .toInt()
-        val latitudeDecimalPartBytes = intToLittleEndianBytes(latitudeDecimalInt)
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
         for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_DECIMAL.byte + i] =
             latitudeDecimalPartBytes[i]
         Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
 
         val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude ?: 0.0)
-        val longitudeIntPartBytes = intToLittleEndianBytes(longitudeBigDecimal.toInt())
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
         for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_INTEGER.byte + i] =
             longitudeIntPartBytes[i]
         val longitudeDecimalInt =
             longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
                 .scaleByPowerOfTen(9).toInt()
-        val longitudeDecimalPartBytes = intToLittleEndianBytes(longitudeDecimalInt)
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
         for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_DECIMAL.byte + i] =
             longitudeDecimalPartBytes[i]
         Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
@@ -1961,13 +1961,13 @@ class BleCmdRepository @Inject constructor(){
         settingBytes[ConfigA1.TWO_FA.byte] = setting.twoFA.toByte()
         settingBytes[ConfigA1.VACATION_MODE.byte] = setting.vacationMode.toByte()
         settingBytes[ConfigA1.AUTOLOCK.byte] = setting.autoLock.toByte()
-        val autoLockDelayBytes = intToLittleEndianBytesU16(setting.autoLockTime)
+        val autoLockDelayBytes = setting.autoLockTime.toLittleEndianByteArrayInt16()
         for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[ConfigA1.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
         settingBytes[ConfigA1.OPERATING_SOUND.byte] = setting.operatingSound.toByte()
         settingBytes[ConfigA1.SOUND_TYPE.byte] = setting.soundType.toByte()
         settingBytes[ConfigA1.SOUND_VALUE.byte] = setting.soundValue.toByte()
         settingBytes[ConfigA1.SHOW_FAST_TRACK_MODE.byte] = setting.showFastTrackMode.toByte()
-        Timber.d("settingBytesA1: ${settingBytes.toHex()}")
+        Timber.d("settingBytesA1: ${settingBytes.toHexPrint()}")
 
         return settingBytes
     }
@@ -2066,16 +2066,16 @@ class BleCmdRepository @Inject constructor(){
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA4) {
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[A4] ${data.toHex()}")
+                    Timber.d("[A4] ${data.toHexPrint()}")
                     val accessCodeQuantity  = data.copyOfRange(0, 2)
                     val accessCardQuantity  = data.copyOfRange(2, 4)
                     val fingerprintQuantity  = data.copyOfRange(4, 6)
                     val faceQuantity  = data.copyOfRange(6, 8)
                     val response = BleV2Lock.SupportedUnlockType(
-                        byteArrayToInt(accessCodeQuantity),
-                        byteArrayToInt(accessCardQuantity),
-                        byteArrayToInt(fingerprintQuantity),
-                        byteArrayToInt(faceQuantity)
+                        accessCodeQuantity.toInt(),
+                        accessCardQuantity.toInt(),
+                        fingerprintQuantity.toInt(),
+                        faceQuantity.toInt()
                     )
                     Timber.d("BleV2Lock.SupportedUnlockType response: $response")
                     return response
@@ -2101,7 +2101,7 @@ class BleCmdRepository @Inject constructor(){
                 if (decrypted.component3().unSignedInt() == 0xA5) {
                     val dataLen = decrypted.component4().unSignedInt()
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[A5] dataLen: $dataLen, data: ${data.toHex()}")
+                    Timber.d("[A5] dataLen: $dataLen, data: ${data.toHexPrint()}")
                     val type = data.component1().unSignedInt()
                     val transferComplete = data.component2().unSignedInt()
                     val dataByteArray = data.copyOfRange(2, dataLen)
@@ -2128,9 +2128,9 @@ class BleCmdRepository @Inject constructor(){
                 if (decrypted.component3().unSignedInt() == 0xA6) {
                     val dataLen = decrypted.component4().unSignedInt()
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                    Timber.d("[A6] dataLen: $dataLen data: ${data.toHex()}")
+                    Timber.d("[A6] dataLen: $dataLen data: ${data.toHexPrint()}")
                     val type = data.component1().unSignedInt()
-                    val index = byteArrayToInt(data.copyOfRange(1, 3))
+                    val index = data.copyOfRange(1, 3).toInt()
                     val isEnable = data.component4().unSignedInt() == 0x01
                     val scheduleData = data.copyOfRange(4, 16)
                     val nameLen = data[16].unSignedInt()
@@ -2180,9 +2180,9 @@ class BleCmdRepository @Inject constructor(){
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xA7) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                    Timber.d("[A7] ${bytes.toHex()}")
+                    Timber.d("[A7] ${bytes.toHexPrint()}")
                     val type = bytes.component1().unSignedInt()
-                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
                     val accessA7 = Access.AccessA7(type, index, isSuccess)
                     Timber.d("[A7] read access from device: $accessA7")
@@ -2205,9 +2205,9 @@ class BleCmdRepository @Inject constructor(){
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xA8) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                    Timber.d("[A8] ${bytes.toHex()}")
+                    Timber.d("[A8] ${bytes.toHexPrint()}")
                     val type = bytes.component1().unSignedInt()
-                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
                     val accessA7 = Access.AccessA7(type, index, isSuccess)
                     Timber.d("[A8] read access from device: $accessA7")
@@ -2231,10 +2231,10 @@ class BleCmdRepository @Inject constructor(){
             if (decrypted.component3().unSignedInt() == 0xA9) {
                 val dataLen = decrypted.component4().unSignedInt()
                 val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                Timber.d("[A9] dataLen: $dataLen data: ${data.toHex()}")
+                Timber.d("[A9] dataLen: $dataLen data: ${data.toHexPrint()}")
                 val type = data.component1().unSignedInt()
                 val state = data.component2().unSignedInt()
-                val index = byteArrayToInt(data.copyOfRange(2, 4))
+                val index = data.copyOfRange(2, 4).toInt()
                 val status = data.component5().unSignedInt() == 0x01
                 val dataInfo = data.copyOfRange(5, dataLen).map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
                 val accessA9 = Access.AccessA9(type, state, index, status, dataInfo)
@@ -2257,9 +2257,9 @@ class BleCmdRepository @Inject constructor(){
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xAA) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                    Timber.d("[AA] ${bytes.toHex()}")
+                    Timber.d("[AA] ${bytes.toHexPrint()}")
                     val type = bytes.component1().unSignedInt()
-                    val index = byteArrayToInt(bytes.copyOfRange(1, 3))
+                    val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
                     val accessA7 = Access.AccessA7(type, index, isSuccess)
                     Timber.d("[AA] read access from device: $accessA7")
@@ -2284,7 +2284,7 @@ class BleCmdRepository @Inject constructor(){
                 if (decrypted.component3().unSignedInt() == 0xAF) {
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { byteArray ->
                         val alertType = Alert.AlertAF(
-                            alertType = when (byteArrayToInt(byteArray)) {
+                            alertType = when (byteArray.toInt()) {
                                 0 -> BleV2Lock.AlertType.ERROR_ACCESS_CODE.value
                                 1 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_AT_WRONG_TIME.value
                                 2 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_BUT_AT_VACATION_MODE.value
@@ -2348,34 +2348,4 @@ class BleCmdRepository @Inject constructor(){
         }
     }
 
-    fun intToLittleEndianBytes(int: Int): ByteArray {
-        val bytes = ByteArray(4)
-        val byteBuffer = ByteBuffer.allocate(4)
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-        byteBuffer.putInt(int)
-        byteBuffer.flip()
-        byteBuffer.get(bytes)
-        return bytes
-    }
-
-    fun intToLittleEndianBytesU16(int: Int): ByteArray {
-        val bytes = ByteArray(2)
-        val byteBuffer = ByteBuffer.allocate(2)
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-        byteBuffer.putShort(int.toShort())
-        byteBuffer.flip()
-        byteBuffer.get(bytes)
-        return bytes
-    }
-
-    fun byteArrayToInt(byteArray: ByteArray): Int {
-        val paddedByteArray = byteArray.copyOf(4)
-        val int = ByteBuffer.wrap(paddedByteArray).int
-        val reversedInt = Integer.reverseBytes(int)
-        Timber.d("byteArrayToInt: ${paddedByteArray.toHex()} => $reversedInt")
-        return reversedInt
-    }
-
 }
-
-fun Byte.unSignedInt() = this.toInt() and 0xFF

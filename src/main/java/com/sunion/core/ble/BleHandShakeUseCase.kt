@@ -28,8 +28,8 @@ class BleHandShakeUseCase @Inject constructor(
         input2: RxBleDevice,
         input3: RxBleConnection
     ): Observable<String> {
-        val keyOne = hexToBytes(input1.keyOne!!)
-        val connectionToken = if (input1.permanentToken.isNullOrBlank()) hexToBytes(input1.oneTimeToken!!) else hexToBytes(input1.permanentToken!!)
+        val keyOne = input1.keyOne!!.hexToByteArray()
+        val connectionToken = if (input1.permanentToken.isNullOrBlank()) input1.oneTimeToken!!.hexToByteArray() else input1.permanentToken!!.hexToByteArray()
         return bleHandshake(
             connection = input3,
             keyOne = keyOne,
@@ -44,7 +44,7 @@ class BleHandShakeUseCase @Inject constructor(
     ): Observable<String> {
         return sendC0(connection, keyOne, token)
             .flatMap { keyTwo ->
-                keyTwoString = bytesToHex(keyTwo)
+                keyTwoString = keyTwo.toHexString()
                 sendC1(connection, keyTwo, token)
                     .take(1)
                     .filter { it.first == DeviceToken.ONE_TIME_TOKEN || it.first == VALID_TOKEN }
@@ -54,7 +54,7 @@ class BleHandShakeUseCase @Inject constructor(
                                 waitForE5(connection, keyTwo)
                             }
                             VALID_TOKEN -> {
-                                permanentTokenString = bytesToHex(token)
+                                permanentTokenString = token.toHexString()
                                 Observable.just(stateAndPermission.second)
                             }
                             else -> {
@@ -124,7 +124,7 @@ class BleHandShakeUseCase @Inject constructor(
                         keyOne,
                         notification
                     )
-                    println("filter [C0] decrypted: ${decrypted?.toHex()}")
+                    println("filter [C0] decrypted: ${decrypted?.toHexPrint()}")
                     decrypted?.component3()?.unSignedInt() == 0xC0
                 },
             rxConnection.writeCharacteristic(
@@ -133,15 +133,15 @@ class BleHandShakeUseCase @Inject constructor(
             ).toObservable(),
             BiFunction { notification: ByteArray, written: ByteArray ->
                 val randomNumberOne = dataTransmission.resolveC0(keyOne, written)
-                Timber.d("[C0] has written: ${written.toHex()}")
-                Timber.d("[C0] has notified: ${notification.toHex()}")
+                Timber.d("[C0] has written: ${written.toHexPrint()}")
+                Timber.d("[C0] has notified: ${notification.toHexPrint()}")
                 val randomNumberTwo = dataTransmission.resolveC0(keyOne, notification)
-                Timber.d("randomNumberTwo: ${randomNumberTwo.toHex()}")
+                Timber.d("randomNumberTwo: ${randomNumberTwo.toHexPrint()}")
                 val keyTwo = generateKeyTwo(
                     randomNumberOne = randomNumberOne,
                     randomNumberTwo = randomNumberTwo
                 )
-                Timber.d("keyTwo: ${keyTwo.toHex()}")
+                Timber.d("keyTwo: ${keyTwo.toHexPrint()}")
                 keyTwo
             }
         )
@@ -177,12 +177,12 @@ class BleHandShakeUseCase @Inject constructor(
                 dataTransmission.createCommand(0xC1, keyTwo, token)
             ).toObservable(),
             BiFunction { notification: ByteArray, written: ByteArray ->
-                Timber.d("[C1] has written: ${written.toHex()}")
-                Timber.d("[C1] has notified: ${notification.toHex()}")
+                Timber.d("[C1] has written: ${written.toHexPrint()}")
+                Timber.d("[C1] has notified: ${notification.toHexPrint()}")
                 val tokenStateFromDevice = dataTransmission.resolveC1(keyTwo, notification)
-                Timber.d("token state from device : ${tokenStateFromDevice.toHex()}")
+                Timber.d("token state from device : ${tokenStateFromDevice.toHexPrint()}")
                 val deviceToken = determineTokenState(tokenStateFromDevice, isLockFromSharing)
-                Timber.d("token state: ${token.toHex()}")
+                Timber.d("token state: ${token.toHexPrint()}")
                 val permission = determineTokenPermission(tokenStateFromDevice)
                 Timber.d("token permission: $permission")
                 deviceToken to permission
@@ -215,7 +215,7 @@ class BleHandShakeUseCase @Inject constructor(
         return if (byteArray.component1().unSignedInt() == 0) {
             throw ConnectionTokenException.IllegalTokenException()
         } else {
-            Timber.d("[E5]: ${byteArray.toHex()}")
+            Timber.d("[E5]: ${byteArray.toHexPrint()}")
             val isValid = byteArray.component1().unSignedInt() == 1
             val isPermanentToken = byteArray.component2().unSignedInt() == 1
             val isOwnerToken = byteArray.component3().unSignedInt() == 1
@@ -226,13 +226,13 @@ class BleHandShakeUseCase @Inject constructor(
                 DeviceToken.PermanentToken(
                     isValid,
                     isPermanentToken,
-                    bytesToHex(token),
+                    token.toHexString(),
                     isOwnerToken,
                     name,
                     permission
                 )
             } else {
-                DeviceToken.OneTimeToken(bytesToHex(token))
+                DeviceToken.OneTimeToken(token.toHexString())
             }
         }
     }

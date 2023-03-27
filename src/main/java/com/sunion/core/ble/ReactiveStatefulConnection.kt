@@ -336,9 +336,9 @@ class ReactiveStatefulConnection @Inject constructor(
         functionName: String
     ): Flow<ByteArray> {
         if (BuildConfig.DEBUG) {
-            bleCmdRepository.decrypt(hexToBytes(_lockConnectionInfo.keyTwo!!), command)
+            bleCmdRepository.decrypt(_lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
                 ?.let {
-                    Timber.d("--> de:${it.toHex()} by $functionName")
+                    Timber.d("--> de:${it.toHexPrint()} by $functionName")
                 }
         }
 
@@ -354,11 +354,11 @@ class ReactiveStatefulConnection @Inject constructor(
                 }
             }
             .onEach { notification ->
-                Timber.d("<-- en:${notification.toHex()} by $functionName")
+                Timber.d("<-- en:${notification.toHexPrint()} by $functionName")
                 if (BuildConfig.DEBUG) {
-                    bleCmdRepository.decrypt(hexToBytes(_lockConnectionInfo.keyTwo!!), command)
+                    bleCmdRepository.decrypt(_lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
                         ?.let {
-                            Timber.d("<-- de:${it.toHex()} by $functionName")
+                            Timber.d("<-- de:${it.toHexPrint()} by $functionName")
                         }
                 }
             }

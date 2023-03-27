@@ -3,6 +3,7 @@ package com.sunion.core.ble.command
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.exception.LockStatusException
+import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
 
 class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
@@ -12,13 +13,13 @@ class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
     override fun create(key: String, data: Unit): ByteArray {
         return bleCmdRepository.createCommand(
             function = function,
-            key = hexToBytes(key)
+            key = key.hexToByteArray()
         )
     }
 
     override fun parseResult(key: String, data: ByteArray): DeviceStatus.DeviceStatusD6 {
         return bleCmdRepository.resolveD6(
-            aesKeyTwo = hexToBytes(key),
+            aesKeyTwo = key.hexToByteArray(),
             notification = data
         )
     }
@@ -26,7 +27,7 @@ class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
     /** receive D6 or EF **/
     override fun match(key: String, data: ByteArray): Boolean {
         return bleCmdRepository.decrypt(
-            hexToBytes(key), data
+            key.hexToByteArray(), data
         )?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xEF) {
                 throw LockStatusException.AdminCodeNotSetException()

@@ -4,9 +4,9 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MAX
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MIN
-import com.sunion.core.ble.entity.hexToBytes
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -23,13 +23,13 @@ class AdminCodeUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xEF,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.isAdminCodeExists")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     decrypted.component3().unSignedInt() == 0xEF
                 } ?: false
@@ -37,7 +37,7 @@ class AdminCodeUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveEf(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -56,14 +56,14 @@ class AdminCodeUseCase @Inject constructor(
         val adminCode = bleCmdRepository.stringCodeToHex(code)
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC7,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             adminCode
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.createAdminCode")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     decrypted.component3().unSignedInt() == 0xC7
                 } ?: false
@@ -71,7 +71,7 @@ class AdminCodeUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveC7(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -93,14 +93,14 @@ class AdminCodeUseCase @Inject constructor(
         val sendBytes = byteArrayOf(oldBytes.size.toByte()) + oldBytes + byteArrayOf(newBytes.size.toByte()) + newBytes
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC8,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             sendBytes
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.updateAdminCode")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -110,7 +110,7 @@ class AdminCodeUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveC8(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)

@@ -1,11 +1,9 @@
 package com.sunion.core.ble.usecase
 
-import com.sunion.core.ble.BleCmdRepository
-import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.*
 import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
-import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -24,14 +22,14 @@ class LockAccessUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA5,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             data = byteArrayOf(type.toByte())
         )
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "getAccessArray type: $type")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -41,7 +39,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 bleCmdRepository.resolveA5(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
             }
@@ -70,15 +68,15 @@ class LockAccessUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA6,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
-            data = byteArrayOf(type.toByte()) + bleCmdRepository.intToLittleEndianBytesU16(index)
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -88,7 +86,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA6(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -119,7 +117,7 @@ class LockAccessUseCase @Inject constructor(
         )
         val command = bleCmdRepository.createCommand(
             function = 0xA7,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             data = data
         )
 
@@ -127,7 +125,7 @@ class LockAccessUseCase @Inject constructor(
             .setupSingleNotificationThenSendCommand(command, "addAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -137,7 +135,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA7(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -170,7 +168,7 @@ class LockAccessUseCase @Inject constructor(
         )
         val command = bleCmdRepository.createCommand(
             function = 0xA8,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
             data = data
         )
 
@@ -178,7 +176,7 @@ class LockAccessUseCase @Inject constructor(
             .setupSingleNotificationThenSendCommand(command, "editAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -188,7 +186,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA8(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result.isSuccess)
@@ -210,15 +208,15 @@ class LockAccessUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA9,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
-            data = byteArrayOf(type.toByte(), state.toByte()) + bleCmdRepository.intToLittleEndianBytesU16(index)
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            data = byteArrayOf(type.toByte(), state.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deviceGetAccess type:$type state:$state index:$index")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -228,7 +226,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveA9(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result)
@@ -248,15 +246,15 @@ class LockAccessUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xAA,
-            key = hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
-            data = byteArrayOf(type.toByte()) + bleCmdRepository.intToLittleEndianBytesU16(index)
+            key = statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
+            data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.decrypt(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!), notification
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(), notification
                 )?.let { decrypted ->
                     if (decrypted.component3().unSignedInt() == 0xEF) {
                         throw LockStatusException.AdminCodeNotSetException()
@@ -266,7 +264,7 @@ class LockAccessUseCase @Inject constructor(
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolveAA(
-                    hexToBytes(statefulConnection.lockConnectionInfo.keyTwo!!),
+                    statefulConnection.lockConnectionInfo.keyTwo!!.hexToByteArray(),
                     notification
                 )
                 emit(result.isSuccess)

@@ -3,7 +3,7 @@ package com.sunion.core.ble.command
 import android.util.Base64
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.command.BleCommand.Companion.FUNCTION_INDEX
-import com.sunion.core.ble.entity.toHex
+import com.sunion.core.ble.toHexPrint
 import com.sunion.core.ble.unSignedInt
 import timber.log.Timber
 
@@ -35,7 +35,7 @@ abstract class BaseCommand<I, R>(private val bleCmdRepository: BleCmdRepository)
         val decrypted = bleCmdRepository.decrypt(Base64.decode(key, Base64.DEFAULT), data)!!
         val match = decrypted.copyOfRange(FUNCTION_INDEX, decrypted.size - 1).first()
             .unSignedInt() == function
-        Timber.d("match:$match (${decrypted.toHex()})")
+        Timber.d("match:$match (${decrypted.toHexPrint()})")
         return match
     }
 }

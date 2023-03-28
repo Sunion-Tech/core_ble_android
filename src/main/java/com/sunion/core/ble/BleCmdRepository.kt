@@ -1233,7 +1233,7 @@ class BleCmdRepository @Inject constructor(){
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xD2) {
                 val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
-                return Integer.reverseBytes(ByteBuffer.wrap(data).int)
+                return data.toInt()
             } else {
                 throw IllegalArgumentException("Return function byte is not [D2]")
             }
@@ -1275,17 +1275,17 @@ class BleCmdRepository @Inject constructor(){
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
                         Timber.d("[D4] ${bytes.toHexPrint()}")
 
-                        val latIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigD4.LATITUDE_INTEGER.byte, ConfigD4.LATITUDE_DECIMAL.byte)).int)
+                        val latIntPart = bytes.copyOfRange(ConfigD4.LATITUDE_INTEGER.byte, ConfigD4.LATITUDE_DECIMAL.byte).toInt()
                         Timber.d("latIntPart: $latIntPart")
-                        val latDecimalPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigD4.LATITUDE_DECIMAL.byte, ConfigD4.LONGITUDE_INTEGER.byte)).int)
+                        val latDecimalPart = bytes.copyOfRange(ConfigD4.LATITUDE_DECIMAL.byte, ConfigD4.LONGITUDE_INTEGER.byte).toInt()
                         val latDecimal = latDecimalPart.toBigDecimal().movePointLeft(9)
                         Timber.d("latDecimalPart: $latIntPart, latDecimal: $latDecimal")
                         val lat = latIntPart.toBigDecimal().plus(latDecimal)
                         Timber.d("lat: $lat, ${lat.toPlainString()}")
 
-                        val lngIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigD4.LONGITUDE_INTEGER.byte, ConfigD4.LONGITUDE_DECIMAL.byte)).int)
+                        val lngIntPart = bytes.copyOfRange(ConfigD4.LONGITUDE_INTEGER.byte, ConfigD4.LONGITUDE_DECIMAL.byte).toInt()
                         Timber.d("lngIntPart: $lngIntPart")
-                        val lngDecimalPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigD4.LONGITUDE_DECIMAL.byte, ConfigD4.SIZE.byte)).int)
+                        val lngDecimalPart = bytes.copyOfRange(ConfigD4.LONGITUDE_DECIMAL.byte, ConfigD4.SIZE.byte).toInt()
                         val lngDecimal = lngDecimalPart.toBigDecimal().movePointLeft(9)
                         Timber.d("lngIntPart: $lngIntPart, lngDecimal: $lngDecimal")
                         val lng = lngIntPart.toBigDecimal().plus(lngDecimal)
@@ -1379,7 +1379,7 @@ class BleCmdRepository @Inject constructor(){
                                 1 -> BatteryState.BATTERY_LOW
                                 else -> BatteryState.BATTERY_ALERT
                             },
-                            timestamp = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(D6Features.TIMESTAMP.byte, D6Features.SIZE.byte)).int).toLong()
+                            timestamp = bytes.copyOfRange(D6Features.TIMESTAMP.byte, D6Features.SIZE.byte).toInt().toLong()
                         )
                         return lockSetting
                     }
@@ -1447,8 +1447,7 @@ class BleCmdRepository @Inject constructor(){
                     val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
                     Timber.d("[E1] dataLength: $dataLength, ${data.toHexPrint()}")
 
-                    val timestamp =
-                        Integer.reverseBytes(ByteBuffer.wrap(data.copyOfRange(0, 4)).int).toLong()
+                    val timestamp = data.copyOfRange(0, 4).toInt().toLong()
                     val event = data.component5().unSignedInt()
                     val name = data.copyOfRange(5, data.size)
                     val log = EventLog(
@@ -1689,10 +1688,8 @@ class BleCmdRepository @Inject constructor(){
                     val weekdays = scheduleData.component2().unSignedInt()
                     val fromTime = scheduleData.component3().unSignedInt()
                     val toTime = scheduleData.component4().unSignedInt()
-                    val scheduleFrom =
-                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(4, 8)).int)
-                    val scheduleTo =
-                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(8, 12)).int)
+                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toInt()
+                    val scheduleTo = scheduleData.copyOfRange(8, 12).toInt()
                     val userCode = Access.AccessCode(
                         index = 999,
                         isEnable = data.component1().unSignedInt() == 0x01,
@@ -1822,17 +1819,17 @@ class BleCmdRepository @Inject constructor(){
                         val autoLockTimeLowerLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.OPERATING_SOUND.byte).toInt()
                         Timber.d("autoLockTimeLowerLimitInt: $autoLockTimeLowerLimitInt")
 
-                        val latIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigA0.LATITUDE_INTEGER.byte, ConfigA0.LATITUDE_DECIMAL.byte)).int)
+                        val latIntPart = bytes.copyOfRange(ConfigA0.LATITUDE_INTEGER.byte, ConfigA0.LATITUDE_DECIMAL.byte).toInt()
                         Timber.d("latIntPart: $latIntPart")
-                        val latDecimalPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigA0.LATITUDE_DECIMAL.byte, ConfigA0.LONGITUDE_INTEGER.byte)).int)
+                        val latDecimalPart = bytes.copyOfRange(ConfigA0.LATITUDE_DECIMAL.byte, ConfigA0.LONGITUDE_INTEGER.byte).toInt()
                         val latDecimal = latDecimalPart.toBigDecimal().movePointLeft(9)
                         Timber.d("latDecimalPart: $latIntPart, latDecimal: $latDecimal")
                         val lat = latIntPart.toBigDecimal().plus(latDecimal)
                         Timber.d("lat: $lat, ${lat.toPlainString()}")
 
-                        val lngIntPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigA0.LONGITUDE_INTEGER.byte, ConfigA0.LONGITUDE_DECIMAL.byte)).int)
+                        val lngIntPart = bytes.copyOfRange(ConfigA0.LONGITUDE_INTEGER.byte, ConfigA0.LONGITUDE_DECIMAL.byte).toInt()
                         Timber.d("lngIntPart: $lngIntPart")
-                        val lngDecimalPart = Integer.reverseBytes(ByteBuffer.wrap(bytes.copyOfRange(ConfigA0.LONGITUDE_DECIMAL.byte, ConfigA0.LOCK_DIRECTION.byte)).int)
+                        val lngDecimalPart = bytes.copyOfRange(ConfigA0.LONGITUDE_DECIMAL.byte, ConfigA0.LOCK_DIRECTION.byte).toInt()
                         val lngDecimal = lngDecimalPart.toBigDecimal().movePointLeft(9)
                         Timber.d("lngIntPart: $lngIntPart, lngDecimal: $lngDecimal")
                         val lng = lngIntPart.toBigDecimal().plus(lngDecimal)
@@ -2142,10 +2139,8 @@ class BleCmdRepository @Inject constructor(){
                     val weekdays = scheduleData.component2().unSignedInt()
                     val fromTime = scheduleData.component3().unSignedInt()
                     val toTime = scheduleData.component4().unSignedInt()
-                    val scheduleFrom =
-                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(4, 8)).int)
-                    val scheduleTo =
-                        Integer.reverseBytes(ByteBuffer.wrap(scheduleData.copyOfRange(8, 12)).int)
+                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toInt()
+                    val scheduleTo = scheduleData.copyOfRange(8, 12).toInt()
                     val accessA6 = Access.AccessA6(
                         type = type,
                         index = index,

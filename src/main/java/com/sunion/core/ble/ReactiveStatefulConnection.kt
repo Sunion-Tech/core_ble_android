@@ -70,7 +70,7 @@ class ReactiveStatefulConnection @Inject constructor(
     private val connectionTimer = CountDownTimer(30000, 1000)
 
     private var _rxBleConnection: RxBleConnection? = null
-    override val rxBleConnection: RxBleConnection?
+    override val rxBleConnection: RxBleConnection
         get() = _rxBleConnection ?: throw NotConnectedException()
 
     private var _lockConnectionInfo: LockConnectionInfo = LockConnectionInfo()
@@ -147,9 +147,13 @@ class ReactiveStatefulConnection @Inject constructor(
     }
 
     override fun establishConnection(
-        macAddress: String,
-        keyOne: String,
         oneTimeToken: String,
+        keyOne: String,
+        macAddress: String,
+        model: String,
+        serialNumber: String?,
+        isFrom: String?,
+        lockName: String?,
         permanentToken: String?,
         isSilentlyFail: Boolean
     ): Disposable {
@@ -169,11 +173,15 @@ class ReactiveStatefulConnection @Inject constructor(
         // six groups of two hex digits without colon
         _lockConnectionInfo = LockConnectionInfo(
             macAddress = if (":" in macAddress) macAddress.replace(":", "") else macAddress,
-            keyOne = keyOne,
             oneTimeToken = oneTimeToken,
-            permanentToken = permanentToken,
+            keyOne = keyOne,
+            model = model,
+            serialNumber = serialNumber,
+            isFrom = isFrom,
+            lockName = lockName,
             keyTwo = null,
-            permission = null
+            permission = null,
+            permanentToken = permanentToken
         )
 
         this.macAddress = mac.uppercase()

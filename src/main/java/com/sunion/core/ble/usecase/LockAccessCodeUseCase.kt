@@ -19,13 +19,13 @@ class LockAccessCodeUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
     /** EA **/
-    fun getAccessCodeArray(): Flow<List<Boolean>> = flow {
+    suspend fun getAccessCodeArray(): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xEA,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "getAccessCodeArray")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xEA)
@@ -43,7 +43,7 @@ class LockAccessCodeUseCase @Inject constructor(
                     byteBooleanArray(list, byte)
                 }
                 list.toList()
-                emit(list)
+                list
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -53,7 +53,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EB **/
-    fun queryAccessCode(index: Int): Flow<Access.AccessCode> = flow {
+    suspend fun queryAccessCode(index: Int): Access.AccessCode {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xEB,
@@ -61,7 +61,7 @@ class LockAccessCodeUseCase @Inject constructor(
             byteArrayOf(index.toByte())
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryAccessCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xEB)
@@ -72,7 +72,7 @@ class LockAccessCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -82,7 +82,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EC **/
-    fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean> = flow {
+    suspend fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
             index = index,
@@ -97,7 +97,7 @@ class LockAccessCodeUseCase @Inject constructor(
             data = sendBytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "addAccessCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xEC)
@@ -108,7 +108,7 @@ class LockAccessCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -118,7 +118,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** ED **/
-    fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean> = flow {
+    suspend fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
             index = index,
@@ -133,7 +133,7 @@ class LockAccessCodeUseCase @Inject constructor(
             data = sendBytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "editAccessCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xED)
@@ -144,7 +144,7 @@ class LockAccessCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -154,7 +154,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EE **/
-    fun deleteAccessCode(index: Int): Flow<Boolean> = flow {
+    suspend fun deleteAccessCode(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xEE,
@@ -162,7 +162,7 @@ class LockAccessCodeUseCase @Inject constructor(
             byteArrayOf(index.toByte())
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteAccessCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xEE)
@@ -173,7 +173,7 @@ class LockAccessCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

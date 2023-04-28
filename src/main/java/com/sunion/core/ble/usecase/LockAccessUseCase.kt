@@ -17,14 +17,14 @@ class LockAccessUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
     /** A5 Get Access **/
-    private fun getAccessArray(type: Int): Flow<List<Boolean>> = flow {
+    private suspend fun getAccessArray(type: Int): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA5,
             key = statefulConnection.key(),
             data = byteArrayOf(type.toByte())
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "getAccessArray type: $type")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA5)
@@ -42,7 +42,7 @@ class LockAccessUseCase @Inject constructor(
                     byteBooleanArray(list, byte)
                 }
                 list.toList()
-                emit(list)
+                list
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -51,13 +51,13 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    fun getAccessCodeArray(): Flow<List<Boolean>> = getAccessArray(0)
-    fun getAccessCardArray(): Flow<List<Boolean>> = getAccessArray(1)
-    fun getFingerprintArray(): Flow<List<Boolean>> = getAccessArray(2)
-    fun getFaceArray(): Flow<List<Boolean>> = getAccessArray(3)
+    suspend fun getAccessCodeArray(): List<Boolean> = getAccessArray(0)
+    suspend fun getAccessCardArray(): List<Boolean> = getAccessArray(1)
+    suspend fun getFingerprintArray(): List<Boolean> = getAccessArray(2)
+    suspend fun getFaceArray(): List<Boolean> = getAccessArray(3)
 
     /** A6 Query Access **/
-    private fun queryAccess(type: Int, index: Int): Flow<Access.AccessA6> = flow {
+    private suspend fun queryAccess(type: Int, index: Int): Access.AccessA6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA6,
@@ -65,7 +65,7 @@ class LockAccessUseCase @Inject constructor(
             data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA6)
@@ -76,20 +76,20 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e -> Timber.e("queryAccess exception $e") }
             .single()
     }
 
-    fun queryAccessCode(index: Int): Flow<Access.AccessA6> = queryAccess(0, index)
-    fun queryAccessCard(index: Int): Flow<Access.AccessA6> = queryAccess(1, index)
-    fun queryFingerprint(index: Int): Flow<Access.AccessA6> = queryAccess(2, index)
-    fun queryFace(index: Int): Flow<Access.AccessA6> = queryAccess(3, index)
+    suspend fun queryAccessCode(index: Int): Access.AccessA6 = queryAccess(0, index)
+    suspend fun queryAccessCard(index: Int): Access.AccessA6 = queryAccess(1, index)
+    suspend fun queryFingerprint(index: Int): Access.AccessA6 = queryAccess(2, index)
+    suspend fun queryFace(index: Int): Access.AccessA6 = queryAccess(3, index)
 
     /** A7 Add Access**/
-    private fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7> = flow {
+    private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = bleCmdRepository.combineAccessA7Command(
             Access.AccessA7Cmd(
@@ -108,7 +108,7 @@ class LockAccessUseCase @Inject constructor(
             data = data
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "addAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA7)
@@ -119,7 +119,7 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -128,13 +128,13 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7> = addAccess(0, index, isEnable, scheduleType, name, code)
-    fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7> = addAccess(1, index, isEnable, scheduleType, name, code)
-    fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7> = addAccess(2, index, isEnable, scheduleType, name, code)
-    fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7> = addAccess(3, index, isEnable, scheduleType, name, code)
+    suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(0, index, isEnable, scheduleType, name, code)
+    suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(1, index, isEnable, scheduleType, name, code)
+    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(2, index, isEnable, scheduleType, name, code)
+    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(3, index, isEnable, scheduleType, name, code)
 
     /** A8 Edit Access **/
-    private fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean> = flow {
+    private suspend fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = bleCmdRepository.combineAccessA7Command(
             Access.AccessA7Cmd(
@@ -153,7 +153,7 @@ class LockAccessUseCase @Inject constructor(
             data = data
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "editAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA8)
@@ -164,7 +164,7 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result.isSuccess)
+                result.isSuccess
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -173,13 +173,13 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean> = editAccess(0, index, isEnable, scheduleType, name, code)
-    fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean> = editAccess(1, index, isEnable, scheduleType, name, code)
-    fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean> = editAccess(2, index, isEnable, scheduleType, name, code)
-    fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean> = editAccess(3, index, isEnable, scheduleType, name, code)
+    suspend fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(0, index, isEnable, scheduleType, name, code)
+    suspend fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(1, index, isEnable, scheduleType, name, code)
+    suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(2, index, isEnable, scheduleType, name, code)
+    suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(3, index, isEnable, scheduleType, name, code)
 
     /** A9 Device Get Access **/
-    private fun deviceGetAccess(type:Int, state:Int, index: Int): Flow<Access.AccessA9> = flow {
+    private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.AccessA9 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA9,
@@ -187,7 +187,7 @@ class LockAccessUseCase @Inject constructor(
             data = byteArrayOf(type.toByte(), state.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deviceGetAccess type:$type state:$state index:$index")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA9)
@@ -198,7 +198,7 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -206,12 +206,12 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    fun deviceGetAccessCard(state:Int, index: Int): Flow<Access.AccessA9> = deviceGetAccess(1, state, index)
-    fun deviceGetFingerprint(state:Int, index: Int): Flow<Access.AccessA9> = deviceGetAccess(2, state, index)
-    fun deviceGetFace(state:Int, index: Int): Flow<Access.AccessA9> = deviceGetAccess(3, state ,index)
+    suspend fun deviceGetAccessCard(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(1, state, index)
+    suspend fun deviceGetFingerprint(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(2, state, index)
+    suspend fun deviceGetFace(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(3, state ,index)
 
     /** AA **/
-    private fun deleteAccess(type: Int, index: Int): Flow<Boolean> = flow {
+    private suspend fun deleteAccess(type: Int, index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xAA,
@@ -219,7 +219,7 @@ class LockAccessUseCase @Inject constructor(
             data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteAccess type:$type index:$index")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xAA)
@@ -230,7 +230,7 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result.isSuccess)
+                result.isSuccess
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -238,10 +238,10 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    fun deleteAccessCode(index: Int): Flow<Boolean> = deleteAccess(0, index)
-    fun deleteAccessCard(index: Int): Flow<Boolean> = deleteAccess(1, index)
-    fun deleteFingerprint(index: Int): Flow<Boolean> = deleteAccess(2, index)
-    fun deleteFace(index: Int): Flow<Boolean> = deleteAccess(3, index)
+    suspend fun deleteAccessCode(index: Int): Boolean = deleteAccess(0, index)
+    suspend fun deleteAccessCard(index: Int): Boolean = deleteAccess(1, index)
+    suspend fun deleteFingerprint(index: Int): Boolean = deleteAccess(2, index)
+    suspend fun deleteFace(index: Int): Boolean = deleteAccess(3, index)
 
     fun byteBooleanArray(mapTo: MutableList<Boolean>, byte: Byte) {
         (0..7).forEach { index ->

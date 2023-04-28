@@ -19,13 +19,13 @@ class LockTokenUseCase @Inject constructor(
 ) {
 
     /** E4 **/
-    fun queryTokenArray(): Flow<List<Int>> = flow {
+    suspend fun queryTokenArray(): List<Int> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE4,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryTokenArray")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE4)
@@ -41,7 +41,7 @@ class LockTokenUseCase @Inject constructor(
                 val indexIterable = bytes
                     .mapIndexed { index, byte -> if (byte.unSignedInt() != 0x00) index else -1 }
                     .filter { index -> index != -1 }
-                emit(indexIterable)
+                indexIterable
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -51,7 +51,7 @@ class LockTokenUseCase @Inject constructor(
     }
 
     /** E5 **/
-    fun queryToken(index: Int): Flow<DeviceToken.PermanentToken> = flow {
+    suspend fun queryToken(index: Int): DeviceToken.PermanentToken {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE5,
@@ -59,7 +59,7 @@ class LockTokenUseCase @Inject constructor(
             byteArrayOf(index.toByte())
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "queryToken")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE5)
@@ -70,7 +70,7 @@ class LockTokenUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -80,7 +80,7 @@ class LockTokenUseCase @Inject constructor(
     }
 
     /** E6 **/
-    fun addOneTimeToken(permission: String, name: String): Flow<AddUserResponse> = flow {
+    suspend fun addOneTimeToken(permission: String, name: String): AddUserResponse {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = permission.toByteArray() + name.toByteArray()
         val command = bleCmdRepository.createCommand(
@@ -89,7 +89,7 @@ class LockTokenUseCase @Inject constructor(
             data = bytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "addOneTimeToken")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE6)
@@ -100,7 +100,7 @@ class LockTokenUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(addUserResponse)
+                addUserResponse
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -110,7 +110,7 @@ class LockTokenUseCase @Inject constructor(
     }
 
     /** E7: **/
-    fun editToken(index: Int, permission: String, name: String): Flow<Boolean> = flow {
+    suspend fun editToken(index: Int, permission: String, name: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.toByteArray()
         val command = bleCmdRepository.createCommand(
@@ -119,7 +119,7 @@ class LockTokenUseCase @Inject constructor(
             data = bytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "editToken")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE7)
@@ -130,7 +130,7 @@ class LockTokenUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ).isSuccessful
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -140,7 +140,7 @@ class LockTokenUseCase @Inject constructor(
     }
 
     /** E8, code is required when delete owner token. **/
-    fun deleteToken(index: Int, code: String = ""): Flow<Boolean> = flow {
+    suspend fun deleteToken(index: Int, code: String = ""): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = if (code.isNotEmpty())
             byteArrayOf(0x00.toByte()) + byteArrayOf(bleCmdRepository.stringCodeToHex(code).size.toByte()) + bleCmdRepository.stringCodeToHex(code)
@@ -153,7 +153,7 @@ class LockTokenUseCase @Inject constructor(
             sendBytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteToken")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE8)
@@ -164,7 +164,7 @@ class LockTokenUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

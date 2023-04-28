@@ -16,7 +16,7 @@ class LockTimeUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun setTime(timeStamp: Long): Flow<Boolean> = flow {
+    suspend fun setTime(timeStamp: Long): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = timeStamp.toInt().toLittleEndianByteArray()
         val sendCmd = bleCmdRepository.createCommand(
@@ -24,7 +24,7 @@ class LockTimeUseCase @Inject constructor(
             key = statefulConnection.key(),
             bytes
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.setTime")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD3)
@@ -35,7 +35,7 @@ class LockTimeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -45,13 +45,13 @@ class LockTimeUseCase @Inject constructor(
             .single()
     }
 
-    fun getTime(): Flow<Int> = flow {
+    suspend fun getTime(): Int {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD2,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.getTime")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD2)
@@ -62,7 +62,7 @@ class LockTimeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(ret)
+                ret
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -72,7 +72,7 @@ class LockTimeUseCase @Inject constructor(
             .single()
     }
 
-    fun setTimeZone(timezone: String): Flow<Boolean> = flow {
+    suspend fun setTimeZone(timezone: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val zonedDateTime = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of(timezone))
         val offsetSeconds = zonedDateTime.offset.totalSeconds
@@ -85,7 +85,7 @@ class LockTimeUseCase @Inject constructor(
             key = statefulConnection.key(),
             data = bytes
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockTimeUseCase.setTimeZone")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD9)
@@ -96,7 +96,7 @@ class LockTimeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

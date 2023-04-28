@@ -18,13 +18,13 @@ class AdminCodeUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun isAdminCodeExists(): Flow<Boolean> = flow {
+    suspend fun isAdminCodeExists(): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xEF,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.isAdminCodeExists")
             .filter { notification ->
                 bleCmdRepository.decrypt(
@@ -39,7 +39,7 @@ class AdminCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -49,7 +49,7 @@ class AdminCodeUseCase @Inject constructor(
             .single()
     }
 
-    fun createAdminCode(code: String): Flow<Boolean> = flow {
+    suspend fun createAdminCode(code: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (!(code.all { char -> char.isDigit() }) || code.length < ACCESSCODE_LENGTH_MIN || code.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
         val adminCode = bleCmdRepository.stringCodeToHex(code)
@@ -58,7 +58,7 @@ class AdminCodeUseCase @Inject constructor(
             key = statefulConnection.key(),
             adminCode
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.createAdminCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xC7)
@@ -69,7 +69,7 @@ class AdminCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -79,7 +79,7 @@ class AdminCodeUseCase @Inject constructor(
             .single()
     }
 
-    fun updateAdminCode(oldCode: String, newCode: String): Flow<Boolean> = flow {
+    suspend fun updateAdminCode(oldCode: String, newCode: String):Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (!(oldCode.all { char -> char.isDigit() }) || oldCode.length < ACCESSCODE_LENGTH_MIN || oldCode.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
         if (!(newCode.all { char -> char.isDigit() }) || newCode.length < ACCESSCODE_LENGTH_MIN || newCode.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
@@ -91,7 +91,7 @@ class AdminCodeUseCase @Inject constructor(
             key = statefulConnection.key(),
             sendBytes
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.updateAdminCode")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xC8)
@@ -102,7 +102,7 @@ class AdminCodeUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

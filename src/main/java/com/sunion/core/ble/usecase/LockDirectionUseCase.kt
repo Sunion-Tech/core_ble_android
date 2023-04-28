@@ -17,13 +17,13 @@ class LockDirectionUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    operator fun invoke(): Flow<DeviceStatus> = flow {
+    suspend operator fun invoke(): DeviceStatus {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xCC,
             key = statefulConnection.key()
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
             .filter { notification ->
                 bleCmdRepository.decrypt(
@@ -59,7 +59,7 @@ class LockDirectionUseCase @Inject constructor(
                         else -> {}
                     }
                 }
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

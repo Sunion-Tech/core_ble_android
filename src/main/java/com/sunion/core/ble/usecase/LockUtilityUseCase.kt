@@ -17,7 +17,7 @@ class LockUtilityUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun factoryReset(adminCode: String): Flow<Boolean> = flow {
+    suspend fun factoryReset(adminCode: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val admin_code = bleCmdRepository.stringCodeToHex(adminCode)
         val sendBytes = byteArrayOf(admin_code.size.toByte()) + admin_code
@@ -26,7 +26,7 @@ class LockUtilityUseCase @Inject constructor(
             key = statefulConnection.key(),
             sendBytes
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.factoryReset")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xCE)
@@ -37,7 +37,7 @@ class LockUtilityUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -47,21 +47,21 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
-    fun getFirmwareVersion(): Flow<String> = flow {
+    suspend fun getFirmwareVersion(): String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val versionByteArray = runCatching {
             statefulConnection.rxBleConnection!!.readCharacteristic(UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb")).toObservable().asFlow().single()
         }.getOrNull() ?: throw IllegalStateException("null version")
-        emit(String(versionByteArray))
+        return String(versionByteArray)
     }
 
-    fun getLockSupportedUnlockTypes(): Flow<BleV2Lock.SupportedUnlockType> = flow {
+    suspend fun getLockSupportedUnlockTypes(): BleV2Lock.SupportedUnlockType {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA4,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.getSupportedUnlockTypes")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA4)
@@ -72,7 +72,7 @@ class LockUtilityUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

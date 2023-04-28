@@ -14,13 +14,13 @@ class LockNameUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun getName(): Flow<String> = flow {
+    suspend fun getName():String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD0,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.getLockName")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD0)
@@ -31,7 +31,7 @@ class LockNameUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -41,7 +41,7 @@ class LockNameUseCase @Inject constructor(
             .single()
     }
 
-    fun setName(name: String): Flow<Boolean> = flow {
+    suspend fun setName(name: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (name.toByteArray().size > 20) throw IllegalArgumentException("Limit of lock name length is 20 bytes.")
         val sendCmd = bleCmdRepository.createCommand(
@@ -49,7 +49,7 @@ class LockNameUseCase @Inject constructor(
             key = statefulConnection.key(),
             name.toByteArray()
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD1)
@@ -60,7 +60,7 @@ class LockNameUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

@@ -15,13 +15,13 @@ class LockEventLogUseCase @Inject constructor(
 ) {
 
     /** E0 **/
-    fun getEventQuantity(): Flow<Int> = flow {
+    suspend fun getEventQuantity(): Int {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE0,
             key = statefulConnection.key(),
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "getEventQuantity")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE0)
@@ -32,7 +32,7 @@ class LockEventLogUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -42,7 +42,7 @@ class LockEventLogUseCase @Inject constructor(
     }
 
     /** E1 **/
-    fun getEvent(index: Int): Flow<EventLog> = flow {
+    suspend fun getEvent(index: Int): EventLog {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xE1,
@@ -50,7 +50,7 @@ class LockEventLogUseCase @Inject constructor(
             byteArrayOf(index.toByte())
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "getEvent")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE1)
@@ -61,7 +61,7 @@ class LockEventLogUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -71,7 +71,7 @@ class LockEventLogUseCase @Inject constructor(
     }
 
     /** E2 **/
-    fun deleteEvent(index: Int): Flow<Boolean> = flow {
+    suspend fun deleteEvent(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = byteArrayOf(index.toByte())
 
@@ -81,7 +81,7 @@ class LockEventLogUseCase @Inject constructor(
             sendBytes
         )
 
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(command, "deleteEvent")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE2)
@@ -92,7 +92,7 @@ class LockEventLogUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

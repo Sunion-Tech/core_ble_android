@@ -15,13 +15,13 @@ class LockConfigD4UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun query(): Flow<LockConfigD4> = flow {
+    suspend fun query(): LockConfigD4  {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD4,
             key = statefulConnection.key()
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigD4UseCase.query")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD4)
@@ -32,7 +32,7 @@ class LockConfigD4UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -71,77 +71,32 @@ class LockConfigD4UseCase @Inject constructor(
             .single()
     }
 
-    fun setKeyPressBeep(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(isSoundOn = isOn))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigD4UseCase.setKeyPressBeep exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setKeyPressBeep(isOn: Boolean): Boolean {
+        val config = query()
+        return updateConfig(config.copy(isSoundOn = isOn))
     }
 
-    fun setVactionMode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(isVacationModeOn = isOn))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigD4UseCase.setVactionMode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setVactionMode(isOn: Boolean): Boolean {
+        val config = query()
+        return updateConfig(config.copy(isVacationModeOn = isOn))
     }
 
-    fun setGuidingCode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(isGuidingCodeOn = isOn))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigD4UseCase.setGuidingCode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setGuidingCode(isOn: Boolean):Boolean {
+        val config = query()
+        return updateConfig(config.copy(isGuidingCodeOn = isOn))
     }
 
-    fun setAutoLock(isOn: Boolean, autoLockTime: Int): Flow<Boolean> = flow {
+    suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean {
         var time = 0
         if (isOn && (autoLockTime < 1 || autoLockTime > 90)) throw IllegalArgumentException("Auto lock time should be 1 ~ 90.")
         else time = autoLockTime
         if (!isOn) time = 1
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(isAutoLock = isOn, autoLockTime = time))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigD4UseCase.setAutoLock exception $e")
-                throw e
-            }
-            .single()
+        val config = query()
+        return updateConfig(config.copy(isAutoLock = isOn, autoLockTime = time))
     }
 
-    fun setLocation(latitude: Double, longitude: Double): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(latitude = latitude, longitude = longitude))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigD4UseCase.setLocation exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setLocation(latitude: Double, longitude: Double): Boolean {
+        val config = query()
+        return updateConfig(config.copy(latitude = latitude, longitude = longitude))
     }
 }

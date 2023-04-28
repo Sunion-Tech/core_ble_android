@@ -2,7 +2,9 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.LockConfig
+import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -15,13 +17,13 @@ class LockConfigA0UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    fun query(): Flow<LockConfig.LockConfigA0> = flow {
+    suspend fun query(): LockConfig.LockConfigA0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA0,
             key = statefulConnection.key()
         )
-        statefulConnection
+        return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigA0UseCase.query")
             .filter { notification ->
                 bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA0)
@@ -32,7 +34,7 @@ class LockConfigA0UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
-                emit(result)
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -71,135 +73,89 @@ class LockConfigA0UseCase @Inject constructor(
             .single()
     }
 
-    fun setLocation(latitude: Double, longitude: Double): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(latitude = latitude, longitude = longitude))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setLocation exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setLocation(latitude: Double, longitude: Double): Boolean {
+        val config = query()
+        return updateConfig(config.copy(latitude = latitude, longitude = longitude))
     }
 
-    fun setGuidingCode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(guidingCode = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setGuidingCode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setGuidingCode(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.guidingCode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(guidingCode = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setVirtualCode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(virtualCode = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setVirtualCode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setVirtualCode(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.virtualCode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(virtualCode = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setTwoFA(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(twoFA = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setTwoFA exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setTwoFA(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.twoFA != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(twoFA = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setVacationMode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(vacationMode = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setVactionMode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setVacationMode(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.vacationMode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(vacationMode = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setAutoLock(isOn: Boolean, autoLockTime: Int): Flow<Boolean> = flow {
+    suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean {
         if (autoLockTime < 1) throw IllegalArgumentException("Auto lock time should greater than 1.")
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(autoLock = if (isOn) 1 else 0, autoLockTime = autoLockTime))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setAutoLock exception $e")
-                throw e
-            }
-            .single()
+        val config = query()
+        if (autoLockTime < config.autoLockTimeUpperLimit || autoLockTime > config.autoLockTimeLowerLimit) {
+            throw IllegalArgumentException("Set auto lock will fail because autoLockTime is not support value")
+        }
+        if (config.autoLock != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(autoLock = if (isOn) 1 else 0, autoLockTime = autoLockTime))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setOperatingSound(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(operatingSound = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setOperatingSound exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setOperatingSound(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.operatingSound != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(operatingSound = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setSoundValue(soundType: Int, defaultSoundValue: Int = 0): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val soundValue = when (soundType) {
-                    0x01 -> if(config.soundValue == 100) 0 else 100
-                    0x02 -> if(config.soundValue == 100) 50 else if(config.soundValue == 50) 0 else 100
-                    else -> defaultSoundValue
-                }
-                val result = updateConfig(config.copy(soundValue = soundValue))
-                emit(result)
+    suspend fun setSoundValue(soundValue :Int): Boolean {
+        val config = query()
+        if (config.soundType != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            val value = when (config.soundType) {
+                0x01 -> if (soundValue == 100 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
+                0x02 -> if (soundValue == 100 || soundValue == 50 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
+                else -> soundValue
             }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setSoundValue exception $e")
-                throw e
-            }
-            .single()
+            return updateConfig(config.copy(soundValue = value))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 
-    fun setShowFastTrackMode(isOn: Boolean): Flow<Boolean> = flow {
-        query()
-            .map { config ->
-                val result = updateConfig(config.copy(showFastTrackMode = if (isOn) 1 else 0))
-                emit(result)
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("LockConfigA0UseCase.setShowFastTrackMode exception $e")
-                throw e
-            }
-            .single()
+    suspend fun setShowFastTrackMode(isOn: Boolean): Boolean {
+        val config = query()
+        if (config.showFastTrackMode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+            return updateConfig(config.copy(showFastTrackMode = if (isOn) 1 else 0))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
     }
 }

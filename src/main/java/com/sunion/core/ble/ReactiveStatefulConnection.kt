@@ -16,6 +16,8 @@ import com.polidea.rxandroidble2.RxBleDevice
 import com.polidea.rxandroidble2.RxBleDeviceServices
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.entity.*
+import com.sunion.core.ble.exception.LockStatusException
+import com.sunion.core.ble.usecase.IncomingSunionBleNotificationUseCase
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -77,6 +79,18 @@ class ReactiveStatefulConnection @Inject constructor(
     override val lockConnectionInfo
         get() = _lockConnectionInfo
 
+    private val _deviceStatus = MutableSharedFlow<DeviceStatus>()
+    val deviceStatus: SharedFlow<DeviceStatus> = _deviceStatus
+
+    var keyTwo: String = ""
+    var rxDeviceToken = DeviceToken.PermanentToken(
+        isValid = false,
+        isPermanent = false,
+        token = "",
+        isOwner = false,
+        name = "",
+        permission = ""
+    )
     /**
      * The connection observable "stateful" field.
      * @return Observable<RxBleConnection> or fallback to [NotConnectedException]
@@ -109,6 +123,12 @@ class ReactiveStatefulConnection @Inject constructor(
             }
             EventState.SUCCESS -> {
                 if (event?.status == EventState.SUCCESS && event.data?.first == true) {
+                    this.keyTwo = _lockConnectionInfo.keyTwo ?: ""
+                    this.macAddress = _lockConnectionInfo.macAddress
+                    this.rxDeviceToken = this.rxDeviceToken.copy(
+                        permission = _lockConnectionInfo.permission ?: "",
+                        token = _lockConnectionInfo.permanentToken ?: "",
+                    )
                     _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTED) }
                 }
             }
@@ -172,16 +192,16 @@ class ReactiveStatefulConnection @Inject constructor(
         val mac = if (":" in macAddress) macAddress else macAddress.chunked(2).joinToString(":")
         // six groups of two hex digits without colon
         _lockConnectionInfo = LockConnectionInfo(
-            macAddress = if (":" in macAddress) macAddress.replace(":", "") else macAddress,
             oneTimeToken = oneTimeToken,
             keyOne = keyOne,
+            macAddress = if (":" in macAddress) macAddress.replace(":", "") else macAddress,
             model = model,
             serialNumber = serialNumber,
             isFrom = isFrom,
             lockName = lockName,
-            keyTwo = null,
-            permission = null,
-            permanentToken = permanentToken
+            keyTwo = "",
+            permission = "",
+            permanentToken = permanentToken ?: "",
         )
 
         this.macAddress = mac.uppercase()
@@ -246,11 +266,12 @@ class ReactiveStatefulConnection @Inject constructor(
             connectionTimer.cancel()
             Timber.d("action after device token exchanged: connected with device: ${device.macAddress}, and the stateful connection has been shared: $connection")
             _lockConnectionInfo = _lockConnectionInfo.copy(
+                macAddress = this.macAddress ?: "",
                 permission = permission,
                 keyTwo = bleHandShakeUseCase.keyTwoString,
                 permanentToken = bleHandShakeUseCase.permanentTokenString
             )
-            Timber.d("_lockConnectionInfo: ${_lockConnectionInfo}")
+            Timber.d("_lockConnectionInfo: $_lockConnectionInfo")
             // after token exchange, update successfully, and connection object had been shared,
             // the E5, D6 notification will emit to downstream
             // the E5 had been intercepted and had been stored in Room database,
@@ -380,6 +401,10 @@ class ReactiveStatefulConnection @Inject constructor(
         }
     }
 
+    fun connect(lockConnectionInfo: LockConnectionInfo) {
+        establishConnection(lockConnectionInfo.oneTimeToken!!, lockConnectionInfo.keyOne!!, lockConnectionInfo.macAddress!!, lockConnectionInfo.model!!, lockConnectionInfo.serialNumber, lockConnectionInfo.isFrom, lockConnectionInfo.lockName, lockConnectionInfo.permanentToken, false)
+    }
+
     override fun disconnect() {
         this.macAddress = null
         _lockScope.launch {
@@ -391,8 +416,24 @@ class ReactiveStatefulConnection @Inject constructor(
             )
             _bluetoothConnectState.emit(BluetoothConnectState.DISCONNECTED)
         }
+        this.rxDeviceToken = DeviceToken.PermanentToken(
+            isValid = false,
+            isPermanent = false,
+            token = "",
+            isOwner = false,
+            name = "",
+            permission = ""
+        )
         removeConnectionObservable()
         close()
+    }
+
+    fun getDeviceToken(): DeviceToken.PermanentToken {
+        return rxDeviceToken
+    }
+
+    fun setDeviceToken(token: DeviceToken.PermanentToken) {
+        rxDeviceToken = token
     }
 
     override fun close() {

@@ -266,7 +266,6 @@ class ReactiveStatefulConnection @Inject constructor(
             connectionTimer.cancel()
             Timber.d("action after device token exchanged: connected with device: ${device.macAddress}, and the stateful connection has been shared: $connection")
             _lockConnectionInfo = _lockConnectionInfo.copy(
-                macAddress = this.macAddress ?: "",
                 permission = permission,
                 keyTwo = bleHandShakeUseCase.keyTwoString,
                 permanentToken = bleHandShakeUseCase.permanentTokenString

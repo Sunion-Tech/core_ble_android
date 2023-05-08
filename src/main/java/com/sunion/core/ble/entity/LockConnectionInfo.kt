@@ -12,7 +12,8 @@ data class LockConnectionInfo(
     var keyTwo: String = "",
     var permission: String = "",
     var permanentToken: String = "",
-    val deviceName: String= ""
+    val deviceName: String = "",
+    val thingName: String = ""
 ) {
 
     companion object {

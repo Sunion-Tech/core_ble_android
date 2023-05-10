@@ -5,17 +5,17 @@ data class LockConnectionInfo(
     var keyOne: String = "",
     var macAddress: String = "",
     var model: String = "",
-    val isOwnerToken: Boolean = false,
     var serialNumber: String? = null,
     var isFrom: String? = null,
-    var lockName: String? = null,
+    var deviceName: String? = null,
+    val isOwnerToken: Boolean = false,
     var keyTwo: String = "",
     var permission: String = "",
     var permanentToken: String = "",
-    val deviceName: String = "",
-    val thingName: String = ""
+    val thingName: String? = null,
+    val userName: String? = null,
 ) {
-
+    val broadcastName: String = "BT_Lock_" + macAddress.replace(":", "").takeLast(6)
     companion object {
         fun from(content: QRCodeContent): LockConnectionInfo = LockConnectionInfo(
             oneTimeToken = content.t,
@@ -24,7 +24,7 @@ data class LockConnectionInfo(
             model = content.m,
             serialNumber = content.s,
             isFrom = content.f,
-            lockName = content.l,
+            deviceName = content.l,
             isOwnerToken = content.f == null,
         )
     }

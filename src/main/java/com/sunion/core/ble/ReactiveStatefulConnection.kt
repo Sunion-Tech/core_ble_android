@@ -173,7 +173,7 @@ class ReactiveStatefulConnection @Inject constructor(
         model: String,
         serialNumber: String?,
         isFrom: String?,
-        lockName: String?,
+        deviceName: String?,
         permanentToken: String?,
         isSilentlyFail: Boolean
     ): Disposable {
@@ -198,7 +198,7 @@ class ReactiveStatefulConnection @Inject constructor(
             model = model,
             serialNumber = serialNumber,
             isFrom = isFrom,
-            lockName = lockName,
+            deviceName = deviceName,
             keyTwo = "",
             permission = "",
             permanentToken = permanentToken ?: "",
@@ -401,7 +401,7 @@ class ReactiveStatefulConnection @Inject constructor(
     }
 
     fun connect(lockConnectionInfo: LockConnectionInfo) {
-        establishConnection(lockConnectionInfo.oneTimeToken!!, lockConnectionInfo.keyOne!!, lockConnectionInfo.macAddress!!, lockConnectionInfo.model!!, lockConnectionInfo.serialNumber, lockConnectionInfo.isFrom, lockConnectionInfo.lockName, lockConnectionInfo.permanentToken, false)
+        establishConnection(lockConnectionInfo.oneTimeToken, lockConnectionInfo.keyOne, lockConnectionInfo.macAddress, lockConnectionInfo.model, lockConnectionInfo.serialNumber, lockConnectionInfo.isFrom, lockConnectionInfo.deviceName, lockConnectionInfo.permanentToken, false)
     }
 
     override fun disconnect() {

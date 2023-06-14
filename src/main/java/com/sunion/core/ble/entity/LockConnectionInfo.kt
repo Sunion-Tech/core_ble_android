@@ -14,6 +14,7 @@ data class LockConnectionInfo(
     var permanentToken: String = "",
     val thingName: String? = null,
     val userName: String? = null,
+    val activeMode: String? = null,
 ) {
     val broadcastName: String = "BT_Lock_" + macAddress.replace(":", "").takeLast(6)
     companion object {
@@ -24,7 +25,7 @@ data class LockConnectionInfo(
             model = content.m,
             serialNumber = content.s,
             isFrom = content.f,
-            deviceName = content.l,
+            deviceName = content.l ?: "new_lock",
             isOwnerToken = content.f == null,
         )
     }

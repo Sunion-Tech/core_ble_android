@@ -24,6 +24,13 @@ fun ByteArray.toInt(): Int {
     return Integer.reverseBytes(int)
 }
 
+fun ByteArray.toLong(): Long {
+    val paddedByteArray = this.copyOf(8)
+    val byteBuffer = ByteBuffer.wrap(paddedByteArray)
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN) // 設定為小端序
+    return byteBuffer.long
+}
+
 //String
 fun String.hexToByteArray(): ByteArray {
     val hex: CharArray = this.toCharArray()
@@ -60,3 +67,30 @@ fun Int.toLittleEndianByteArrayInt16(): ByteArray {
     return byteArray
 }
 
+fun Long.toLittleEndianByteArray(): ByteArray {
+    val byteArray = ByteArray(8)
+    val byteBuffer = ByteBuffer.allocate(8)
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+    byteBuffer.putLong(this)
+    byteBuffer.flip()
+    byteBuffer.get(byteArray)
+    return byteArray
+}
+
+fun Long.toLittleEndianByteArrayInt32(): ByteArray {
+    val byteArray = ByteArray(4)
+    val byteBuffer = ByteBuffer.allocate(4)
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+    byteBuffer.putInt(this.toInt())
+    byteBuffer.flip()
+    byteBuffer.get(byteArray)
+    return byteArray
+}
+
+fun Long.limitValidTimeRange(): Long {
+    return when {
+        this < 0 -> 0
+        this > 4294967295 -> 4294967295
+        else -> this
+    }
+}

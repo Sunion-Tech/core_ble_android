@@ -9,8 +9,8 @@ sealed class Access: SunionBleNotification() {
         val weekDays: Int? = null,
         val from: Int? = null,
         val to: Int? = null,
-        val scheduleFrom: Int? = null,
-        val scheduleTo: Int? = null,
+        val scheduleFrom: Long? = null,
+        val scheduleTo: Long? = null,
         val name: String
     ) : Access()
 
@@ -29,8 +29,8 @@ sealed class Access: SunionBleNotification() {
         val weekDays: Int? = null,
         val from: Int? = null,
         val to: Int? = null,
-        val scheduleFrom: Int? = null,
-        val scheduleTo: Int? = null,
+        val scheduleFrom: Long? = null,
+        val scheduleTo: Long? = null,
         val name: String,
         val nameLen: Int
     ) : Access()

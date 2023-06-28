@@ -718,12 +718,12 @@ class BleCmdRepository @Inject constructor(){
 
         when (scheduleType) {
             is AccessScheduleType.ValidTimeRange -> {
-                Timber.d("ValidTimeRange from: ${scheduleType.from.toInt()}, to: ${scheduleType.to.toInt()}")
+                Timber.d("ValidTimeRange from: ${scheduleType.from}, to: ${scheduleType.to}")
 
-                val fromTimeByteArray = scheduleType.from.toInt().toLittleEndianByteArray()
+                val fromTimeByteArray = scheduleType.from.limitValidTimeRange().toLittleEndianByteArrayInt32()
                 for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
 
-                val toTimeByteArray = scheduleType.to.toInt().toLittleEndianByteArray()
+                val toTimeByteArray = scheduleType.to.limitValidTimeRange().toLittleEndianByteArrayInt32()
                 for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
             }
             is AccessScheduleType.ScheduleEntry -> {
@@ -982,12 +982,12 @@ class BleCmdRepository @Inject constructor(){
 
         when (accessA7Cmd.scheduleType) {
             is AccessScheduleType.ValidTimeRange -> {
-                Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from.toInt()}, to: ${accessA7Cmd.scheduleType.to.toInt()}")
+                Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
 
-                val fromTimeByteArray = accessA7Cmd.scheduleType.from.toInt().toLittleEndianByteArray()
+                val fromTimeByteArray = accessA7Cmd.scheduleType.from.limitValidTimeRange().toLittleEndianByteArrayInt32()
                 for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
 
-                val toTimeByteArray = accessA7Cmd.scheduleType.to.toInt().toLittleEndianByteArray()
+                val toTimeByteArray = accessA7Cmd.scheduleType.to.limitValidTimeRange().toLittleEndianByteArrayInt32()
                 for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
             }
             is AccessScheduleType.ScheduleEntry -> {
@@ -1688,8 +1688,8 @@ class BleCmdRepository @Inject constructor(){
                     val weekdays = scheduleData.component2().unSignedInt()
                     val fromTime = scheduleData.component3().unSignedInt()
                     val toTime = scheduleData.component4().unSignedInt()
-                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toInt()
-                    val scheduleTo = scheduleData.copyOfRange(8, 12).toInt()
+                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toLong()
+                    val scheduleTo = scheduleData.copyOfRange(8, 12).toLong()
                     val userCode = Access.AccessCode(
                         index = 999,
                         isEnable = data.component1().unSignedInt() == 0x01,
@@ -2139,8 +2139,8 @@ class BleCmdRepository @Inject constructor(){
                     val weekdays = scheduleData.component2().unSignedInt()
                     val fromTime = scheduleData.component3().unSignedInt()
                     val toTime = scheduleData.component4().unSignedInt()
-                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toInt()
-                    val scheduleTo = scheduleData.copyOfRange(8, 12).toInt()
+                    val scheduleFrom = scheduleData.copyOfRange(4, 8).toLong()
+                    val scheduleTo = scheduleData.copyOfRange(8, 12).toLong()
                     val accessA6 = Access.AccessA6(
                         type = type,
                         index = index,

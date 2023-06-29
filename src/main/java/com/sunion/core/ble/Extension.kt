@@ -46,6 +46,14 @@ fun String.hexToByteArray(): ByteArray {
     return rawData
 }
 
+fun String.colonMac(): String {
+    return if (":" in this) this else this.chunked(2).joinToString(":")
+}
+
+fun String.noColonMac(): String {
+    return if (":" in this) this.replace(":", "") else this
+}
+
 //Int
 fun Int.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(4)

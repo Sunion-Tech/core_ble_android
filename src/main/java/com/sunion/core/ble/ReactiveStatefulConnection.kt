@@ -188,13 +188,11 @@ class ReactiveStatefulConnection @Inject constructor(
 
         connectionTimer.start()
 
-        // six groups of two hex digits with colon
-        val mac = if (":" in macAddress) macAddress else macAddress.chunked(2).joinToString(":")
         // six groups of two hex digits without colon
         _lockConnectionInfo = LockConnectionInfo(
             oneTimeToken = oneTimeToken,
             keyOne = keyOne,
-            macAddress = if (":" in macAddress) macAddress.replace(":", "") else macAddress,
+            macAddress = macAddress.colonMac(),
             model = model,
             serialNumber = serialNumber,
             isFrom = isFrom,
@@ -204,8 +202,9 @@ class ReactiveStatefulConnection @Inject constructor(
             permanentToken = permanentToken ?: "",
         )
 
-        this.macAddress = mac.uppercase()
-        val device = rxBleClient.getBleDevice(mac.uppercase())
+        // six groups of two hex digits with colon
+        this.macAddress = macAddress.colonMac().uppercase()
+        val device = rxBleClient.getBleDevice(macAddress.colonMac().uppercase())
         // please see https://github.com/Polidea/RxAndroidBle/wiki/Tutorial:-Connection-Observable-sharing
         val connection = establishBleConnectionAndRequestMtu(device)
             .doOnSubscribe {

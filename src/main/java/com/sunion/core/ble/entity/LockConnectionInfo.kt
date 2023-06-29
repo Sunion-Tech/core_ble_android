@@ -1,5 +1,8 @@
 package com.sunion.core.ble.entity
 
+import com.sunion.core.ble.colonMac
+import com.sunion.core.ble.noColonMac
+
 data class LockConnectionInfo(
     var oneTimeToken: String = "",
     var keyOne: String = "",
@@ -16,16 +19,16 @@ data class LockConnectionInfo(
     val userName: String? = null,
     val activeMode: String? = null,
 ) {
-    val broadcastName: String = "BT_Lock_" + macAddress.replace(":", "").takeLast(6)
+    val broadcastName: String = "BT_Lock_" + macAddress.noColonMac().takeLast(6)
     companion object {
         fun from(content: QRCodeContent): LockConnectionInfo = LockConnectionInfo(
             oneTimeToken = content.t,
             keyOne = content.k,
-            macAddress = content.a,
+            macAddress = content.a.colonMac(),
             model = content.m,
             serialNumber = content.s,
             isFrom = content.f,
-            deviceName = content.l ?: "new_lock",
+            deviceName = content.l ?: "New_Lock",
             isOwnerToken = content.f == null,
         )
     }

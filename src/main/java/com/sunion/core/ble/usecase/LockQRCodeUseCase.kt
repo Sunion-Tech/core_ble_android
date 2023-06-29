@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.sunion.core.ble.BleCmdRepository
+import com.sunion.core.ble.colonMac
 import com.sunion.core.ble.entity.QRCodeContent
 import com.sunion.core.ble.exception.GenerateBarcodeException
 import timber.log.Timber
@@ -28,7 +29,7 @@ class LockQRCodeUseCase @Inject constructor(
         val decode = decryptV2(data, barcodeKey.toByteArray())
         val decodeString = String(decode!!)
         val qrCodeContent = gson.fromJson(decodeString, QRCodeContent::class.java)!!
-        return qrCodeContent.copy(a = qrCodeContent.a.chunked(2).joinToString(":") { it })
+        return qrCodeContent.copy(a = qrCodeContent.a.colonMac())
     }
 
     fun parseQRCodeContent(barcodeKey: String, content: String): QRCodeContent {

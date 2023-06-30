@@ -16,8 +16,6 @@ import com.polidea.rxandroidble2.RxBleDevice
 import com.polidea.rxandroidble2.RxBleDeviceServices
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.entity.*
-import com.sunion.core.ble.exception.LockStatusException
-import com.sunion.core.ble.usecase.IncomingSunionBleNotificationUseCase
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -167,13 +165,9 @@ class ReactiveStatefulConnection @Inject constructor(
     }
 
     override fun establishConnection(
-        oneTimeToken: String,
-        keyOne: String,
         macAddress: String,
-        model: String,
-        serialNumber: String?,
-        isFrom: String?,
-        deviceName: String?,
+        keyOne: String,
+        oneTimeToken: String,
         permanentToken: String?,
         isSilentlyFail: Boolean
     ): Disposable {
@@ -190,16 +184,12 @@ class ReactiveStatefulConnection @Inject constructor(
 
         // six groups of two hex digits without colon
         _lockConnectionInfo = LockConnectionInfo(
-            oneTimeToken = oneTimeToken,
-            keyOne = keyOne,
             macAddress = macAddress.colonMac(),
-            model = model,
-            serialNumber = serialNumber,
-            isFrom = isFrom,
-            deviceName = deviceName,
-            keyTwo = "",
-            permission = "",
-            permanentToken = permanentToken ?: "",
+            keyOne = keyOne,
+            oneTimeToken = oneTimeToken,
+            permanentToken = permanentToken,
+            keyTwo = null,
+            permission = null
         )
 
         // six groups of two hex digits with colon
@@ -397,10 +387,6 @@ class ReactiveStatefulConnection @Inject constructor(
         } else {
             false
         }
-    }
-
-    fun connect(lockConnectionInfo: LockConnectionInfo) {
-        establishConnection(lockConnectionInfo.oneTimeToken, lockConnectionInfo.keyOne, lockConnectionInfo.macAddress, lockConnectionInfo.model, lockConnectionInfo.serialNumber, lockConnectionInfo.isFrom, lockConnectionInfo.deviceName, lockConnectionInfo.permanentToken, false)
     }
 
     override fun disconnect() {

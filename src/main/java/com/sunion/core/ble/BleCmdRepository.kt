@@ -78,8 +78,8 @@ class BleCmdRepository @Inject constructor(){
         VACATION_MODE (20),
         AUTOLOCK (21),
         AUTOLOCK_DELAY ( 22),
-        AUTOLOCK_DELAY_UPPER_LIMIT (24),
-        AUTOLOCK_DELAY_LOWER_LIMIT (26),
+        AUTOLOCK_DELAY_LOWER_LIMIT (24),
+        AUTOLOCK_DELAY_UPPER_LIMIT (26),
         OPERATING_SOUND (28),
         SOUND_TYPE (29),
         SOUND_VALUE (30),
@@ -1812,12 +1812,12 @@ class BleCmdRepository @Inject constructor(){
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
                         Timber.d("[A0] ${bytes.toHexPrint()}")
 
-                        val autoLockTimeInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY.byte,ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
+                        val autoLockTimeInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY.byte,ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
                         Timber.d("autoLockTimeInt: $autoLockTimeInt")
-                        val autoLockTimeUpperLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte,ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
-                        Timber.d("autoLockTimeUpperLimitInt: $autoLockTimeUpperLimitInt")
-                        val autoLockTimeLowerLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.OPERATING_SOUND.byte).toInt()
+                        val autoLockTimeLowerLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
                         Timber.d("autoLockTimeLowerLimitInt: $autoLockTimeLowerLimitInt")
+                        val autoLockTimeUpperLimitInt = bytes.copyOfRange(ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte,ConfigA0.OPERATING_SOUND.byte).toInt()
+                        Timber.d("autoLockTimeUpperLimitInt: $autoLockTimeUpperLimitInt")
 
                         val latIntPart = bytes.copyOfRange(ConfigA0.LATITUDE_INTEGER.byte, ConfigA0.LATITUDE_DECIMAL.byte).toInt()
                         Timber.d("latIntPart: $latIntPart")
@@ -1875,16 +1875,16 @@ class BleCmdRepository @Inject constructor(){
                                     autoLockTimeInt
                                 }
                             },
-                            autoLockTimeUpperLimit = when (autoLockTimeUpperLimitInt) {
-                                0xFFFF -> BleV2Lock.AutoLockTimeUpperLimit.NOT_SUPPORT.value
-                                else -> {
-                                    autoLockTimeUpperLimitInt
-                                }
-                            },
                             autoLockTimeLowerLimit = when (autoLockTimeLowerLimitInt) {
                                 0xFFFF -> BleV2Lock.AutoLockTimeLowerLimit.NOT_SUPPORT.value
                                 else -> {
                                     autoLockTimeLowerLimitInt
+                                }
+                            },
+                            autoLockTimeUpperLimit = when (autoLockTimeUpperLimitInt) {
+                                0xFFFF -> BleV2Lock.AutoLockTimeUpperLimit.NOT_SUPPORT.value
+                                else -> {
+                                    autoLockTimeUpperLimitInt
                                 }
                             },
                             operatingSound = when (bytes[ConfigA0.OPERATING_SOUND.byte].unSignedInt()) {

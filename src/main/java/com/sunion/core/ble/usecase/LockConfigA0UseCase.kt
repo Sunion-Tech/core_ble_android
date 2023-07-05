@@ -117,7 +117,7 @@ class LockConfigA0UseCase @Inject constructor(
     suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean {
         if (autoLockTime < 1) throw IllegalArgumentException("Auto lock time should greater than 1.")
         val config = query()
-        if (autoLockTime < config.autoLockTimeUpperLimit || autoLockTime > config.autoLockTimeLowerLimit) {
+        if (autoLockTime < config.autoLockTimeLowerLimit || autoLockTime > config.autoLockTimeUpperLimit) {
             throw IllegalArgumentException("Set auto lock will fail because autoLockTime is not support value")
         }
         if (config.autoLock != BleV2Lock.SoundType.NOT_SUPPORT.value) {

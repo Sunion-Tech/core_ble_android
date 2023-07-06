@@ -9,6 +9,7 @@ sealed class DeviceToken {
         const val ILLEGAL_TOKEN = 0
 
         const val PERMISSION_OWNER = "O"
+        const val PERMISSION_MANAGER = "M"
         const val PERMISSION_ALL = "A"
         const val PERMISSION_LIMITED = "L"
         const val PERMISSION_NONE = "N"

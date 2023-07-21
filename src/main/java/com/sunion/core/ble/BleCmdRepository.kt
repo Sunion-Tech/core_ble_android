@@ -1,7 +1,6 @@
 package com.sunion.core.ble
 
 import android.annotation.SuppressLint
-import android.util.Base64
 import androidx.annotation.VisibleForTesting
 import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.exception.ConnectionTokenException
@@ -176,13 +175,13 @@ class BleCmdRepository @Inject constructor(){
                 DeviceToken.PermanentToken(
                     isValid,
                     isPermanentToken,
-                    Base64.encodeToString(token, Base64.DEFAULT),
+                    token.toHexString(),
                     isOwnerToken,
                     name,
                     permission
                 )
             } else {
-                DeviceToken.OneTimeToken(Base64.encodeToString(token, Base64.DEFAULT))
+                DeviceToken.OneTimeToken(token.toHexString())
             }
         }
     }
@@ -1539,7 +1538,7 @@ class BleCmdRepository @Inject constructor(){
                         isOwner = data.component3().unSignedInt() == 1,
                         name = String(data.copyOfRange(12, data.size)),
                         permission = String(data.copyOfRange(3, 4)),
-                        token = Base64.encodeToString(data.copyOfRange(4, 12), Base64.DEFAULT)
+                        token = data.copyOfRange(4, 12).toHexString()
                     )
                     Timber.d("user: $user")
                     user
@@ -1567,7 +1566,7 @@ class BleCmdRepository @Inject constructor(){
                     val tokenIndexInDevice = data.component2().unSignedInt()
                     val tokenBytes = data.copyOfRange(2, data.size)
                     Timber.d("token bytes: ${tokenBytes.toHexPrint()}")
-                    val token = Base64.encodeToString(tokenBytes, Base64.DEFAULT)
+                    val token = tokenBytes.toHexString()
                     val response = AddUserResponse(
                         isSuccessful,
                         tokenIndexInDevice,
@@ -1603,7 +1602,7 @@ class BleCmdRepository @Inject constructor(){
                     val tokenBytes = data.copyOfRange(4, 12)
                     val name = String(data.copyOfRange(12, data.size))
                     Timber.d("token bytes: ${tokenBytes.toHexPrint()}")
-                    val token = Base64.encodeToString(tokenBytes, Base64.DEFAULT)
+                    val token = tokenBytes.toHexString()
                     val response = UpdateTokenResponse(
                         isSuccessful,
                         tokenIndexInDevice,

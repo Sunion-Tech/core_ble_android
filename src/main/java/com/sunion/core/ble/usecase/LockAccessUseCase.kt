@@ -206,9 +206,13 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    suspend fun deviceGetAccessCard(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(1, state, index)
-    suspend fun deviceGetFingerprint(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(2, state, index)
-    suspend fun deviceGetFace(state:Int, index: Int): Access.AccessA9 = deviceGetAccess(3, state ,index)
+    suspend fun deviceGetAccessCard(index: Int): Access.AccessA9 = deviceGetAccess(1, 1, index)
+    suspend fun deviceGetFingerprint(index: Int): Access.AccessA9 = deviceGetAccess(2, 1, index)
+    suspend fun deviceGetFace(index: Int): Access.AccessA9 = deviceGetAccess(3, 1 ,index)
+
+    suspend fun deviceExitAccessCard(index: Int): Access.AccessA9 = deviceGetAccess(1, 0, index)
+    suspend fun deviceExitFingerprint(index: Int): Access.AccessA9 = deviceGetAccess(2, 0, index)
+    suspend fun deviceExitFace(index: Int): Access.AccessA9 = deviceGetAccess(3, 0 ,index)
 
     /** AA **/
     private suspend fun deleteAccess(type: Int, index: Int): Boolean {

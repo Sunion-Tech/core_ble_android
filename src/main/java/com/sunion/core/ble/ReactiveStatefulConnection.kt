@@ -117,7 +117,11 @@ class ReactiveStatefulConnection @Inject constructor(
         _lockScope.launch { _connState.emit(event) }
         when (event.status) {
             EventState.ERROR -> {
-                close()
+                disconnect()
+                when (event.message) {
+                    TimeoutException::class.java.simpleName -> {}
+                    else -> { unless(event.data != null) {} }
+                }
             }
             EventState.SUCCESS -> {
                 if (event?.status == EventState.SUCCESS && event.data?.first == true) {
@@ -390,7 +394,6 @@ class ReactiveStatefulConnection @Inject constructor(
     }
 
     override fun disconnect() {
-        this.macAddress = null
         _lockScope.launch {
             _connState.emit(
                 Event.error(
@@ -400,6 +403,7 @@ class ReactiveStatefulConnection @Inject constructor(
             )
             _bluetoothConnectState.emit(BluetoothConnectState.DISCONNECTED)
         }
+        this.macAddress = null
         this.rxDeviceToken = DeviceToken.PermanentToken(
             isValid = false,
             isPermanent = false,

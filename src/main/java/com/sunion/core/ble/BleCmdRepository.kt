@@ -977,7 +977,8 @@ class BleCmdRepository @Inject constructor(){
         scheduleByte[0] = accessA7Cmd.scheduleType.getByteOfType()
         val nameLenByte = accessA7Cmd.nameLen.toByte()
         val nameByte = accessA7Cmd.name.toByteArray()
-        val codeByte = stringCodeToHex(accessA7Cmd.code)
+        val codeByte = accessA7Cmd.code
+        Timber.d("combineAccessA7Command codeByte: ${codeByte.toHexPrint()}")
 
         when (accessA7Cmd.scheduleType) {
             is AccessScheduleType.ValidTimeRange -> {
@@ -2230,6 +2231,7 @@ class BleCmdRepository @Inject constructor(){
                 val state = data.component2().unSignedInt()
                 val index = data.copyOfRange(2, 4).toInt()
                 val status = data.component5().unSignedInt() == 0x01
+                Timber.d("[A9] read access dataInfo: ${data.copyOfRange(5, dataLen).toHexPrint()}")
                 val dataInfo = data.copyOfRange(5, dataLen).map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
                 val accessA9 = Access.AccessA9(type, state, index, status, dataInfo)
                 Timber.d("[A9] read access from device: $accessA9")

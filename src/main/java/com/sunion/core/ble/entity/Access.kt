@@ -39,7 +39,7 @@ sealed class Access: SunionBleNotification() {
         val type: Int,
         val index: Int,
         val isEnable: Boolean,
-        val code: String,
+        val code: ByteArray,
         val scheduleType: AccessScheduleType,
         val name: String,
         val nameLen: Int

@@ -54,6 +54,14 @@ fun String.noColonMac(): String {
     return if (":" in this) this.replace(":", "") else this
 }
 
+fun String.accessCodeToHex(): ByteArray {
+    return this.takeIf { it.isNotBlank() }
+        ?.filter { it.isDigit() }
+        ?.map { Character.getNumericValue(it).toByte() }
+        ?.toByteArray()
+        ?: throw IllegalArgumentException("Invalid user code string")
+}
+
 //Int
 fun Int.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(4)

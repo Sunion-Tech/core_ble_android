@@ -24,7 +24,7 @@ sealed class Access: SunionBleNotification() {
         val type: Int,
         val index: Int,
         val isEnable: Boolean,
-        val code: String,
+        val code: ByteArray,
         val scheduleType: String,
         val weekDays: Int? = null,
         val from: Int? = null,
@@ -56,6 +56,6 @@ sealed class Access: SunionBleNotification() {
         val state: Int,
         val index: Int,
         val status: Boolean,
-        val data: String,
+        val data: ByteArray,
     ) : Access()
 }

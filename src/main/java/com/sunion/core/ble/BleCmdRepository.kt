@@ -2153,7 +2153,7 @@ class BleCmdRepository @Inject constructor(){
                         scheduleTo = scheduleTo,
                         nameLen = nameLen,
                         name = name,
-                        code = code,
+                        code = accessCode,
                     )
                     Timber.d("[A6] read access from device: $accessA6")
                     accessA6
@@ -2232,7 +2232,7 @@ class BleCmdRepository @Inject constructor(){
                 val index = data.copyOfRange(2, 4).toInt()
                 val status = data.component5().unSignedInt() == 0x01
                 Timber.d("[A9] read access dataInfo: ${data.copyOfRange(5, dataLen).toHexPrint()}")
-                val dataInfo = data.copyOfRange(5, dataLen).map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
+                val dataInfo = data.copyOfRange(5, dataLen)
                 val accessA9 = Access.AccessA9(type, state, index, status, dataInfo)
                 Timber.d("[A9] read access from device: $accessA9")
                 accessA9

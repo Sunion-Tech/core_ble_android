@@ -31,6 +31,10 @@ fun ByteArray.toLong(): Long {
     return byteBuffer.long
 }
 
+fun ByteArray.accessByteArrayToString(): String{
+    return this.map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
+}
+
 //String
 fun String.hexToByteArray(): ByteArray {
     val hex: CharArray = this.toCharArray()

@@ -197,13 +197,22 @@ class BleCmdRepository @Inject constructor(){
                 commandSerial.set(0)
                 cmd_c0(serialIncrementAndGet(), key)
             }
+            0xA0 -> cmd_a0(serialIncrementAndGet(), key)
+            0xA1 -> cmd_a1(serialIncrementAndGet(), key, data)
+            0xA2 -> cmd_a2(serialIncrementAndGet(), key)
+            0xA3 -> cmd_a3(serialIncrementAndGet(), key, data)
+            0xA4 -> cmd_a4(serialIncrementAndGet(), key)
+            0xA5 -> cmd_a5(serialIncrementAndGet(), key, data)
+            0xA6 -> cmd_a6(serialIncrementAndGet(), key, data)
+            0xA7 -> cmd_a7(serialIncrementAndGet(), key, data)
+            0xA8 -> cmd_a8(serialIncrementAndGet(), key, data)
+            0xA9 -> cmd_a9(serialIncrementAndGet(), key, data)
+            0xAA -> cmd_aa(serialIncrementAndGet(), key, data)
             0xC1 -> cmd_c1(serialIncrementAndGet(), key, data)
             0xC7 -> cmd_c7(serialIncrementAndGet(), key, data)
             0xC8 -> cmd_c8(serialIncrementAndGet(), key, data)
             0xCC -> cmd_cc(serialIncrementAndGet(), key)
             0xCE -> cmd_ce(serialIncrementAndGet(), key, data)
-            0xF0 -> cmd_f0(serialIncrementAndGet(), key, data)
-            0xF1 -> cmd_f1(serialIncrementAndGet(), key, data)
             0xD0 -> cmd_d0(serialIncrementAndGet(), key)
             0xD1 -> cmd_d1(serialIncrementAndGet(), key, data)
             0xD2 -> cmd_d2(serialIncrementAndGet(), key)
@@ -228,17 +237,8 @@ class BleCmdRepository @Inject constructor(){
             0xED -> cmd_ed(serialIncrementAndGet(), key, data)
             0xEE -> cmd_ee(serialIncrementAndGet(), key, data)
             0xEF -> cmd_ef(serialIncrementAndGet(), key)
-            0xA0 -> cmd_a0(serialIncrementAndGet(), key)
-            0xA1 -> cmd_a1(serialIncrementAndGet(), key, data)
-            0xA2 -> cmd_a2(serialIncrementAndGet(), key)
-            0xA3 -> cmd_a3(serialIncrementAndGet(), key, data)
-            0xA4 -> cmd_a4(serialIncrementAndGet(), key)
-            0xA5 -> cmd_a5(serialIncrementAndGet(), key, data)
-            0xA6 -> cmd_a6(serialIncrementAndGet(), key, data)
-            0xA7 -> cmd_a7(serialIncrementAndGet(), key, data)
-            0xA8 -> cmd_a8(serialIncrementAndGet(), key, data)
-            0xA9 -> cmd_a9(serialIncrementAndGet(), key, data)
-            0xAA -> cmd_aa(serialIncrementAndGet(), key, data)
+            0xF0 -> cmd_f0(serialIncrementAndGet(), key, data)
+            0xF1 -> cmd_f1(serialIncrementAndGet(), key, data)
             else -> throw IllegalArgumentException("Unknown function")
         }
     }
@@ -1085,23 +1085,6 @@ class BleCmdRepository @Inject constructor(){
         sendByte[1] = 0x03.toByte() // len
         return encrypt(aesKeyTwo, pad(serial + sendByte + data))
             ?: throw IllegalArgumentException("bytes cannot be null")
-    }
-
-    /**
-     * Resolve [F0] The result of deleting a user code.
-     *
-     * @param notification Data return from device.
-     * @return ByteArray represent token.
-     *
-     * */
-    fun resolveF0(aesKeyTwo: ByteArray, notification: ByteArray): String {
-        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
-            if (decrypted.component3().unSignedInt() == 0xF0) {
-                String(decrypted.copyOfRange(2, decrypted.size - 1))
-            } else {
-                throw IllegalArgumentException("Return function byte is not [F0]")
-            }
-        } ?: throw IllegalArgumentException("Error when decryption")
     }
 
     fun resolveC0(keyOne: ByteArray, notification: ByteArray): ByteArray {
@@ -2296,6 +2279,23 @@ class BleCmdRepository @Inject constructor(){
                 } else {
                     throw IllegalArgumentException("Return function byte is not [AF]")
                 }
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [F0] The result of wifi setting string.
+     *
+     * @param notification Data return from device.
+     * @return String represent wifi setting string.
+     *
+     * */
+    fun resolveF0(aesKeyTwo: ByteArray, notification: ByteArray): String {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xF0) {
+                String(decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()))
+            } else {
+                throw IllegalArgumentException("Return function byte is not [F0]")
             }
         } ?: throw IllegalArgumentException("Error when decryption")
     }

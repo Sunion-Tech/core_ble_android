@@ -1821,7 +1821,7 @@ class BleCmdRepository @Inject constructor(){
                         val lockConfigA0 = LockConfig.LockConfigA0(
                             latitude = lat.toDouble(),
                             longitude = lng.toDouble(),
-                            direction = when (bytes[A2Features.LOCK_DIRECTION.byte].unSignedInt()) {
+                            direction = when (bytes[ConfigA0.LOCK_DIRECTION.byte].unSignedInt()) {
                                 0xA0 -> BleV2Lock.Direction.RIGHT.value
                                 0xA1 -> BleV2Lock.Direction.LEFT.value
                                 0xA2 -> BleV2Lock.Direction.UNKNOWN.value

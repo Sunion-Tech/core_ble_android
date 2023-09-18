@@ -63,7 +63,7 @@ fun String.accessCodeToHex(): ByteArray {
         ?.filter { it.isDigit() }
         ?.map { Character.getNumericValue(it).toByte() }
         ?.toByteArray()
-        ?: throw IllegalArgumentException("Invalid user code string")
+        ?: ByteArray(0)
 }
 
 //Int

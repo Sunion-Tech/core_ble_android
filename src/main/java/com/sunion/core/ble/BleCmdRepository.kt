@@ -105,7 +105,9 @@ class BleCmdRepository @Inject constructor(){
 
     @SuppressLint("GetInstance")
     fun encrypt(key: ByteArray, data: ByteArray): ByteArray? {
-        Timber.d("key:\n${key.toHexPrint()}")
+        Timber.d("key:\n${key.toHexPrint()} \ndata:\n" +
+                data.toHexPrint()
+        )
         return try {
             val cipher: Cipher = Cipher.getInstance(CIPHER_MODE)
             val keySpec = SecretKeySpec(key, "AES")
@@ -209,6 +211,8 @@ class BleCmdRepository @Inject constructor(){
             0xA9 -> cmd_a9(serialIncrementAndGet(), key, data)
             0xAA -> cmd_aa(serialIncrementAndGet(), key, data)
             0xC1 -> cmd_c1(serialIncrementAndGet(), key, data)
+            0xC3 -> cmd_c3(serialIncrementAndGet(), key, data)
+            0xC4 -> cmd_c4(serialIncrementAndGet(), key, data)
             0xC7 -> cmd_c7(serialIncrementAndGet(), key, data)
             0xC8 -> cmd_c8(serialIncrementAndGet(), key, data)
             0xCC -> cmd_cc(serialIncrementAndGet(), key)
@@ -277,6 +281,32 @@ class BleCmdRepository @Inject constructor(){
             "bytes cannot be null"
         )
     }
+
+    fun cmd_c3(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        code: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xC3.toByte() // function
+        sendByte[1] = (code.size).toByte() // len
+        Timber.d("c3: ${(serial + sendByte + code).toHexPrint()}")
+        return encrypt(aesKeyTwo, pad(serial + sendByte + code))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    fun cmd_c4(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        code: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xC4.toByte() // function
+        sendByte[1] = code.size.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + code))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
     fun cmd_c7(
         serial: ByteArray,
         aesKeyTwo: ByteArray,
@@ -1107,6 +1137,51 @@ class BleCmdRepository @Inject constructor(){
             }
         } ?: throw IllegalArgumentException("Error when decryption")
     }
+    /**
+     * Resolve [C3] Set OTA status.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent the OTA status.
+     *
+     * */
+    fun resolveC3(aesKeyTwo: ByteArray, notification: ByteArray): BleV2Lock.OTAStatus {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xC3) {
+                val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                Timber.d("[C3] ${data.toHexPrint()}")
+                val target  = data.component1()
+                val state  = data.component2()
+                val isSuccess  = data.component3()
+                val response = BleV2Lock.OTAStatus(
+                    target.toInt(),
+                    state.toInt(),
+                    isSuccess.toInt(),
+                )
+                Timber.d("BleV2Lock.OTAStatus response: $response")
+                return response
+            } else {
+                throw IllegalArgumentException("Return function byte is not [C3]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [C4] Transfer OTA data.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent data first byte move to last byte.
+     *
+     * */
+    fun resolveC4(aesKeyTwo: ByteArray, notification: ByteArray): String {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xC4) {
+                return decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).toHexPrint()
+            } else {
+                throw IllegalArgumentException("Return function byte is not [C4]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
     fun resolveC7(aesKeyTwo: ByteArray, notification: ByteArray): Boolean {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xC7) {

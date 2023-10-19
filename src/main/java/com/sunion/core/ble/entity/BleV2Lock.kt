@@ -159,6 +159,12 @@ data class BleV2Lock(
         val faceQuantity: Int,
     )
 
+    data class OTAStatus(
+        val target: Int,
+        val state: Int,
+        val isSuccess: Int,
+    )
+
     enum class AlertType(val value: Int) {
         ERROR_ACCESS_CODE(0),
         CURRENT_ACCESS_CODE_AT_WRONG_TIME(1),

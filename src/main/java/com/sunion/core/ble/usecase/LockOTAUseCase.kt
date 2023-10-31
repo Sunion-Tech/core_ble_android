@@ -22,9 +22,9 @@ class LockOTAUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    suspend fun setOTAStatus(target:Int, state:Int, fileSize:Long): BleV2Lock.OTAStatus {
+    suspend fun setOTAStatus(target:Int, state:Int, fileSize:Int): BleV2Lock.OTAStatus {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = byteArrayOf(target.toByte()) + byteArrayOf(state.toByte()) + fileSize.toInt().toLittleEndianByteArray()
+        val bytes = byteArrayOf(target.toByte()) + byteArrayOf(state.toByte()) + fileSize.toLittleEndianByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC3,
             key = statefulConnection.key(),
@@ -51,9 +51,9 @@ class LockOTAUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setOTAFinish(target:Int, state:Int, fileSize:Long, iv:String, signature:String): BleV2Lock.OTAStatus {
+    suspend fun setOTAFinish(target:Int, state:Int, fileSize:Int, iv:String, signature:String): BleV2Lock.OTAStatus {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = byteArrayOf(target.toByte()) + byteArrayOf(state.toByte()) + fileSize.toInt().toLittleEndianByteArray() +iv.hexToByteArray() + signature.hexToByteArray()
+        val bytes = byteArrayOf(target.toByte()) + byteArrayOf(state.toByte()) + fileSize.toLittleEndianByteArray() +iv.hexToByteArray() + signature.hexToByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC3,
             key = statefulConnection.key(),

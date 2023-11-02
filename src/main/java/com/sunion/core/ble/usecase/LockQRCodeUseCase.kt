@@ -25,7 +25,7 @@ class LockQRCodeUseCase @Inject constructor(
     private val barcodeEncoder = BarcodeEncoder()
 
     fun parseWifiQRCodeContent(barcodeKey: String, content: String): QRCodeContent {
-        val data = Base64.decode(content.toByteArray(), Base64.DEFAULT)
+        val data = Base64.decode(content.toByteArray(), Base64.NO_WRAP)
         val decode = decryptV2(data, barcodeKey.toByteArray())
         val decodeString = String(decode!!)
         val qrCodeContent = gson.fromJson(decodeString, QRCodeContent::class.java)!!
@@ -33,7 +33,7 @@ class LockQRCodeUseCase @Inject constructor(
     }
 
     fun parseQRCodeContent(barcodeKey: String, content: String): QRCodeContent {
-        val data = Base64.decode(content.toByteArray(), Base64.DEFAULT)
+        val data = Base64.decode(content.toByteArray(), Base64.NO_WRAP)
         val decode = decryptV1(data, barcodeKey.toByteArray())
         val decodeString = String(decode!!)
         val qrCodeContent = gson.fromJson(decodeString, QRCodeContent::class.java)!!
@@ -52,7 +52,7 @@ class LockQRCodeUseCase @Inject constructor(
             barcodeKey.toByteArray(),
             bleCmdRepository.pad(content.toString().toByteArray(), true)
         )?.let {
-            Base64.encodeToString(it, Base64.DEFAULT)
+            Base64.encodeToString(it, Base64.NO_WRAP)
         } ?: throw GenerateBarcodeException()
         return barcodeContent
     }

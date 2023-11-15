@@ -174,4 +174,9 @@ data class BleV2Lock(
         LOCK_BREAK_ALERT(40),
         UNKNOWN_ALERT_TYPE(-1),
     }
+    
+    enum class PlugState(val value: Int) {
+        POWER_OFF(0),
+        POWER_ON(1),
+    }
 }

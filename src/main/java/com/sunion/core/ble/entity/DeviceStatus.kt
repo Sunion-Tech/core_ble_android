@@ -20,4 +20,10 @@ sealed class DeviceStatus: SunionBleNotification() {
         val battery: Int,
         val batteryState: Int,
     ) : DeviceStatus()
+
+    data class DeviceStatusB0(
+        val setWifi: Int,
+        val connectWifi: Int,
+        val plugState: Int,
+    ) : DeviceStatus()
 }

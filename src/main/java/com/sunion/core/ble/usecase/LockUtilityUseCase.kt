@@ -47,6 +47,33 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
+    suspend fun factoryReset(): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0xCF,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.factoryReset")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xCF)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolveCF(
+                    statefulConnection.key(),
+                    notification
+                )
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.factoryReset exception $e")
+                throw e
+            }
+            .single()
+    }
+
     suspend fun getFirmwareVersion(): String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val versionByteArray = runCatching {

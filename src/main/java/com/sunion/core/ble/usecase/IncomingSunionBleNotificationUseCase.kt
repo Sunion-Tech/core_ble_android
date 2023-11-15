@@ -30,6 +30,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                             0xA2 -> true
                             0xAF -> true
                             0xA9 -> true
+                            0xB0 -> true
                             else -> false
                         }
                     } ?: false
@@ -62,6 +63,12 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                         }
                         0xA9 -> {
                             result = bleCmdRepository.resolveA9(
+                                statefulConnection.key(),
+                                notification
+                            )
+                        }
+                        0xB0 -> {
+                            result = bleCmdRepository.resolveB0(
                                 statefulConnection.key(),
                                 notification
                             )

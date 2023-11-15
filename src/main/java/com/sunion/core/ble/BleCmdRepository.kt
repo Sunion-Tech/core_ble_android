@@ -210,6 +210,8 @@ class BleCmdRepository @Inject constructor(){
             0xA8 -> cmd_a8(serialIncrementAndGet(), key, data)
             0xA9 -> cmd_a9(serialIncrementAndGet(), key, data)
             0xAA -> cmd_aa(serialIncrementAndGet(), key, data)
+            0xB0 -> cmd_b0(serialIncrementAndGet(), key)
+            0xB1 -> cmd_b1(serialIncrementAndGet(), key, data)
             0xC1 -> cmd_c1(serialIncrementAndGet(), key, data)
             0xC3 -> cmd_c3(serialIncrementAndGet(), key, data)
             0xC4 -> cmd_c4(serialIncrementAndGet(), key, data)
@@ -217,6 +219,7 @@ class BleCmdRepository @Inject constructor(){
             0xC8 -> cmd_c8(serialIncrementAndGet(), key, data)
             0xCC -> cmd_cc(serialIncrementAndGet(), key)
             0xCE -> cmd_ce(serialIncrementAndGet(), key, data)
+            0xCF -> cmd_cf(serialIncrementAndGet(), key)
             0xD0 -> cmd_d0(serialIncrementAndGet(), key)
             0xD1 -> cmd_d1(serialIncrementAndGet(), key, data)
             0xD2 -> cmd_d2(serialIncrementAndGet(), key)
@@ -248,6 +251,38 @@ class BleCmdRepository @Inject constructor(){
     }
 
     fun generateRandomBytes(size: Int): ByteArray = Random.nextBytes(size)
+
+    /**
+     * ByteArray [B0] data command. Get the plug status.
+     *
+     * @return An encoded byte array of [B0] command.
+     * */
+    fun cmd_b0(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xB0.toByte() // function
+        return encrypt(aesKeyTwo, pad(serial + sendByte))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [B1] data command. Set the plug status.
+     *
+     * @return An encoded byte array of [B1] command.
+     * */
+    fun cmd_b1(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray,
+        name: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xB1.toByte() // function
+        sendByte[1] = name.size.toByte() // len
+        return encrypt(aesKeyTwo, pad(serial + sendByte + name))
+            ?: throw IllegalArgumentException("bytes cannot be null")
+    }
 
     /**
      * ByteArray [C0] data command, length 16 of random number.
@@ -371,6 +406,22 @@ class BleCmdRepository @Inject constructor(){
 //        Timber.d("ce: ${(serial + sendByte + code).toHexPrint()}")
         return encrypt(aesKeyTwo, pad(serial + sendByte + code))
             ?: throw IllegalArgumentException("bytes cannot be null")
+    }
+
+    /**
+     * ByteArray [CF] data command. Factory reset
+     *
+     * @return An encoded byte array of [CF] command.
+     * */
+    fun cmd_cf(
+        serial: ByteArray,
+        aesKeyTwo: ByteArray
+    ): ByteArray {
+        val sendByte = ByteArray(2)
+        sendByte[0] = 0xCF.toByte() // function
+        return encrypt(aesKeyTwo, pad(serial + sendByte)) ?: throw IllegalArgumentException(
+            "bytes cannot be null"
+        )
     }
 
     /**
@@ -1117,6 +1168,34 @@ class BleCmdRepository @Inject constructor(){
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
 
+    /**
+     * Resolve [B0] Get plug status.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent the plug status.
+     *
+     * */
+    fun resolveB0(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.DeviceStatusB0 {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xB0) {
+                val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
+                Timber.d("[B0] ${data.toHexPrint()}")
+                val setWifi  = data.component1()
+                val connectWifi  = data.component2()
+                val plugStatus  = data.component3()
+                val response = DeviceStatus.DeviceStatusB0(
+                    setWifi.toInt(),
+                    connectWifi.toInt(),
+                    plugStatus.toInt(),
+                )
+                Timber.d("BleV2Lock.PlugStatus response: $response")
+                return response
+            } else {
+                throw IllegalArgumentException("Return function byte is not [B0]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
     fun resolveC0(keyOne: ByteArray, notification: ByteArray): ByteArray {
         return decrypt(keyOne, notification)?.let { decrypted ->
 //            Timber.d("[C0] decrypted: ${decrypted.toHexPrint()}")
@@ -1233,6 +1312,27 @@ class BleCmdRepository @Inject constructor(){
                 }
             } else {
                 throw IllegalArgumentException("Return function byte is not [C8]")
+            }
+        } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    /**
+     * Resolve [CF] token generated from device.
+     *
+     * @param notification Data return from device.
+     * @return ByteArray represent token.
+     *
+     * */
+    fun resolveCF(aesKeyTwo: ByteArray, notification: ByteArray): Boolean {
+        return decrypt(aesKeyTwo, notification)?.let { decrypted ->
+            if (decrypted.component3().unSignedInt() == 0xCF) {
+                when {
+                    decrypted.component5().unSignedInt() == 0x01 -> true
+                    decrypted.component5().unSignedInt() == 0x00 -> false
+                    else -> throw IllegalArgumentException("Unknown data")
+                }
+            } else {
+                throw IllegalArgumentException("Return function byte is not [CF]")
             }
         } ?: throw IllegalArgumentException("Error when decryption")
     }

@@ -51,11 +51,11 @@ fun String.hexToByteArray(): ByteArray {
 }
 
 fun String.colonMac(): String {
-    return if (":" in this) this else this.chunked(2).joinToString(":")
+    return if (":" in this) this.toUpperCaseMac() else this.uppercase(Locale.getDefault()).chunked(2).joinToString(":")
 }
 
 fun String.noColonMac(): String {
-    return if (":" in this) this.replace(":", "") else this
+    return if (":" in this) this.toUpperCaseMac().replace(":", "") else this.uppercase(Locale.getDefault())
 }
 
 fun String.accessCodeToHex(): ByteArray {
@@ -64,6 +64,12 @@ fun String.accessCodeToHex(): ByteArray {
         ?.map { Character.getNumericValue(it).toByte() }
         ?.toByteArray()
         ?: ByteArray(0)
+}
+
+fun String.toUpperCaseMac(): String {
+    val parts = this.split(":")
+    val upperCaseParts = parts.map { it.uppercase(Locale.getDefault()) }
+    return upperCaseParts.joinToString(":")
 }
 
 //Int

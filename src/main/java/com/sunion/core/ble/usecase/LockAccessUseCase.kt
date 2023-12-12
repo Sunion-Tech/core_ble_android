@@ -130,8 +130,8 @@ class LockAccessUseCase @Inject constructor(
 
     suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
     suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.AccessA7 = addAccess(1, index, isEnable, scheduleType, name, code)
-    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.AccessA7 = addAccess(2, index, isEnable, scheduleType, name, code)
-    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.AccessA7 = addAccess(3, index, isEnable, scheduleType, name, code)
+    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.AccessA7 = addAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.AccessA7 = addAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
 
     /** A8 Edit Access **/
     private suspend fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean {
@@ -175,8 +175,8 @@ class LockAccessUseCase @Inject constructor(
 
     suspend fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
     suspend fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = editAccess(1, index, isEnable, scheduleType, name, code)
-    suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = editAccess(2, index, isEnable, scheduleType, name, code)
-    suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = editAccess(3, index, isEnable, scheduleType, name, code)
+    suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
 
     /** A9 Device Get Access **/
     private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.AccessA9 {

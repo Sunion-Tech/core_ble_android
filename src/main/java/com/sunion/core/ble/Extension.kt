@@ -120,3 +120,7 @@ fun Long.limitValidTimeRange(): Long {
         else -> this
     }
 }
+
+fun Int.isSupport(): Boolean {
+    return this != 0xFF && this != 0xFFFF
+}

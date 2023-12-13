@@ -179,4 +179,9 @@ data class BleV2Lock(
         POWER_OFF(0),
         POWER_ON(1),
     }
+
+    sealed class DeviceType(val value: Int) {
+        object WiFi : DeviceType(1)
+        object Ble : DeviceType(2)
+    }
 }

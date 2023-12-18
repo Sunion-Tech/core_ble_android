@@ -15,6 +15,8 @@ class LockConfigD4UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private var currentLockConfigD4: LockConfigD4? = null
+
     suspend fun query(): LockConfigD4  {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
@@ -32,6 +34,7 @@ class LockConfigD4UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
+                currentLockConfigD4 = result
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -61,6 +64,7 @@ class LockConfigD4UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
+                query()
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -72,18 +76,15 @@ class LockConfigD4UseCase @Inject constructor(
     }
 
     suspend fun setKeyPressBeep(isOn: Boolean): Boolean {
-        val config = query()
-        return updateConfig(config.copy(isSoundOn = isOn))
+        return updateConfig(getCurrentLockConfigD4().copy(isSoundOn = isOn))
     }
 
-    suspend fun setVactionMode(isOn: Boolean): Boolean {
-        val config = query()
-        return updateConfig(config.copy(isVacationModeOn = isOn))
+    suspend fun setVacationMode(isOn: Boolean): Boolean {
+        return updateConfig(getCurrentLockConfigD4().copy(isVacationModeOn = isOn))
     }
 
     suspend fun setGuidingCode(isOn: Boolean):Boolean {
-        val config = query()
-        return updateConfig(config.copy(isGuidingCodeOn = isOn))
+        return updateConfig(getCurrentLockConfigD4().copy(isGuidingCodeOn = isOn))
     }
 
     suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean {
@@ -91,12 +92,14 @@ class LockConfigD4UseCase @Inject constructor(
         if (isOn && (autoLockTime < 1 || autoLockTime > 90)) throw IllegalArgumentException("Auto lock time should be 1 ~ 90.")
         else time = autoLockTime
         if (!isOn) time = 1
-        val config = query()
-        return updateConfig(config.copy(isAutoLock = isOn, autoLockTime = time))
+        return updateConfig(getCurrentLockConfigD4().copy(isAutoLock = isOn, autoLockTime = time))
     }
 
     suspend fun setLocation(latitude: Double, longitude: Double): Boolean {
-        val config = query()
-        return updateConfig(config.copy(latitude = latitude, longitude = longitude))
+        return updateConfig(getCurrentLockConfigD4().copy(latitude = latitude, longitude = longitude))
+    }
+
+    suspend fun getCurrentLockConfigD4(): LockConfigD4 {
+        return currentLockConfigD4 ?: query()
     }
 }

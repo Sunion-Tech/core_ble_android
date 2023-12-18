@@ -2,10 +2,10 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
-import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.LockConfig
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.isSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -17,6 +17,8 @@ class LockConfigA0UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private var currentLockConfigA0: LockConfig.LockConfigA0? = null
+    
     suspend fun query(): LockConfig.LockConfigA0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
@@ -34,6 +36,7 @@ class LockConfigA0UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
+                currentLockConfigA0 = result
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -44,9 +47,9 @@ class LockConfigA0UseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun updateConfig(LockConfigA0: LockConfig.LockConfigA0): Boolean {
+    private suspend fun updateConfig(lockConfigA0: LockConfig.LockConfigA0): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = bleCmdRepository.settingBytesA1(LockConfigA0)
+        val bytes = bleCmdRepository.settingBytesA1(lockConfigA0)
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA1,
             key = statefulConnection.key(),
@@ -63,6 +66,7 @@ class LockConfigA0UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 )
+                query()
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -74,41 +78,36 @@ class LockConfigA0UseCase @Inject constructor(
     }
 
     suspend fun setLocation(latitude: Double, longitude: Double): Boolean {
-        val config = query()
-        return updateConfig(config.copy(latitude = latitude, longitude = longitude))
+        return updateConfig(getCurrentLockConfigA0().copy(latitude = latitude, longitude = longitude))
     }
 
     suspend fun setGuidingCode(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.guidingCode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(guidingCode = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().guidingCode.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(guidingCode = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setVirtualCode(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.virtualCode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(virtualCode = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().virtualCode.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(virtualCode = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setTwoFA(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.twoFA != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(twoFA = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().twoFA.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(twoFA = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setVacationMode(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.vacationMode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(vacationMode = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().vacationMode.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(vacationMode = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
@@ -116,46 +115,47 @@ class LockConfigA0UseCase @Inject constructor(
 
     suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean {
         if (autoLockTime < 1) throw IllegalArgumentException("Auto lock time should greater than 1.")
-        val config = query()
-        if (autoLockTime < config.autoLockTimeLowerLimit || autoLockTime > config.autoLockTimeUpperLimit) {
+        if (autoLockTime < getCurrentLockConfigA0().autoLockTimeLowerLimit || autoLockTime > getCurrentLockConfigA0().autoLockTimeUpperLimit) {
             throw IllegalArgumentException("Set auto lock will fail because autoLockTime is not support value")
         }
-        if (config.autoLock != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(autoLock = if (isOn) 1 else 0, autoLockTime = autoLockTime))
+        if (getCurrentLockConfigA0().autoLock.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(autoLock = if (isOn) 1 else 0, autoLockTime = autoLockTime))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setOperatingSound(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.operatingSound != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(operatingSound = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().operatingSound.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(operatingSound = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setSoundValue(soundValue :Int): Boolean {
-        val config = query()
-        if (config.soundType != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            val value = when (config.soundType) {
+        if (getCurrentLockConfigA0().soundType.isSupport()) {
+            val value = when (getCurrentLockConfigA0().soundType) {
                 0x01 -> if (soundValue == 100 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
                 0x02 -> if (soundValue == 100 || soundValue == 50 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
                 else -> soundValue
             }
-            return updateConfig(config.copy(soundValue = value))
+            return updateConfig(getCurrentLockConfigA0().copy(soundValue = value))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
     }
 
     suspend fun setShowFastTrackMode(isOn: Boolean): Boolean {
-        val config = query()
-        if (config.showFastTrackMode != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-            return updateConfig(config.copy(showFastTrackMode = if (isOn) 1 else 0))
+        if (getCurrentLockConfigA0().showFastTrackMode.isSupport()) {
+            return updateConfig(getCurrentLockConfigA0().copy(showFastTrackMode = if (isOn) 1 else 0))
         } else {
             throw LockStatusException.LockFunctionNotSupportException()
         }
+    }
+
+    //update A0LockConfig after query()
+    suspend fun getCurrentLockConfigA0(): LockConfig.LockConfigA0 {
+        return currentLockConfigA0 ?: query()
     }
 }

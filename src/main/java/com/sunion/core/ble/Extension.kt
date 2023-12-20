@@ -7,9 +7,13 @@ import java.util.*
 //Byte
 fun Byte.unSignedInt(): Int = this.toInt() and 0xFF
 
+fun Byte.toHexString(): String {
+    return String.format("%02X", this)
+}
+
 //ByteArray
 fun ByteArray.toHexPrint(): String {
-    return joinToString(", ") { "%02x".format(it).uppercase(Locale.getDefault()) }
+    return joinToString(", ") { "%02X".format(it) }
 }
 
 fun ByteArray.toHexString(): String {

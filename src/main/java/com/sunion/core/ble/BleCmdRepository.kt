@@ -488,7 +488,7 @@ class BleCmdRepository @Inject constructor(){
             ?: throw IllegalArgumentException("bytes cannot be null")
     }
 
-    fun settingBytesD4(setting: LockConfig.LockConfigD4): ByteArray {
+    fun settingBytesD4(setting: LockConfig.D4): ByteArray {
         val settingBytes = ByteArray(ConfigD4.SIZE.byte)
         settingBytes[ConfigD4.LOCK_DIRECTION.byte] = 0xA3.toByte()
         settingBytes[ConfigD4.KEYPRESS_BEEP.byte] = (if (setting.isSoundOn) 0x01.toByte() else 0x00.toByte())
@@ -1049,7 +1049,7 @@ class BleCmdRepository @Inject constructor(){
     }
 
     fun combineAccessA7Command(
-        accessA7Cmd: Access.AccessA7Cmd
+        accessA7Cmd: Access.A7Cmd
     ): ByteArray {
         val typeByte = byteArrayOf(accessA7Cmd.type.toByte())
         val indexByte = accessA7Cmd.index.toLittleEndianByteArrayInt16()
@@ -1175,7 +1175,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent the plug status.
      *
      * */
-    fun resolveB0(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.DeviceStatusB0 {
+    fun resolveB0(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.B0 {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xB0) {
                 val data = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
@@ -1183,7 +1183,7 @@ class BleCmdRepository @Inject constructor(){
                 val setWifi  = data.component1()
                 val connectWifi  = data.component2()
                 val plugStatus  = data.component3()
-                val response = DeviceStatus.DeviceStatusB0(
+                val response = DeviceStatus.B0(
                     setWifi.toInt(),
                     connectWifi.toInt(),
                     plugStatus.toInt(),
@@ -1426,7 +1426,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent lock status.
      *
      * */
-    fun resolveD4(aesKeyTwo: ByteArray, notification: ByteArray): LockConfig.LockConfigD4 {
+    fun resolveD4(aesKeyTwo: ByteArray, notification: ByteArray): LockConfig.D4 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xD4) {
@@ -1449,7 +1449,7 @@ class BleCmdRepository @Inject constructor(){
                         val lng = lngIntPart.toBigDecimal().plus(lngDecimal)
                         Timber.d("lng: $lng, ${lng.toPlainString()}")
 
-                        val lockConfigD4 = LockConfig.LockConfigD4(
+                        val lockConfigD4 = LockConfig.D4(
                             direction = when (bytes[ConfigD4.LOCK_DIRECTION.byte].unSignedInt()) {
                                 0xA0 -> LockDirection.Right
                                 0xA1 -> LockDirection.Left
@@ -1502,7 +1502,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent lock status.
      *
      * */
-    fun resolveD6(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.DeviceStatusD6 {
+    fun resolveD6(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.D6 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xD6) {
@@ -1512,8 +1512,8 @@ class BleCmdRepository @Inject constructor(){
                         } else {
                             bytes[D6Features.AUTOLOCK_DELAY.byte].unSignedInt()
                         }
-                        val lockSetting = DeviceStatus.DeviceStatusD6(
-                            config = LockConfig.LockConfigD4(
+                        val lockSetting = DeviceStatus.D6(
+                            config = LockConfig.D4(
                                 direction = when (bytes[D6Features.LOCK_DIRECTION.byte].unSignedInt()) {
                                     0xA0 -> LockDirection.Right
                                     0xA1 -> LockDirection.Left
@@ -1828,7 +1828,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent a user code setting.
      *
      * */
-    fun resolveEb(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessCode {
+    fun resolveEb(aesKeyTwo: ByteArray, notification: ByteArray): Access.Code {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xEB) {
@@ -1848,7 +1848,7 @@ class BleCmdRepository @Inject constructor(){
                     val toTime = scheduleData.component4().unSignedInt()
                     val scheduleFrom = scheduleData.copyOfRange(4, 8).toLong()
                     val scheduleTo = scheduleData.copyOfRange(8, 12).toLong()
-                    val userCode = Access.AccessCode(
+                    val userCode = Access.Code(
                         index = 999,
                         isEnable = data.component1().unSignedInt() == 0x01,
                         code = code,
@@ -1963,7 +1963,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent lock status.
      *
      * */
-    fun resolveA0(aesKeyTwo: ByteArray, notification: ByteArray): LockConfig.LockConfigA0 {
+    fun resolveA0(aesKeyTwo: ByteArray, notification: ByteArray): LockConfig.A0 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA0) {
@@ -1993,7 +1993,7 @@ class BleCmdRepository @Inject constructor(){
                         val lng = lngIntPart.toBigDecimal().plus(lngDecimal)
                         Timber.d("lng: $lng, ${lng.toPlainString()}")
 
-                        val lockConfigA0 = LockConfig.LockConfigA0(
+                        val lockConfigA0 = LockConfig.A0(
                             latitude = lat.toDouble(),
                             longitude = lng.toDouble(),
                             direction = when (bytes[ConfigA0.LOCK_DIRECTION.byte].unSignedInt()) {
@@ -2082,7 +2082,7 @@ class BleCmdRepository @Inject constructor(){
         } ?: throw IllegalArgumentException("Error when decryption")
     }
 
-    fun settingBytesA1(setting: LockConfig.LockConfigA0): ByteArray {
+    fun settingBytesA1(setting: LockConfig.A0): ByteArray {
         val settingBytes = ByteArray(ConfigA1.SIZE.byte)
 
         val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude ?: 0.0)
@@ -2109,7 +2109,7 @@ class BleCmdRepository @Inject constructor(){
             longitudeDecimalPartBytes[i]
         Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
 
-        Timber.d("LockConfig.LockConfigA0: $setting")
+        Timber.d("LockConfig.A0: $setting")
         settingBytes[ConfigA1.LOCK_DIRECTION.byte] = setting.direction.toByte()
         settingBytes[ConfigA1.GUIDING_CODE.byte] = setting.guidingCode.toByte()
         settingBytes[ConfigA1.VIRTUAL_CODE.byte] = setting.virtualCode.toByte()
@@ -2155,12 +2155,12 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent lock status.
      *
      * */
-    fun resolveA2(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.DeviceStatusA2 {
+    fun resolveA2(aesKeyTwo: ByteArray, notification: ByteArray): DeviceStatus.A2 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA2) {
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
-                        val lockSetting = DeviceStatus.DeviceStatusA2(
+                        val lockSetting = DeviceStatus.A2(
                             direction = when (bytes[A2Features.LOCK_DIRECTION.byte].unSignedInt()) {
                                 0xA0 -> BleV2Lock.Direction.RIGHT.value
                                 0xA1 -> BleV2Lock.Direction.LEFT.value
@@ -2250,7 +2250,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent whether the lock has admin code or not.
      *
      * */
-    fun resolveA5(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA5 {
+    fun resolveA5(aesKeyTwo: ByteArray, notification: ByteArray): Access.A5 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA5) {
@@ -2260,7 +2260,7 @@ class BleCmdRepository @Inject constructor(){
                     val type = data.component1().unSignedInt()
                     val transferComplete = data.component2().unSignedInt()
                     val dataByteArray = data.copyOfRange(2, dataLen)
-                    val accessA5 = Access.AccessA5(type, transferComplete, dataByteArray)
+                    val accessA5 = Access.A5(type, transferComplete, dataByteArray)
                     Timber.d("[A5] read access from device: $accessA5")
                     accessA5
                 } else {
@@ -2277,7 +2277,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent a accessA6.
      *
      * */
-    fun resolveA6(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA6 {
+    fun resolveA6(aesKeyTwo: ByteArray, notification: ByteArray): Access.A6 {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xA6) {
@@ -2299,7 +2299,7 @@ class BleCmdRepository @Inject constructor(){
                     val toTime = scheduleData.component4().unSignedInt()
                     val scheduleFrom = scheduleData.copyOfRange(4, 8).toLong()
                     val scheduleTo = scheduleData.copyOfRange(8, 12).toLong()
-                    val accessA6 = Access.AccessA6(
+                    val accessA6 = Access.A6(
                         type = type,
                         index = index,
                         isEnable = isEnable,
@@ -2329,7 +2329,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent accessA7.
      *
      * */
-    fun resolveA7(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+    fun resolveA7(aesKeyTwo: ByteArray, notification: ByteArray): Access.A7 {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xA7) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
@@ -2337,7 +2337,7 @@ class BleCmdRepository @Inject constructor(){
                     val type = bytes.component1().unSignedInt()
                     val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
-                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    val accessA7 = Access.A7(type, index, isSuccess)
                     Timber.d("[A7] read access from device: $accessA7")
                     accessA7
                 }
@@ -2354,7 +2354,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent accessA7.
      *
      * */
-    fun resolveA8(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+    fun resolveA8(aesKeyTwo: ByteArray, notification: ByteArray): Access.A7 {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xA8) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
@@ -2362,7 +2362,7 @@ class BleCmdRepository @Inject constructor(){
                     val type = bytes.component1().unSignedInt()
                     val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
-                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    val accessA7 = Access.A7(type, index, isSuccess)
                     Timber.d("[A8] read access from device: $accessA7")
                     accessA7
                 }
@@ -2379,7 +2379,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent accessA9.
      *
      * */
-    fun resolveA9(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA9 {
+    fun resolveA9(aesKeyTwo: ByteArray, notification: ByteArray): Access.A9 {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xA9) {
                 val dataLen = decrypted.component4().unSignedInt()
@@ -2391,7 +2391,7 @@ class BleCmdRepository @Inject constructor(){
                 val status = data.component5().unSignedInt() == 0x01
                 Timber.d("[A9] read access dataInfo: ${data.copyOfRange(5, dataLen).toHexPrint()}")
                 val dataInfo = data.copyOfRange(5, dataLen)
-                val accessA9 = Access.AccessA9(type, state, index, status, dataInfo)
+                val accessA9 = Access.A9(type, state, index, status, dataInfo)
                 Timber.d("[A9] read access from device: $accessA9")
                 accessA9
             } else {
@@ -2407,7 +2407,7 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent AccessA7.
      *
      * */
-    fun resolveAA(aesKeyTwo: ByteArray, notification: ByteArray): Access.AccessA7 {
+    fun resolveAA(aesKeyTwo: ByteArray, notification: ByteArray): Access.A7 {
         return decrypt(aesKeyTwo, notification)?.let { decrypted ->
             if (decrypted.component3().unSignedInt() == 0xAA) {
                 decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { bytes ->
@@ -2415,7 +2415,7 @@ class BleCmdRepository @Inject constructor(){
                     val type = bytes.component1().unSignedInt()
                     val index = bytes.copyOfRange(1, 3).toInt()
                     val isSuccess = bytes.component4().unSignedInt() == 0x01
-                    val accessA7 = Access.AccessA7(type, index, isSuccess)
+                    val accessA7 = Access.A7(type, index, isSuccess)
                     Timber.d("[AA] read access from device: $accessA7")
                     accessA7
                 }
@@ -2432,12 +2432,12 @@ class BleCmdRepository @Inject constructor(){
      * @return ByteArray represent alert notification.
      *
      * */
-    fun resolveAF(aesKeyTwo: ByteArray, notification: ByteArray): Alert.AlertAF {
+    fun resolveAF(aesKeyTwo: ByteArray, notification: ByteArray): Alert.AF {
         return aesKeyTwo.let { keyTwo ->
             decrypt(keyTwo, notification)?.let { decrypted ->
                 if (decrypted.component3().unSignedInt() == 0xAF) {
                     decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt()).let { byteArray ->
-                        val alertType = Alert.AlertAF(
+                        val alertType = Alert.AF(
                             alertType = when (byteArray.toInt()) {
                                 0 -> BleV2Lock.AlertType.ERROR_ACCESS_CODE.value
                                 1 -> BleV2Lock.AlertType.CURRENT_ACCESS_CODE_AT_WRONG_TIME.value

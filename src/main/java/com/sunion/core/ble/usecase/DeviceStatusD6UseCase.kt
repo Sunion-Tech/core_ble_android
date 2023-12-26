@@ -17,7 +17,7 @@ class DeviceStatusD6UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    suspend operator fun invoke(): DeviceStatus.DeviceStatusD6 {
+    suspend operator fun invoke(): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = DeviceStatusD6Command(bleCmdRepository)
         val sendCmd = command.create(
@@ -40,7 +40,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setLockState(desiredState: Int): DeviceStatus.DeviceStatusD6 {
+    suspend fun setLockState(desiredState: Int): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (desiredState!=LockState.LOCKED && desiredState!=LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
         val sendCmd = bleCmdRepository.createCommand(

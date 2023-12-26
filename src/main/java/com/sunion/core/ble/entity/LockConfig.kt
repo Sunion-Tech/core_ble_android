@@ -2,7 +2,7 @@ package com.sunion.core.ble.entity
 
 sealed class LockConfig {
     object UNKNOWN : LockConfig()
-    data class LockConfigD4(
+    data class D4(
         val direction: LockDirection,
         val isSoundOn: Boolean,
         val isVacationModeOn: Boolean,
@@ -13,7 +13,7 @@ sealed class LockConfig {
         val longitude: Double? = null
     ) : LockConfig()
 
-    data class LockConfigA0(
+    data class A0(
         val latitude: Double,
         val longitude: Double,
         val direction: Int,

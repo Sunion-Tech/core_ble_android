@@ -17,7 +17,7 @@ class DeviceStatusA2UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    suspend operator fun invoke(): DeviceStatus.DeviceStatusA2 {
+    suspend operator fun invoke(): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = DeviceStatusA2Command(bleCmdRepository)
         val sendCmd = command.create(
@@ -40,7 +40,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setLockState(state: Int): DeviceStatus.DeviceStatusA2 {
+    suspend fun setLockState(state: Int): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (state == BleV2Lock.LockState.UNKNOWN.value) throw IllegalArgumentException("Unknown desired lock state.")
         val lockState = if (state == BleV2Lock.LockState.UNLOCKED.value) byteArrayOf(0x00) else byteArrayOf(0x01)
@@ -71,7 +71,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setSecurityBolt(state: Int): DeviceStatus.DeviceStatusA2 {
+    suspend fun setSecurityBolt(state: Int): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("SecurityBolt not support.")
         val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)

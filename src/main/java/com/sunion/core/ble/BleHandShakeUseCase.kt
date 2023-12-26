@@ -2,7 +2,7 @@ package com.sunion.core.ble
 
 import androidx.annotation.VisibleForTesting
 import com.sunion.core.ble.exception.ConnectionTokenException
-import com.sunion.core.ble.entity.DeviceToken.DeviceTokenState.VALID_TOKEN
+import com.sunion.core.ble.entity.DeviceToken.State.VALID_TOKEN
 import com.polidea.rxandroidble2.NotificationSetupMode
 import com.polidea.rxandroidble2.RxBleConnection
 import com.polidea.rxandroidble2.RxBleDevice

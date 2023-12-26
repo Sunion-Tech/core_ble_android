@@ -57,7 +57,7 @@ class LockAccessUseCase @Inject constructor(
     suspend fun getFaceArray(): List<Boolean> = getAccessArray(3)
 
     /** A6 Query Access **/
-    private suspend fun queryAccess(type: Int, index: Int): Access.AccessA6 {
+    private suspend fun queryAccess(type: Int, index: Int): Access.A6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA6,
@@ -83,16 +83,16 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryAccessCode(index: Int): Access.AccessA6 = queryAccess(0, index)
-    suspend fun queryAccessCard(index: Int): Access.AccessA6 = queryAccess(1, index)
-    suspend fun queryFingerprint(index: Int): Access.AccessA6 = queryAccess(2, index)
-    suspend fun queryFace(index: Int): Access.AccessA6 = queryAccess(3, index)
+    suspend fun queryAccessCode(index: Int): Access.A6 = queryAccess(0, index)
+    suspend fun queryAccessCard(index: Int): Access.A6 = queryAccess(1, index)
+    suspend fun queryFingerprint(index: Int): Access.A6 = queryAccess(2, index)
+    suspend fun queryFace(index: Int): Access.A6 = queryAccess(3, index)
 
     /** A7 Add Access**/
-    private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.AccessA7 {
+    private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = bleCmdRepository.combineAccessA7Command(
-            Access.AccessA7Cmd(
+            Access.A7Cmd(
                 type = type,
                 index = index,
                 isEnable = isEnable,
@@ -128,16 +128,16 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.AccessA7 = addAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
-    suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.AccessA7 = addAccess(1, index, isEnable, scheduleType, name, code)
-    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.AccessA7 = addAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
-    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.AccessA7 = addAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.A7 = addAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
+    suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 = addAccess(1, index, isEnable, scheduleType, name, code)
+    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7 = addAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7 = addAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
 
     /** A8 Edit Access **/
     private suspend fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = bleCmdRepository.combineAccessA7Command(
-            Access.AccessA7Cmd(
+            Access.A7Cmd(
                 type = type,
                 index = index,
                 isEnable = isEnable,
@@ -179,7 +179,7 @@ class LockAccessUseCase @Inject constructor(
     suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
 
     /** A9 Device Get Access **/
-    private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.AccessA9 {
+    private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.A9 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xA9,
@@ -206,13 +206,13 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    suspend fun deviceGetAccessCard(index: Int): Access.AccessA9 = deviceGetAccess(1, 1, index)
-    suspend fun deviceGetFingerprint(index: Int): Access.AccessA9 = deviceGetAccess(2, 1, index)
-    suspend fun deviceGetFace(index: Int): Access.AccessA9 = deviceGetAccess(3, 1 ,index)
+    suspend fun deviceGetAccessCard(index: Int): Access.A9 = deviceGetAccess(1, 1, index)
+    suspend fun deviceGetFingerprint(index: Int): Access.A9 = deviceGetAccess(2, 1, index)
+    suspend fun deviceGetFace(index: Int): Access.A9 = deviceGetAccess(3, 1 ,index)
 
-    suspend fun deviceExitAccessCard(index: Int): Access.AccessA9 = deviceGetAccess(1, 0, index)
-    suspend fun deviceExitFingerprint(index: Int): Access.AccessA9 = deviceGetAccess(2, 0, index)
-    suspend fun deviceExitFace(index: Int): Access.AccessA9 = deviceGetAccess(3, 0 ,index)
+    suspend fun deviceExitAccessCard(index: Int): Access.A9 = deviceGetAccess(1, 0, index)
+    suspend fun deviceExitFingerprint(index: Int): Access.A9 = deviceGetAccess(2, 0, index)
+    suspend fun deviceExitFace(index: Int): Access.A9 = deviceGetAccess(3, 0 ,index)
 
     /** AA **/
     private suspend fun deleteAccess(type: Int, index: Int): Boolean {

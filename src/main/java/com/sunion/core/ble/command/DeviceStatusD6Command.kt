@@ -5,7 +5,7 @@ import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.hexToByteArray
 
 class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
-    BleCommand<Unit, DeviceStatus.DeviceStatusD6> {
+    BleCommand<Unit, DeviceStatus.D6> {
     override val function: Int = 0xD6
 
     override fun create(key: String, data: Unit): ByteArray {
@@ -15,7 +15,7 @@ class DeviceStatusD6Command(private val bleCmdRepository: BleCmdRepository) :
         )
     }
 
-    override fun parseResult(key: String, data: ByteArray): DeviceStatus.DeviceStatusD6 {
+    override fun parseResult(key: String, data: ByteArray): DeviceStatus.D6 {
         return bleCmdRepository.resolveD6(
             aesKeyTwo = key.hexToByteArray(),
             notification = data

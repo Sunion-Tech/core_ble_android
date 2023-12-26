@@ -2,7 +2,7 @@ package com.sunion.core.ble.entity
 
 sealed class DeviceToken {
 
-    companion object DeviceTokenState {
+    companion object State {
         const val ONE_TIME_TOKEN = 3
         const val REFUSED_TOKEN = 2
         const val VALID_TOKEN = 1

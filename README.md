@@ -254,13 +254,13 @@ _bleSunionBleNotificationListener?.cancel()
 _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
     .map { sunionBleNotification ->
         when (sunionBleNotification) {
-            is DeviceStatus.DeviceStatusD6 -> {
+            is DeviceStatus.D6 -> {
             }
-            is DeviceStatus.DeviceStatusA2 -> {
+            is DeviceStatus.A2 -> {
             }
-            is Alert.AlertAF -> {
+            is Alert.AF -> {
             }
-            is Access.AccessA9 -> {             
+            is Access.A9 -> {             
             }
             else -> { 
                 _currentDeviceStatus = DeviceStatus.UNKNOWN 
@@ -275,7 +275,7 @@ _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
 ### DeviceStatusD6UseCase
 #### Query device status from lock
 ```
-operator fun invoke(): Flow<DeviceStatus.DeviceStatusD6>
+operator fun invoke(): Flow<DeviceStatus.D6>
 ```
 Example
 ```
@@ -297,7 +297,7 @@ Exceptions
 #### Set LockState
 You should determine LockDirection before setting LockState. Please refer to LockDirectionUseCase.
 ```
-setLockState(desiredState: Int): Flow<DeviceStatus.DeviceStatusD6>
+setLockState(desiredState: Int): Flow<DeviceStatus.D6>
 ```
 Parameter
 
@@ -328,7 +328,7 @@ Exceptions
 ### DeviceStatusA2UseCase
 #### Query device status from lock
 ```
-operator fun invoke(): Flow<DeviceStatus.DeviceStatusA2>
+operator fun invoke(): Flow<DeviceStatus.A2>
 ```
 Example
 ```
@@ -349,7 +349,7 @@ Exceptions
 
 #### Set LockState
 ```
-setLockState(state: Int): Flow<DeviceStatus.DeviceStatusA2>
+setLockState(state: Int): Flow<DeviceStatus.A2>
 ```
 Parameter
 
@@ -379,7 +379,7 @@ Exceptions
 
 #### Set SecurityBolt
 ```
-setSecurityBolt(state: Int): Flow<DeviceStatus.DeviceStatusA2>
+setSecurityBolt(state: Int): Flow<DeviceStatus.A2>
 ```
 Parameter
 
@@ -491,10 +491,10 @@ Example
 lockDirectionUseCase()
     .map { deviceStatus ->
         when (deviceStatus) {
-            is DeviceStatus.DeviceStatusD6 -> {
+            is DeviceStatus.D6 -> {
                 updateStatus(deviceStatus)
             }
-            is DeviceStatus.DeviceStatusA2 -> {
+            is DeviceStatus.A2 -> {
                 if(deviceStatus.direction == BleV2Lock.Direction.NOT_SUPPORT.value) {
                     throw LockStatusException.LockFunctionNotSupportException()
                 }
@@ -646,7 +646,7 @@ Exception
 Please refer to [LockConfigD4](###LockConfigD4)
 
 ```
-query(): Flow<LockConfigD4>
+query(): Flow<LockConfig.D4>
 ```
 
 Example
@@ -810,7 +810,7 @@ Exception
 Please refer to [LockConfigA0](###LockConfigA0)
 
 ```
-query(): Flow<LockConfigA0>
+query(): Flow<LockConfig.A0>
 ```
 
 Example
@@ -1506,7 +1506,7 @@ Exception
 
 #### Query access code
 ```
-queryAccessCode(index: Int): Flow<Access.AccessA6>
+queryAccessCode(index: Int): Flow<Access.A6>
 ```
 
 Parameter
@@ -1533,7 +1533,7 @@ Exception
 
 #### Add access code
 ```
-addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
 ```
 
 Parameter
@@ -1550,7 +1550,7 @@ Example
 if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.addAccessCode(index, isEnabled, scheduleType, name, code)
         .map { result ->
-            result = Access.AccessA7
+            result = Access.A7
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -1664,7 +1664,7 @@ Exception
 
 #### Query access card
 ```
-queryAccessCard(index: Int): Flow<Access.AccessA6>
+queryAccessCard(index: Int): Flow<Access.A6>
 ```
 
 Parameter
@@ -1691,7 +1691,7 @@ Exception
 
 #### Add access card
 ```
-addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
 ```
 
 Parameter
@@ -1708,7 +1708,7 @@ Example
 if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.addAccessCard(index, isEnabled, scheduleType, name, code)
         .map { result ->
-            result = Access.AccessA7
+            result = Access.A7
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -1795,7 +1795,7 @@ Exception
 
 #### Device get access card
 ```
-deviceGetAccessCard(state:Int, index: Int): Flow<Access.AccessA9>
+deviceGetAccessCard(state:Int, index: Int): Flow<Access.A9>
 ```
 
 Parameter
@@ -1809,7 +1809,7 @@ Example
 if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.deviceGetAccessCard(state, index)
         .map { result ->
-            result = Access.AccessA9
+            result = Access.A9
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -1855,7 +1855,7 @@ Exception
 
 #### Query fingerprint
 ```
-queryFingerprint(index: Int): Flow<Access.AccessA6>
+queryFingerprint(index: Int): Flow<Access.A6>
 ```
 
 Parameter
@@ -1882,7 +1882,7 @@ Exception
 
 #### Add fingerprint
 ```
-addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
 ```
 
 Parameter
@@ -1899,7 +1899,7 @@ Example
 if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.addFingerprint(index, isEnabled, scheduleType, name, code)
         .map { result ->
-            result = Access.AccessA7
+            result = Access.A7
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -1986,7 +1986,7 @@ Exception
 
 #### Device get fingerprint
 ```
-deviceGetFingerprint(state:Int, index: Int): Flow<Access.AccessA9>
+deviceGetFingerprint(state:Int, index: Int): Flow<Access.A9>
 ```
 
 Parameter
@@ -2000,7 +2000,7 @@ Example
 if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.deviceGetFingerprint(state, index)
         .map { result ->
-            result = Access.AccessA9
+            result = Access.A9
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -2046,7 +2046,7 @@ Exception
 
 #### Query face
 ```
-queryFace(index: Int): Flow<Access.AccessA6>
+queryFace(index: Int): Flow<Access.A6>
 ```
 
 Parameter
@@ -2073,7 +2073,7 @@ Exception
 
 #### Add face
 ```
-addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.AccessA7>
+addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
 ```
 
 Parameter
@@ -2090,7 +2090,7 @@ Example
 if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
     lockAccessUseCase.addFace(index, isEnabled, scheduleType, name, code)
         .map { result ->
-            result = Access.AccessA7
+            result = Access.A7
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -2177,7 +2177,7 @@ Exception
 
 #### Device get face
 ```
-deviceGetFace(state:Int, index: Int): Flow<Access.AccessA9>
+deviceGetFace(state:Int, index: Int): Flow<Access.A9>
 ```
 
 Parameter
@@ -2191,7 +2191,7 @@ Example
 if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
     lockAccessUseCase.deviceGetFace(state, index)
         .map { result ->
-            result = Access.AccessA9
+            result = Access.A9
         }
         .flowOn(Dispatchers.IO)
         .catch { Timer.e(it) }
@@ -2312,7 +2312,7 @@ Exception
 ### DeviceStatusD6
 | Name | Type | Description |
 | -------- | -------- | -------- |
-|config|LockConfigD4|Please refer to [LockConfigD4](###LockConfigD4)|
+|config|LockConfig.D4|Please refer to [LockConfigD4](###LockConfigD4)|
 |lockState|Int|0: Unlocked<br>1: Locked|
 |battery|Int|Percentage of battery power|
 |batteryState|Int|0: Battery good<br>1: Battery low<br>2: Battery alert|

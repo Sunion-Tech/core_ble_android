@@ -18,7 +18,7 @@ class PlugConfigUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    suspend operator fun invoke(): DeviceStatus.DeviceStatusB0 {
+    suspend operator fun invoke(): DeviceStatus.B0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xB0,
@@ -45,7 +45,7 @@ class PlugConfigUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setPlugState(state: Int): DeviceStatus.DeviceStatusB0 {
+    suspend fun setPlugState(state: Int): DeviceStatus.B0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = byteArrayOf(state.toByte())
         val sendCmd = bleCmdRepository.createCommand(

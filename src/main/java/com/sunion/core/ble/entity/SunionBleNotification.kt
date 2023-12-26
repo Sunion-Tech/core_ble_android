@@ -6,7 +6,7 @@ sealed class SunionBleNotification {
 
 sealed class Alert : SunionBleNotification() {
     object UNKNOWN : Alert()
-    data class AlertAF(
+    data class AF(
         val alertType: Int,
     ) : Alert()
 }

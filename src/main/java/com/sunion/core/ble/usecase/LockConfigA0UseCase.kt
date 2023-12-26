@@ -17,9 +17,9 @@ class LockConfigA0UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    private var currentLockConfigA0: LockConfig.LockConfigA0? = null
+    private var currentLockConfigA0: LockConfig.A0? = null
     
-    suspend fun query(): LockConfig.LockConfigA0 {
+    suspend fun query(): LockConfig.A0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xA0,
@@ -47,7 +47,7 @@ class LockConfigA0UseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun updateConfig(lockConfigA0: LockConfig.LockConfigA0): Boolean {
+    private suspend fun updateConfig(lockConfigA0: LockConfig.A0): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = bleCmdRepository.settingBytesA1(lockConfigA0)
         val sendCmd = bleCmdRepository.createCommand(
@@ -155,7 +155,7 @@ class LockConfigA0UseCase @Inject constructor(
     }
 
     //update A0LockConfig after query()
-    suspend fun getCurrentLockConfigA0(): LockConfig.LockConfigA0 {
+    suspend fun getCurrentLockConfigA0(): LockConfig.A0 {
         return currentLockConfigA0 ?: query()
     }
 }

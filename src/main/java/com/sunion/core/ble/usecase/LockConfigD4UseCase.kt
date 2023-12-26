@@ -2,7 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
-import com.sunion.core.ble.entity.LockConfig.LockConfigD4
+import com.sunion.core.ble.entity.LockConfig
 import com.sunion.core.ble.exception.NotConnectedException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -15,9 +15,9 @@ class LockConfigD4UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    private var currentLockConfigD4: LockConfigD4? = null
+    private var currentLockConfigD4: LockConfig.D4? = null
 
-    suspend fun query(): LockConfigD4  {
+    suspend fun query(): LockConfig.D4  {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xD4,
@@ -45,7 +45,7 @@ class LockConfigD4UseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun updateConfig(lockConfigD4: LockConfigD4): Boolean {
+    private suspend fun updateConfig(lockConfigD4: LockConfig.D4): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = bleCmdRepository.settingBytesD4(lockConfigD4)
         val sendCmd = bleCmdRepository.createCommand(
@@ -99,7 +99,7 @@ class LockConfigD4UseCase @Inject constructor(
         return updateConfig(getCurrentLockConfigD4().copy(latitude = latitude, longitude = longitude))
     }
 
-    suspend fun getCurrentLockConfigD4(): LockConfigD4 {
+    suspend fun getCurrentLockConfigD4(): LockConfig.D4 {
         return currentLockConfigD4 ?: query()
     }
 }

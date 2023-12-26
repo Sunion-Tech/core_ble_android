@@ -122,7 +122,7 @@ class LockWifiUseCase @Inject constructor(
         )
     }
 
-    suspend fun setLockStateD6(state: Int, identityId:String): DeviceStatus.DeviceStatusD6 {
+    suspend fun setLockStateD6(state: Int, identityId:String): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (state!= LockState.LOCKED && state!= LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
         val data = (if (state == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)) + identityId.toByteArray()
@@ -152,7 +152,7 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setLockStateA2(state: Int, identityId:String): DeviceStatus.DeviceStatusA2 {
+    suspend fun setLockStateA2(state: Int, identityId:String): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (state == BleV2Lock.LockState.UNKNOWN.value) throw IllegalArgumentException("Unknown desired lock state.")
         val lockState = if (state == BleV2Lock.LockState.UNLOCKED.value) byteArrayOf(0x00) else byteArrayOf(0x01)
@@ -183,7 +183,7 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setSecurityBolt(state: Int, identityId:String): DeviceStatus.DeviceStatusA2 {
+    suspend fun setSecurityBolt(state: Int, identityId:String): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("SecurityBolt not support.")
         val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)

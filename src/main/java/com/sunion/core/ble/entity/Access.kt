@@ -1,7 +1,7 @@
 package com.sunion.core.ble.entity
 
 sealed class Access: SunionBleNotification() {
-    data class AccessCode(
+    data class Code(
         val index: Int,
         val isEnable: Boolean,
         val code: String,
@@ -14,13 +14,13 @@ sealed class Access: SunionBleNotification() {
         val name: String
     ) : Access()
 
-    data class AccessA5(
+    data class A5(
         val type: Int,
         val transferComplete: Int,
         val data: ByteArray
     ) : Access()
 
-    data class AccessA6(
+    data class A6(
         val type: Int,
         val index: Int,
         val isEnable: Boolean,
@@ -35,7 +35,7 @@ sealed class Access: SunionBleNotification() {
         val nameLen: Int
     ) : Access()
 
-    data class AccessA7Cmd(
+    data class A7Cmd(
         val type: Int,
         val index: Int,
         val isEnable: Boolean,
@@ -45,13 +45,13 @@ sealed class Access: SunionBleNotification() {
         val nameLen: Int
     )
 
-    data class AccessA7(
+    data class A7(
         val type: Int,
         val index: Int,
         val isSuccess: Boolean,
     ) : Access()
 
-    data class AccessA9(
+    data class A9(
         val type: Int,
         val state: Int,
         val index: Int,

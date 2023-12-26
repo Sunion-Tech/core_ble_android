@@ -53,7 +53,7 @@ class LockAccessCodeUseCase @Inject constructor(
     }
 
     /** EB **/
-    suspend fun queryAccessCode(index: Int): Access.AccessCode {
+    suspend fun queryAccessCode(index: Int): Access.Code {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
             function = 0xEB,

@@ -126,5 +126,9 @@ fun Long.limitValidTimeRange(): Long {
 }
 
 fun Int.isSupport(): Boolean {
-    return this != 0xFF && this != 0xFFFF
+    return this != 0xFF
+}
+
+fun Int.isSupport2Byte(): Boolean {
+    return this != 0xFFFF
 }

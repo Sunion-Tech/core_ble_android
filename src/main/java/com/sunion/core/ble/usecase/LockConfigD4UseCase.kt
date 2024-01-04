@@ -102,4 +102,8 @@ class LockConfigD4UseCase @Inject constructor(
     suspend fun getCurrentLockConfigD4(): LockConfig.D4 {
         return currentLockConfigD4 ?: query()
     }
+
+    fun clearCurrentConfigD4() {
+        currentLockConfigD4 = null
+    }
 }

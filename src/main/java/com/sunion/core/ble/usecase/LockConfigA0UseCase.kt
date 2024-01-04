@@ -158,4 +158,8 @@ class LockConfigA0UseCase @Inject constructor(
     suspend fun getCurrentLockConfigA0(): LockConfig.A0 {
         return currentLockConfigA0 ?: query()
     }
+
+    fun clearCurrentConfigA0() {
+        currentLockConfigA0 = null
+    }
 }

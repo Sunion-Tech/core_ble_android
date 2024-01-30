@@ -22,14 +22,15 @@ class BleHandShakeUseCase @Inject constructor(
 
     var keyTwoString: String = ""
     var permanentTokenString: String = ""
+    var permission = DeviceToken.PERMISSION_NONE
 
     override fun invoke(
         input1: LockConnectionInfo,
         input2: RxBleDevice,
         input3: RxBleConnection
     ): Observable<String> {
-        val keyOne = input1.keyOne!!.hexToByteArray()
-        val connectionToken = if (input1.permanentToken.isNullOrBlank()) input1.oneTimeToken!!.hexToByteArray() else input1.permanentToken!!.hexToByteArray()
+        val keyOne = input1.keyOne.hexToByteArray()
+        val connectionToken = if (input1.permanentToken.isNullOrBlank()) input1.oneTimeToken.hexToByteArray() else input1.permanentToken!!.hexToByteArray()
         return bleHandshake(
             connection = input3,
             keyOne = keyOne,
@@ -97,6 +98,7 @@ class BleHandShakeUseCase @Inject constructor(
                     val token = pair.second
                     if (token is DeviceToken.PermanentToken) {
                         permanentTokenString = token.token
+                        permission = token.permission
                     }
                 }
                 .flatMap { pair ->
@@ -226,10 +228,10 @@ class BleHandShakeUseCase @Inject constructor(
                 DeviceToken.PermanentToken(
                     isValid,
                     isPermanentToken,
-                    token.toHexString(),
                     isOwnerToken,
+                    permission,
+                    token.toHexString(),
                     name,
-                    permission
                 )
             } else {
                 DeviceToken.OneTimeToken(token.toHexString())

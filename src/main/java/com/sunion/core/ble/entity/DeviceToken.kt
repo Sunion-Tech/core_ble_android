@@ -19,9 +19,9 @@ sealed class DeviceToken {
     data class PermanentToken(
         val isValid: Boolean = false,
         val isPermanent: Boolean = false,
-        val token: String,
         val isOwner: Boolean = false,
+        val permission: String = PERMISSION_NONE,
+        val token: String,
         val name: String,
-        val permission: String
     ) : DeviceToken()
 }

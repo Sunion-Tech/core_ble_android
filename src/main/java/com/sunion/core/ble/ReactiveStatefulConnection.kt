@@ -84,10 +84,10 @@ class ReactiveStatefulConnection @Inject constructor(
     var rxDeviceToken = DeviceToken.PermanentToken(
         isValid = false,
         isPermanent = false,
-        token = "",
         isOwner = false,
+        permission = DeviceToken.PERMISSION_NONE,
+        token = "",
         name = "",
-        permission = ""
     )
     /**
      * The connection observable "stateful" field.
@@ -125,11 +125,11 @@ class ReactiveStatefulConnection @Inject constructor(
             }
             EventState.SUCCESS -> {
                 if (event?.status == EventState.SUCCESS && event.data?.first == true) {
-                    this.keyTwo = _lockConnectionInfo.keyTwo ?: ""
+                    this.keyTwo = _lockConnectionInfo.keyTwo ?: bleHandShakeUseCase.keyTwoString
                     this.macAddress = _lockConnectionInfo.macAddress
                     this.rxDeviceToken = this.rxDeviceToken.copy(
-                        permission = _lockConnectionInfo.permission ?: "",
-                        token = _lockConnectionInfo.permanentToken ?: "",
+                        permission = _lockConnectionInfo.permission ?: bleHandShakeUseCase.permission,
+                        token = _lockConnectionInfo.permanentToken ?: bleHandShakeUseCase.permanentTokenString,
                     )
                     _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTED) }
                 }
@@ -407,10 +407,10 @@ class ReactiveStatefulConnection @Inject constructor(
         this.rxDeviceToken = DeviceToken.PermanentToken(
             isValid = false,
             isPermanent = false,
-            token = "",
             isOwner = false,
+            permission = DeviceToken.PERMISSION_NONE,
+            token = "",
             name = "",
-            permission = ""
         )
         removeConnectionObservable()
         close()

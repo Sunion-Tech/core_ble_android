@@ -177,10 +177,10 @@ class BleCmdRepository @Inject constructor(){
                 DeviceToken.PermanentToken(
                     isValid,
                     isPermanentToken,
-                    token.toHexString(),
                     isOwnerToken,
+                    permission,
+                    token.toHexString(),
                     name,
-                    permission
                 )
             } else {
                 DeviceToken.OneTimeToken(token.toHexString())
@@ -1695,9 +1695,9 @@ class BleCmdRepository @Inject constructor(){
                         isValid = data.component1().unSignedInt() == 1,
                         isPermanent = data.component2().unSignedInt() == 1,
                         isOwner = data.component3().unSignedInt() == 1,
-                        name = String(data.copyOfRange(12, data.size)),
                         permission = String(data.copyOfRange(3, 4)),
-                        token = data.copyOfRange(4, 12).toHexString()
+                        token = data.copyOfRange(4, 12).toHexString(),
+                        name = String(data.copyOfRange(12, data.size))
                     )
                     Timber.d("user: $user")
                     user

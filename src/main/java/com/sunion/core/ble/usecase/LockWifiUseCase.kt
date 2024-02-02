@@ -138,10 +138,11 @@ class LockWifiUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD6(
+                val result = bleCmdRepository.resolve(
+                    0xD6,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceStatus.D6
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -169,10 +170,11 @@ class LockWifiUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA2(
+                val result = bleCmdRepository.resolve(
+                    0xA2,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceStatus.A2
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -201,10 +203,11 @@ class LockWifiUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA2(
+                val result = bleCmdRepository.resolve(
+                    0xA2,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceStatus.A2
                 result
             }
             .flowOn(Dispatchers.IO)

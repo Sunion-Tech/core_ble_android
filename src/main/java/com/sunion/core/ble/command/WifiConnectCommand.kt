@@ -27,10 +27,11 @@ class WifiConnectCommand @Inject constructor(
     }
 
     override fun parseResult(key: String, data: ByteArray): WifiConnectState {
-        val response = bleCmdRepository.resolveF0(
-            aesKeyTwo = key.hexToByteArray(),
+        val response = bleCmdRepository.resolve(
+            function = function,
+            key = key.hexToByteArray(),
             notification = data
-        )
+        ) as String
         Timber.d("response: $response")
         connectWifiState.add(response)
         Timber.d(response)

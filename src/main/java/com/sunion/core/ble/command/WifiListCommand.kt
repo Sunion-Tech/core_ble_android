@@ -20,10 +20,11 @@ class WifiListCommand @Inject constructor(private val bleCmdRepository: BleCmdRe
     }
 
     override fun parseResult(key: String, data: ByteArray): WifiList {
-        val response = bleCmdRepository.resolveF0(
-            aesKeyTwo = key.hexToByteArray(),
+        val response = bleCmdRepository.resolve(
+            function = function,
+            key = key.hexToByteArray(),
             notification = data
-        )
+        ) as String
         Timber.d("response:$response")
         if (response == "LE")
             return WifiList.End

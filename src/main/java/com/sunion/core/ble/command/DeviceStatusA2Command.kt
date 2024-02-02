@@ -16,10 +16,11 @@ class DeviceStatusA2Command(private val bleCmdRepository: BleCmdRepository) :
     }
 
     override fun parseResult(key: String, data: ByteArray): DeviceStatus.A2 {
-        return bleCmdRepository.resolveA2(
-            aesKeyTwo = key.hexToByteArray(),
+        return bleCmdRepository.resolve(
+            function = function,
+            key = key.hexToByteArray(),
             notification = data
-        )
+        ) as DeviceStatus.A2
     }
 
     /** receive A2 or EF **/

@@ -38,10 +38,11 @@ class LockOTAUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC3(
+                val result = bleCmdRepository.resolve(
+                    0xC3,
                     statefulConnection.key(),
                     notification
-                )
+                ) as BleV2Lock.OTAStatus
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -68,10 +69,11 @@ class LockOTAUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC3(
+                val result = bleCmdRepository.resolve(
+                    0xC3,
                     statefulConnection.key(),
                     notification
-                )
+                ) as BleV2Lock.OTAStatus
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -98,10 +100,11 @@ class LockOTAUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC3(
+                val result = bleCmdRepository.resolve(
+                    0xC3,
                     statefulConnection.key(),
                     notification
-                )
+                ) as BleV2Lock.OTAStatus
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -128,10 +131,11 @@ class LockOTAUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC4(
+                val result = bleCmdRepository.resolve(
+                    0xC4,
                     statefulConnection.key(),
                     notification
-                )
+                ) as String
                 result
             }
             .flowOn(Dispatchers.IO)

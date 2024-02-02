@@ -28,10 +28,11 @@ class LockEventLogUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveE0(
+                val result = bleCmdRepository.resolve(
+                    0xE0,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Int
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -57,10 +58,11 @@ class LockEventLogUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveE1(
+                val result = bleCmdRepository.resolve(
+                    0xE1,
                     statefulConnection.key(),
                     notification
-                )
+                ) as EventLog
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -88,10 +90,11 @@ class LockEventLogUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveE2(
+                val result = bleCmdRepository.resolve(
+                    0xE2,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)

@@ -77,9 +77,6 @@ class ReactiveStatefulConnection @Inject constructor(
     override val lockConnectionInfo
         get() = _lockConnectionInfo
 
-    private val _deviceStatus = MutableSharedFlow<DeviceStatus>()
-    val deviceStatus: SharedFlow<DeviceStatus> = _deviceStatus
-
     var keyTwo: String = ""
     var rxDeviceToken = DeviceToken.PermanentToken(
         isValid = false,

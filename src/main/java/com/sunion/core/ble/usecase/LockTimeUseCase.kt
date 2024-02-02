@@ -31,10 +31,11 @@ class LockTimeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD3(
+                val result = bleCmdRepository.resolve(
+                    0xD3,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -58,10 +59,11 @@ class LockTimeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val ret = bleCmdRepository.resolveD2(
+                val ret = bleCmdRepository.resolve(
+                    0xD2,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Int
                 ret
             }
             .flowOn(Dispatchers.IO)
@@ -92,10 +94,11 @@ class LockTimeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD9(
+                val result = bleCmdRepository.resolve(
+                    0xD9,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)

@@ -45,16 +45,18 @@ class LockDirectionUseCase @Inject constructor(
                 )?.let { decrypted ->
                     when (decrypted.component3().unSignedInt()) {
                         0xD6 -> {
-                            result = bleCmdRepository.resolveD6(
+                            result = bleCmdRepository.resolve(
+                                0xD6,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as DeviceStatus.D6
                         }
                         0xA2 -> {
-                            result = bleCmdRepository.resolveA2(
+                            result = bleCmdRepository.resolve(
+                                0xA2,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            )as DeviceStatus.A2
                         }
                         else -> {}
                     }

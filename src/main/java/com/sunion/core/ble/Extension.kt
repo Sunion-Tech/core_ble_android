@@ -97,6 +97,19 @@ fun Int.toLittleEndianByteArrayInt16(): ByteArray {
     return byteArray
 }
 
+fun Int.isSupport(): Boolean {
+    return this != 0xFF
+}
+
+fun Int.isSupport2Byte(): Boolean {
+    return this != 0xFFFF
+}
+
+fun Int.toHexString(): String {
+    return this.toString(16).uppercase(Locale.getDefault())
+}
+
+//Long
 fun Long.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(8)
     val byteBuffer = ByteBuffer.allocate(8)
@@ -123,12 +136,4 @@ fun Long.limitValidTimeRange(): Long {
         this > 4294967295 -> 4294967295
         else -> this
     }
-}
-
-fun Int.isSupport(): Boolean {
-    return this != 0xFF
-}
-
-fun Int.isSupport2Byte(): Boolean {
-    return this != 0xFFFF
 }

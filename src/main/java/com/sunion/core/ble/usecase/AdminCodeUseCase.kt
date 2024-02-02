@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MAX
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MIN
 import com.sunion.core.ble.exception.NotConnectedException
@@ -35,11 +36,12 @@ class AdminCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveEf(
+                val result = bleCmdRepository.resolve(
+                    0xEF,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as Boolean
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -52,11 +54,12 @@ class AdminCodeUseCase @Inject constructor(
     suspend fun createAdminCode(code: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (!(code.all { char -> char.isDigit() }) || code.length < ACCESSCODE_LENGTH_MIN || code.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
-        val adminCode = bleCmdRepository.stringCodeToHex(code)
+        val adminCode = code.accessCodeToHex()
+        val sendBytes = byteArrayOf(adminCode.size.toByte()) + adminCode
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC7,
             key = statefulConnection.key(),
-            adminCode
+            sendBytes
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "AdminCodeUseCase.createAdminCode")
@@ -65,11 +68,12 @@ class AdminCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC7(
+                val result = bleCmdRepository.resolve(
+                    0xC7,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as Boolean
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -83,8 +87,8 @@ class AdminCodeUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         if (!(oldCode.all { char -> char.isDigit() }) || oldCode.length < ACCESSCODE_LENGTH_MIN || oldCode.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
         if (!(newCode.all { char -> char.isDigit() }) || newCode.length < ACCESSCODE_LENGTH_MIN || newCode.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
-        val newBytes = bleCmdRepository.stringCodeToHex(newCode)
-        val oldBytes = bleCmdRepository.stringCodeToHex(oldCode)
+        val newBytes = newCode.accessCodeToHex()
+        val oldBytes = oldCode.accessCodeToHex()
         val sendBytes = byteArrayOf(oldBytes.size.toByte()) + oldBytes + byteArrayOf(newBytes.size.toByte()) + newBytes
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xC8,
@@ -98,11 +102,12 @@ class AdminCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveC8(
+                val result = bleCmdRepository.resolve(
+                    0xC8,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as Boolean
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

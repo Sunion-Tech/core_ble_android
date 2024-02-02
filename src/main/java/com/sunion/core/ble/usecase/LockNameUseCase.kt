@@ -27,10 +27,11 @@ class LockNameUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD0(
+                val result = bleCmdRepository.resolve(
+                    0xD0,
                     statefulConnection.key(),
                     notification
-                )
+                ) as String
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -56,10 +57,11 @@ class LockNameUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD1(
+                val result = bleCmdRepository.resolve(
+                    0xD1,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)

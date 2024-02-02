@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.exception.NotConnectedException
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +20,8 @@ class LockUtilityUseCase @Inject constructor(
 ) {
     suspend fun factoryReset(adminCode: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val admin_code = bleCmdRepository.stringCodeToHex(adminCode)
-        val sendBytes = byteArrayOf(admin_code.size.toByte()) + admin_code
+        val adminCodeByteArray = adminCode.accessCodeToHex()
+        val sendBytes = byteArrayOf(adminCodeByteArray.size.toByte()) + adminCodeByteArray
         val sendCmd = bleCmdRepository.createCommand(
             function = 0xCE,
             key = statefulConnection.key(),
@@ -33,10 +34,11 @@ class LockUtilityUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveCE(
+                val result = bleCmdRepository.resolve(
+                    0xCE,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -60,10 +62,11 @@ class LockUtilityUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveCF(
+                val result = bleCmdRepository.resolve(
+                    0xCF,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -95,10 +98,11 @@ class LockUtilityUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA4(
+                val result = bleCmdRepository.resolve(
+                    0xA4,
                     statefulConnection.key(),
                     notification
-                )
+                ) as BleV2Lock.SupportedUnlockType
                 result
             }
             .flowOn(Dispatchers.IO)

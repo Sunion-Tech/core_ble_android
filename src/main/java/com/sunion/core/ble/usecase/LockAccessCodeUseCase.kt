@@ -32,10 +32,11 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                bleCmdRepository.resolveEa(
+                bleCmdRepository.resolve(
+                    0xEA,
                     statefulConnection.key(),
                     notification
-                )
+                ) as ByteArray
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
@@ -68,11 +69,13 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveEb(
+                val result = bleCmdRepository.resolve(
+                    0xEB,
                     statefulConnection.key(),
-                    notification
+                    notification,
+                    index
                 )
-                result
+                result as Access.Code
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -104,10 +107,11 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveEc(
+                val result = bleCmdRepository.resolve(
+                    0xEC,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -140,11 +144,12 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveEd(
+                val result = bleCmdRepository.resolve(
+                    0xED,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as Boolean
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -169,11 +174,12 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveEe(
+                val result = bleCmdRepository.resolve(
+                    0xEE,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as Boolean
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

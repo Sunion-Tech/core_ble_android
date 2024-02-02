@@ -31,10 +31,11 @@ class PlugConfigUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveB0(
+                val result = bleCmdRepository.resolve(
+                    0xB0,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceStatus.B0
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -60,10 +61,11 @@ class PlugConfigUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveB0(
+                val result = bleCmdRepository.resolve(
+                    0xB0,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceStatus.B0
                 result
             }
             .flowOn(Dispatchers.IO)

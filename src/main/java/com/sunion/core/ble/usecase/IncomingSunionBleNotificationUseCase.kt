@@ -3,6 +3,9 @@ package com.sunion.core.ble.usecase
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.entity.Access
+import com.sunion.core.ble.entity.Alert
+import com.sunion.core.ble.entity.DeviceStatus
 import com.sunion.core.ble.entity.SunionBleNotification
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.flow.*
@@ -44,34 +47,39 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                 )?.let { decrypted ->
                     when (decrypted.component3().unSignedInt()) {
                         0xD6 -> {
-                            result = bleCmdRepository.resolveD6(
+                            result = bleCmdRepository.resolve(
+                                0xD6,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as DeviceStatus.D6
                         }
                         0xA2 -> {
-                            result = bleCmdRepository.resolveA2(
+                            result = bleCmdRepository.resolve(
+                                0xA2,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as DeviceStatus.A2
                         }
                         0xAF -> {
-                            result = bleCmdRepository.resolveAF(
+                            result = bleCmdRepository.resolve(
+                                0xAF,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as Alert.AF
                         }
                         0xA9 -> {
-                            result = bleCmdRepository.resolveA9(
+                            result = bleCmdRepository.resolve(
+                                0xA9,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as Access.A9
                         }
                         0xB0 -> {
-                            result = bleCmdRepository.resolveB0(
+                            result = bleCmdRepository.resolve(
+                                0xB0,
                                 statefulConnection.key(),
                                 notification
-                            )
+                            ) as DeviceStatus.B0
                         }
                         else -> {}
                     }

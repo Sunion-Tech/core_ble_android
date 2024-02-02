@@ -31,10 +31,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                bleCmdRepository.resolveA5(
+                bleCmdRepository.resolve(
+                    0xA5,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A5
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
@@ -72,10 +73,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA6(
+                val result = bleCmdRepository.resolve(
+                    0xA6,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A6
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -115,10 +117,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA7(
+                val result = bleCmdRepository.resolve(
+                    0xA7,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A7
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -160,10 +163,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA8(
+                val result = bleCmdRepository.resolve(
+                    0xA8,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A7
                 result.isSuccess
             }
             .flowOn(Dispatchers.IO)
@@ -194,10 +198,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveA9(
+                val result = bleCmdRepository.resolve(
+                    0xA9,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A9
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -230,10 +235,11 @@ class LockAccessUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveAA(
+                val result = bleCmdRepository.resolve(
+                    0xAA,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Access.A7
                 result.isSuccess
             }
             .flowOn(Dispatchers.IO)

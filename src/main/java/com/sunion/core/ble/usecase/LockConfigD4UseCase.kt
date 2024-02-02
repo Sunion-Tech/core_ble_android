@@ -30,10 +30,11 @@ class LockConfigD4UseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD4(
+                val result = bleCmdRepository.resolve(
+                    0xD4,
                     statefulConnection.key(),
                     notification
-                )
+                ) as LockConfig.D4
                 currentLockConfigD4 = result
                 result
             }
@@ -60,10 +61,11 @@ class LockConfigD4UseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD5(
+                val result = bleCmdRepository.resolve(
+                    0xD5,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 query()
                 result
             }

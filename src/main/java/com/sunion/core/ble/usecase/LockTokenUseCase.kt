@@ -2,8 +2,10 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.AddUserResponse
 import com.sunion.core.ble.entity.DeviceToken
+import com.sunion.core.ble.entity.UpdateTokenResponse
 import com.sunion.core.ble.exception.NotConnectedException
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
@@ -32,10 +34,11 @@ class LockTokenUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                bleCmdRepository.resolveE4(
+                bleCmdRepository.resolve(
+                    0xE4,
                     statefulConnection.key(),
                     notification
-                )
+                ) as ByteArray
             }
             .map { bytes ->
                 val indexIterable = bytes
@@ -66,10 +69,11 @@ class LockTokenUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveUser(
+                val result = bleCmdRepository.resolve(
+                    0xE5,
                     statefulConnection.key(),
                     notification
-                )
+                ) as DeviceToken.PermanentToken
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -96,10 +100,11 @@ class LockTokenUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val addUserResponse = bleCmdRepository.resolveE6(
+                val addUserResponse = bleCmdRepository.resolve(
+                    0xE6,
                     statefulConnection.key(),
                     notification
-                )
+                ) as AddUserResponse
                 addUserResponse
             }
             .flowOn(Dispatchers.IO)
@@ -126,11 +131,12 @@ class LockTokenUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveE7(
+                val result = bleCmdRepository.resolve(
+                    0xE7,
                     statefulConnection.key(),
                     notification
-                ).isSuccessful
-                result
+                ) as UpdateTokenResponse
+                result.isSuccessful
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -143,7 +149,7 @@ class LockTokenUseCase @Inject constructor(
     suspend fun deleteToken(index: Int, code: String = ""): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = if (code.isNotEmpty())
-            byteArrayOf(0x00.toByte()) + byteArrayOf(bleCmdRepository.stringCodeToHex(code).size.toByte()) + bleCmdRepository.stringCodeToHex(code)
+            byteArrayOf(0x00.toByte()) + byteArrayOf(code.accessCodeToHex().size.toByte()) + code.accessCodeToHex()
         else
             byteArrayOf(index.toByte())
 
@@ -160,10 +166,11 @@ class LockTokenUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveE8(
+                val result = bleCmdRepository.resolve(
+                    0xE8,
                     statefulConnection.key(),
                     notification
-                )
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)

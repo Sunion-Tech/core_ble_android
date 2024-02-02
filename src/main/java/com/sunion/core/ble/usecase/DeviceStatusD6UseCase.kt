@@ -55,11 +55,12 @@ class DeviceStatusD6UseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                val result = bleCmdRepository.resolveD6(
+                val result = bleCmdRepository.resolve(
+                    0xD6,
                     statefulConnection.key(),
                     notification
                 )
-                result
+                result as DeviceStatus.D6
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

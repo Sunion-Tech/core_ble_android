@@ -168,13 +168,13 @@ class BleCmdRepository @Inject constructor(){
             0xA3 -> {
                 cmd(function, key, 2, data)
             }
-            0xA5, 0xB1, 0xD7, 0xE1, 0xE2, 0xE5, 0xEB, 0xEE -> {
+            0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE3, 0xE5, 0xEB, 0xEE -> {
                 cmd(function, key, 1, data)
             }
             0xA6, 0xAA -> {
                 cmd(function, key, 3, data)
             }
-            0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1 -> {
+            0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
                 cmd(function, key, data.size, data)
             }
             0xA9, 0xD3 -> {
@@ -403,7 +403,7 @@ class BleCmdRepository @Inject constructor(){
                         // LockConfig.A0
                         resolveA0(byteArrayData)
                     }
-                    0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF -> {
+                    0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
@@ -446,6 +446,10 @@ class BleCmdRepository @Inject constructor(){
                     0xC0, 0xC1, 0xD8, 0xE4, 0xEA -> {
                         // ByteArray
                         byteArrayData
+                    }
+                    0xC2 -> {
+                        // Version String
+                        resolveC2(byteArrayData)
                     }
                     0xC3 -> {
                         // BleV2Lock.OTAStatus
@@ -737,6 +741,7 @@ class BleCmdRepository @Inject constructor(){
                 3 -> BleV2Lock.AlertType.ACTIVELY_PRESS_THE_CLEAR_KEY.value
                 20 -> BleV2Lock.AlertType.MANY_ERROR_KEY_LOCKED.value
                 40 -> BleV2Lock.AlertType.LOCK_BREAK_ALERT.value
+                0xFF -> BleV2Lock.AlertType.NONE.value
                 else -> BleV2Lock.AlertType.UNKNOWN_ALERT_TYPE.value
             }
         )
@@ -755,6 +760,13 @@ class BleCmdRepository @Inject constructor(){
         )
         Timber.d("resolveB0: $response")
         return response
+    }
+
+    private fun resolveC2(data: ByteArray): String {
+        val versionName = data.component1().unSignedInt()
+        val version = data.copyOfRange(1, 3)
+        Timber.d("resolveC2: ${String(version)}")
+        return String(version)
     }
 
     private fun resolveC3(data: ByteArray): BleV2Lock.OTAStatus {

@@ -103,4 +103,35 @@ class LockEventLogUseCase @Inject constructor(
             }
             .single()
     }
+
+    suspend fun getEventByAddress(offset: Int): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendBytes = byteArrayOf(offset.toByte())
+
+        val command = bleCmdRepository.createCommand(
+            function = 0xE3,
+            key = statefulConnection.key(),
+            sendBytes
+        )
+
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(command, "getEventByAddress")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE1)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0xE1,
+                    statefulConnection.key(),
+                    notification
+                ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("getEventByAddress exception $e")
+            }
+            .single()
+    }
 }

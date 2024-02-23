@@ -112,4 +112,32 @@ class LockUtilityUseCase @Inject constructor(
             }
             .single()
     }
+
+    suspend fun getFirmwareVersion(type: Int): String {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0xC2,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.getFirmwareVersion $type")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xC2)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0xC2,
+                    statefulConnection.key(),
+                    notification
+                ) as String
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.getFirmwareVersion $type exception $e")
+                throw e
+            }
+            .single()
+    }
 }

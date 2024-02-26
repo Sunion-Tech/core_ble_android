@@ -25,7 +25,7 @@ class BleCmdRepository @Inject constructor(){
         val NOTIFICATION_CHARACTERISTIC: UUID = UUID.fromString("de915dce-3539-61ea-ade7-d44a2237601f")
     }
 
-    enum class D6Features(val byte: Int){
+    enum class ConfigD6(val byte: Int){
         SIZE(13),
         LOCK_DIRECTION (0),
         KEYPRESS_BEEP (1),
@@ -38,7 +38,7 @@ class BleCmdRepository @Inject constructor(){
         LOW_BATTERY (8),
         TIMESTAMP (9)
     }
-    enum class A2Features(val byte: Int){
+    enum class ConfigA2(val byte: Int){
         SIZE(8),
         LOCK_DIRECTION (0),
         VACATION_MODE (1),
@@ -612,39 +612,39 @@ class BleCmdRepository @Inject constructor(){
 
     private fun resolveA2(data: ByteArray): DeviceStatus.A2 {
         val lockSetting = DeviceStatus.A2(
-            direction = when (data[A2Features.LOCK_DIRECTION.byte].unSignedInt()) {
+            direction = when (data[ConfigA2.LOCK_DIRECTION.byte].unSignedInt()) {
                 0xA0 -> BleV2Lock.Direction.RIGHT.value
                 0xA1 -> BleV2Lock.Direction.LEFT.value
                 0xA2 -> BleV2Lock.Direction.UNKNOWN.value
                 else -> BleV2Lock.Direction.NOT_SUPPORT.value
             },
-            vacationMode = when (data[A2Features.VACATION_MODE.byte].unSignedInt()) {
+            vacationMode = when (data[ConfigA2.VACATION_MODE.byte].unSignedInt()) {
                 0 -> BleV2Lock.VacationMode.CLOSE.value
                 1 -> BleV2Lock.VacationMode.OPEN.value
                 else -> BleV2Lock.VacationMode.NOT_SUPPORT.value
             },
-            deadBolt = when (data[A2Features.DEAD_BOLT.byte].unSignedInt()) {
+            deadBolt = when (data[ConfigA2.DEAD_BOLT.byte].unSignedInt()) {
                 0 -> BleV2Lock.DeadBolt.NOT_PROTRUDE.value
                 1 -> BleV2Lock.DeadBolt.PROTRUDE.value
                 else -> BleV2Lock.DeadBolt.NOT_SUPPORT.value
             },
-            doorState = when (data[A2Features.DOOR_STATE.byte].unSignedInt()) {
+            doorState = when (data[ConfigA2.DOOR_STATE.byte].unSignedInt()) {
                 0 -> BleV2Lock.DoorState.OPEN.value
                 1 -> BleV2Lock.DoorState.CLOSE.value
                 else -> BleV2Lock.DoorState.NOT_SUPPORT.value
             },
-            lockState = when (data[A2Features.LOCK_STATE.byte].unSignedInt()) {
+            lockState = when (data[ConfigA2.LOCK_STATE.byte].unSignedInt()) {
                 0 -> BleV2Lock.LockState.UNLOCKED.value
                 1 -> BleV2Lock.LockState.LOCKED.value
                 else -> BleV2Lock.LockState.UNKNOWN.value
             },
-            securityBolt = when (data[A2Features.SECURITY_BOLT.byte].unSignedInt()) {
+            securityBolt = when (data[ConfigA2.SECURITY_BOLT.byte].unSignedInt()) {
                 0 -> BleV2Lock.SecurityBolt.NOT_PROTRUDE.value
                 1 -> BleV2Lock.SecurityBolt.PROTRUDE.value
                 else -> BleV2Lock.SecurityBolt.NOT_SUPPORT.value
             },
-            battery = data[A2Features.BATTERY.byte].unSignedInt(),
-            batteryState = when (data[A2Features.LOW_BATTERY.byte].unSignedInt()) {
+            battery = data[ConfigA2.BATTERY.byte].unSignedInt(),
+            batteryState = when (data[ConfigA2.LOW_BATTERY.byte].unSignedInt()) {
                 0 -> BleV2Lock.BatteryState.NORMAL.value
                 1 -> BleV2Lock.BatteryState.WEAK_CURRENT.value
                 else -> BleV2Lock.BatteryState.DANGEROUS.value
@@ -819,37 +819,37 @@ class BleCmdRepository @Inject constructor(){
     }
 
     private fun resolveD6(data: ByteArray): DeviceStatus.D6 {
-        val autoLockTime = if (data[D6Features.AUTOLOCK_DELAY.byte].unSignedInt() !in 1..90) {
+        val autoLockTime = if (data[ConfigD6.AUTOLOCK_DELAY.byte].unSignedInt() !in 1..90) {
             1
         } else {
-            data[D6Features.AUTOLOCK_DELAY.byte].unSignedInt()
+            data[ConfigD6.AUTOLOCK_DELAY.byte].unSignedInt()
         }
         val lockSetting = DeviceStatus.D6(
             config = LockConfig.D4(
-                direction = when (data[D6Features.LOCK_DIRECTION.byte].unSignedInt()) {
+                direction = when (data[ConfigD6.LOCK_DIRECTION.byte].unSignedInt()) {
                     0xA0 -> LockDirection.Right
                     0xA1 -> LockDirection.Left
                     0xA2 -> LockDirection.NotDetermined
                     else -> throw LockStatusException.LockDirectionException()
                 },
-                isSoundOn = data[D6Features.KEYPRESS_BEEP.byte].unSignedInt() == 0x01,
-                isVacationModeOn = data[D6Features.VACATION_MODE.byte].unSignedInt() == 0x01,
-                isAutoLock = data[D6Features.AUTOLOCK.byte].unSignedInt() == 0x01,
+                isSoundOn = data[ConfigD6.KEYPRESS_BEEP.byte].unSignedInt() == 0x01,
+                isVacationModeOn = data[ConfigD6.VACATION_MODE.byte].unSignedInt() == 0x01,
+                isAutoLock = data[ConfigD6.AUTOLOCK.byte].unSignedInt() == 0x01,
                 autoLockTime = autoLockTime,
-                isGuidingCodeOn = data[D6Features.GUIDING_CODE.byte].unSignedInt() == 0x01
+                isGuidingCodeOn = data[ConfigD6.GUIDING_CODE.byte].unSignedInt() == 0x01
             ),
-            lockState = when (data[D6Features.LOCK_STATE.byte].unSignedInt()) {
+            lockState = when (data[ConfigD6.LOCK_STATE.byte].unSignedInt()) {
                 0 -> LockState.UNLOCKED
                 1 -> LockState.LOCKED
                 else -> LockState.UNKNOWN
             },
-            battery = data[D6Features.BATTERY.byte].unSignedInt(),
-            batteryState = when (data[D6Features.LOW_BATTERY.byte].unSignedInt()) {
+            battery = data[ConfigD6.BATTERY.byte].unSignedInt(),
+            batteryState = when (data[ConfigD6.LOW_BATTERY.byte].unSignedInt()) {
                 0 -> BatteryState.BATTERY_GOOD
                 1 -> BatteryState.BATTERY_LOW
                 else -> BatteryState.BATTERY_ALERT
             },
-            timestamp = data.copyOfRange(D6Features.TIMESTAMP.byte, D6Features.SIZE.byte).toInt().toLong()
+            timestamp = data.copyOfRange(ConfigD6.TIMESTAMP.byte, ConfigD6.SIZE.byte).toInt().toLong()
         )
         return lockSetting
     }

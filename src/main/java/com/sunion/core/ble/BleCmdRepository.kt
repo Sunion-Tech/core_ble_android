@@ -49,6 +49,19 @@ class BleCmdRepository @Inject constructor(){
         BATTERY (6),
         LOW_BATTERY (7)
     }
+    enum class Config82(val byte: Int){
+        SIZE(10),
+        MAIN_VERSION (0),
+        SUB_VERSION (1),
+        LOCK_DIRECTION (2),
+        VACATION_MODE (3),
+        DEAD_BOLT (4),
+        DOOR_STATE ( 5),
+        LOCK_STATE (6),
+        SECURITY_BOLT (7),
+        BATTERY (8),
+        LOW_BATTERY (9)
+    }
     enum class ConfigD4(val byte: Int){
         SIZE(22),
         LOCK_DIRECTION (0),
@@ -99,6 +112,50 @@ class BleCmdRepository @Inject constructor(){
         SOUND_TYPE (25),
         SOUND_VALUE (26),
         SHOW_FAST_TRACK_MODE (27)
+    }
+
+    enum class Config80(val byte: Int){
+        MAIN_VERSION (0),
+        SUB_VERSION (1),
+        FORMAT_VERSION (2),
+        SERVER_VERSION (3),
+        LATITUDE_INTEGER (7),
+        LATITUDE_DECIMAL (11),
+        LONGITUDE_INTEGER (15),
+        LONGITUDE_DECIMAL (19),
+        LOCK_DIRECTION (23),
+        GUIDING_CODE (24),
+        VIRTUAL_CODE (25),
+        TWO_FA (26),
+        VACATION_MODE (27),
+        AUTOLOCK (28),
+        AUTOLOCK_DELAY ( 29),
+        AUTOLOCK_DELAY_LOWER_LIMIT (31),
+        AUTOLOCK_DELAY_UPPER_LIMIT (33),
+        OPERATING_SOUND (35),
+        SOUND_TYPE (36),
+        SOUND_VALUE (37),
+        SHOW_FAST_TRACK_MODE (38),
+        SABBATH_MODE (39),
+    }
+
+    enum class Config81(val byte: Int){
+        LATITUDE_INTEGER (0),
+        LATITUDE_DECIMAL (4),
+        LONGITUDE_INTEGER (8),
+        LONGITUDE_DECIMAL (12),
+        LOCK_DIRECTION (16),
+        GUIDING_CODE (17),
+        VIRTUAL_CODE (18),
+        TWO_FA (19),
+        VACATION_MODE (20),
+        AUTOLOCK (21),
+        AUTOLOCK_DELAY ( 22),
+        OPERATING_SOUND (24),
+        SOUND_TYPE (25),
+        SOUND_VALUE (26),
+        SHOW_FAST_TRACK_MODE (27),
+        SABBATH_MODE (28),
     }
 
     @SuppressLint("GetInstance")
@@ -159,23 +216,23 @@ class BleCmdRepository @Inject constructor(){
         data: ByteArray = byteArrayOf()
     ): ByteArray {
         return when (function) {
-            0xA0, 0xA2, 0xA4, 0xB0, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
+            0x80, 0x82, 0x85, 0x86, 0x87, 0xA0, 0xA2, 0xA4, 0xB0, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
                 cmd(function, key)
+            }
+            0x81, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
+                cmd(function, key, data.size, data)
+            }
+            0x83, 0x84, 0xA3 -> {
+                cmd(function, key, 2, data)
             }
             0xA1 -> {
                 cmd(function, key, 28, data)
-            }
-            0xA3 -> {
-                cmd(function, key, 2, data)
             }
             0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE3, 0xE5, 0xEB, 0xEE -> {
                 cmd(function, key, 1, data)
             }
             0xA6, 0xAA -> {
                 cmd(function, key, 3, data)
-            }
-            0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
-                cmd(function, key, data.size, data)
             }
             0xA9, 0xD3 -> {
                 cmd(function, key, 4, data)
@@ -318,6 +375,52 @@ class BleCmdRepository @Inject constructor(){
         return data
     }
 
+    fun settingBytes81(setting: LockConfig.Eighty): ByteArray {
+        val settingBytes = ByteArray(setting.size)
+
+        val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude)
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[Config81.LATITUDE_INTEGER.byte + i] =
+            latitudeIntPartBytes[i]
+        val latitudeDecimalInt =
+            latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
+                .toInt()
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LATITUDE_DECIMAL.byte + i] =
+            latitudeDecimalPartBytes[i]
+        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
+
+        val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude)
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_INTEGER.byte + i] =
+            longitudeIntPartBytes[i]
+        val longitudeDecimalInt =
+            longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
+                .scaleByPowerOfTen(9).toInt()
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_DECIMAL.byte + i] =
+            longitudeDecimalPartBytes[i]
+        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
+
+        Timber.d("LockConfig.A0: $setting")
+        settingBytes[Config81.LOCK_DIRECTION.byte] = setting.direction.toByte()
+        settingBytes[Config81.GUIDING_CODE.byte] = setting.guidingCode.toByte()
+        settingBytes[Config81.VIRTUAL_CODE.byte] = setting.virtualCode.toByte()
+        settingBytes[Config81.TWO_FA.byte] = setting.twoFA.toByte()
+        settingBytes[Config81.VACATION_MODE.byte] = setting.vacationMode.toByte()
+        settingBytes[Config81.AUTOLOCK.byte] = setting.autoLock.toByte()
+        val autoLockDelayBytes = setting.autoLockTime.toLittleEndianByteArrayInt16()
+        for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[Config81.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
+        settingBytes[Config81.OPERATING_SOUND.byte] = setting.operatingSound.toByte()
+        settingBytes[Config81.SOUND_TYPE.byte] = setting.soundType.toByte()
+        settingBytes[Config81.SOUND_VALUE.byte] = setting.soundValue.toByte()
+        settingBytes[Config81.SHOW_FAST_TRACK_MODE.byte] = setting.showFastTrackMode.toByte()
+        settingBytes[Config81.SABBATH_MODE.byte] = setting.sabbathMode.toByte()
+        Timber.d("settingBytes81: ${settingBytes.toHexPrint()}")
+
+        return settingBytes
+    }
+
     fun settingBytesA1(setting: LockConfig.A0): ByteArray {
         val settingBytes = ByteArray(ConfigA1.SIZE.byte)
 
@@ -399,17 +502,37 @@ class BleCmdRepository @Inject constructor(){
             Timber.d("resolve[${function.toHexString()}]: ${checkFunction.toHexString()}, ${byteArrayData.size}, ${byteArrayData.toHexPrint()}")
             if (checkFunction == function) {
                 when (function) {
-                    0xA0 -> {
-                        // LockConfig.A0
-                        resolveA0(byteArrayData)
+                    0x80 -> {
+                        // LockConfig.Eighty
+                        resolve80(byteArrayData)
                     }
-                    0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
+                    0X81 -> {
+                        // LockConfig.EightyOne
+                        resolve81(byteArrayData)
+                    }
+                    0x82 -> {
+                        // DeviceStatus.EightyTwo
+                        resolve82(byteArrayData)
+                    }
+                    0x84, 0x87, 0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
                             0x00 -> false
                             else -> throw IllegalArgumentException("Unknown data")
                         }
+                    }
+                    0x85 -> {
+                        // BleV3Lock.UserAbility
+                        resolve85(byteArrayData)
+                    }
+                    0x86 -> {
+                        // BleV3Lock.UserCount
+                        resolve86(byteArrayData)
+                    }
+                    0xA0 -> {
+                        // LockConfig.A0
+                        resolveA0(byteArrayData)
                     }
                     0xA2 -> {
                         // DeviceStatus.A2
@@ -501,6 +624,205 @@ class BleCmdRepository @Inject constructor(){
                 throw IllegalArgumentException("Return function byte is not [$function]")
             }
         } ?: throw IllegalArgumentException("Error when decryption")
+    }
+
+    private fun resolve80(data: ByteArray): LockConfig.Eighty {
+        val autoLockTimeInt = data.copyOfRange(Config80.AUTOLOCK_DELAY.byte,Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
+        Timber.d("autoLockTimeInt: $autoLockTimeInt")
+        val autoLockTimeLowerLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte,Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
+        Timber.d("autoLockTimeLowerLimitInt: $autoLockTimeLowerLimitInt")
+        val autoLockTimeUpperLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte,Config80.OPERATING_SOUND.byte).toInt()
+        Timber.d("autoLockTimeUpperLimitInt: $autoLockTimeUpperLimitInt")
+
+        val latIntPart = data.copyOfRange(Config80.LATITUDE_INTEGER.byte, Config80.LATITUDE_DECIMAL.byte).toInt()
+        Timber.d("latIntPart: $latIntPart")
+        val latDecimalPart = data.copyOfRange(Config80.LATITUDE_DECIMAL.byte, Config80.LONGITUDE_INTEGER.byte).toInt()
+        val latDecimal = latDecimalPart.toBigDecimal().movePointLeft(9)
+        Timber.d("latDecimalPart: $latIntPart, latDecimal: $latDecimal")
+        val lat = latIntPart.toBigDecimal().plus(latDecimal)
+        Timber.d("lat: $lat, ${lat.toPlainString()}")
+
+        val lngIntPart = data.copyOfRange(Config80.LONGITUDE_INTEGER.byte, Config80.LONGITUDE_DECIMAL.byte).toInt()
+        Timber.d("lngIntPart: $lngIntPart")
+        val lngDecimalPart = data.copyOfRange(Config80.LONGITUDE_DECIMAL.byte, Config80.LOCK_DIRECTION.byte).toInt()
+        val lngDecimal = lngDecimalPart.toBigDecimal().movePointLeft(9)
+        Timber.d("lngIntPart: $lngIntPart, lngDecimal: $lngDecimal")
+        val lng = lngIntPart.toBigDecimal().plus(lngDecimal)
+        Timber.d("lng: $lng, ${lng.toPlainString()}")
+
+        var lockConfig80 = LockConfig.Eighty(
+            size = data.size,
+            mainVersion = data[Config80.MAIN_VERSION.byte].unSignedInt(),
+            subVersion = data[Config80.SUB_VERSION.byte].unSignedInt(),
+            formatVersion = data[Config80.FORMAT_VERSION.byte].unSignedInt(),
+            serverVersion = data[Config80.SERVER_VERSION.byte].unSignedInt(),
+            latitude = lat.toDouble(),
+            longitude = lng.toDouble(),
+            direction = when (data[Config80.LOCK_DIRECTION.byte].unSignedInt()) {
+                0xA0 -> BleV3Lock.Direction.RIGHT.value
+                0xA1 -> BleV3Lock.Direction.LEFT.value
+                0xA2 -> BleV3Lock.Direction.UNKNOWN.value
+                else -> BleV3Lock.Direction.NOT_SUPPORT.value
+            },
+            guidingCode = when (data[Config80.GUIDING_CODE.byte].unSignedInt()) {
+                0 -> BleV3Lock.GuidingCode.CLOSE.value
+                1 -> BleV3Lock.GuidingCode.OPEN.value
+                else -> BleV3Lock.GuidingCode.NOT_SUPPORT.value
+            },
+            virtualCode = when (data[Config80.VIRTUAL_CODE.byte].unSignedInt()) {
+                0 -> BleV3Lock.VirtualCode.CLOSE.value
+                1 -> BleV3Lock.VirtualCode.OPEN.value
+                else -> BleV3Lock.VirtualCode.NOT_SUPPORT.value
+            },
+            twoFA = when (data[Config80.TWO_FA.byte].unSignedInt()) {
+                0 -> BleV3Lock.TwoFA.CLOSE.value
+                1 -> BleV3Lock.TwoFA.OPEN.value
+                else -> BleV3Lock.TwoFA.NOT_SUPPORT.value
+            },
+            vacationMode = when (data[Config80.VACATION_MODE.byte].unSignedInt()) {
+                0 -> BleV3Lock.VacationMode.CLOSE.value
+                1 -> BleV3Lock.VacationMode.OPEN.value
+                else -> BleV3Lock.VacationMode.NOT_SUPPORT.value
+            },
+            autoLock = when (data[Config80.AUTOLOCK.byte].unSignedInt()) {
+                0 -> BleV3Lock.AutoLock.CLOSE.value
+                1 -> BleV3Lock.AutoLock.OPEN.value
+                else -> BleV3Lock.AutoLock.NOT_SUPPORT.value
+            },
+            autoLockTime = when (autoLockTimeInt) {
+                0xFFFF -> BleV3Lock.AutoLockTime.NOT_SUPPORT.value
+                else -> {
+                    autoLockTimeInt
+                }
+            },
+            autoLockTimeLowerLimit = when (autoLockTimeLowerLimitInt) {
+                0xFFFF -> BleV3Lock.AutoLockTimeLowerLimit.NOT_SUPPORT.value
+                else -> {
+                    autoLockTimeLowerLimitInt
+                }
+            },
+            autoLockTimeUpperLimit = when (autoLockTimeUpperLimitInt) {
+                0xFFFF -> BleV3Lock.AutoLockTimeUpperLimit.NOT_SUPPORT.value
+                else -> {
+                    autoLockTimeUpperLimitInt
+                }
+            },
+            operatingSound = when (data[Config80.OPERATING_SOUND.byte].unSignedInt()) {
+                0 -> BleV3Lock.OperatingSound.CLOSE.value
+                1 -> BleV3Lock.OperatingSound.OPEN.value
+                else -> BleV3Lock.OperatingSound.NOT_SUPPORT.value
+            },
+            soundType = when (data[Config80.SOUND_TYPE.byte].unSignedInt()) {
+                0x01 -> BleV3Lock.SoundType.ON_OFF.value
+                0x02 -> BleV3Lock.SoundType.LEVEL.value
+                0x03 -> BleV3Lock.SoundType.PERCENTAGE.value
+                else -> BleV3Lock.SoundType.NOT_SUPPORT.value
+            },
+            soundValue = when (data[Config80.SOUND_TYPE.byte].unSignedInt()) {
+                0x01 -> if (data[Config80.SOUND_VALUE.byte].unSignedInt() == 100) BleV3Lock.SoundValue.OPEN.value else BleV3Lock.SoundValue.CLOSE.value
+                0x02 -> when (data[Config80.SOUND_VALUE.byte].unSignedInt()) {
+                    100 -> BleV3Lock.SoundValue.HIGH_VOICE.value
+                    50 -> BleV3Lock.SoundValue.LOW_VOICE.value
+                    else -> BleV3Lock.SoundValue.CLOSE.value
+                }
+                0x03 -> data[Config80.SOUND_VALUE.byte].unSignedInt()
+                else -> BleV3Lock.SoundValue.NOT_SUPPORT.value
+            },
+            showFastTrackMode = when (data[Config80.SHOW_FAST_TRACK_MODE.byte].unSignedInt()) {
+                0 -> BleV3Lock.ShowFastTrackMode.CLOSE.value
+                1 -> BleV3Lock.ShowFastTrackMode.OPEN.value
+                else -> BleV3Lock.ShowFastTrackMode.NOT_SUPPORT.value
+            },
+            sabbathMode = when (data[Config80.SABBATH_MODE.byte].unSignedInt()) {
+                0 -> BleV3Lock.SabbathMode.CLOSE.value
+                1 -> BleV3Lock.SabbathMode.OPEN.value
+                else -> BleV3Lock.SabbathMode.NOT_SUPPORT.value
+            },
+        )
+        Timber.d("resolve80: $lockConfig80")
+        return lockConfig80
+    }
+
+    private fun resolve81(data: ByteArray): LockConfig.EightyOne {
+        var lockConfig81 = LockConfig.EightyOne(
+            isSuccess = data.component1().unSignedInt() == 0x01
+        )
+        if(lockConfig81.isSuccess){
+            lockConfig81 = lockConfig81.copy(version = data.copyOfRange(1, 5).toInt())
+        }
+        return lockConfig81
+    }
+
+    private fun resolve82(data: ByteArray): DeviceStatus.EightTwo {
+        val lockSetting = DeviceStatus.EightTwo(
+            mainVersion = data[Config82.MAIN_VERSION.byte].unSignedInt(),
+            subVersion = data[Config82.SUB_VERSION.byte].unSignedInt(),
+            direction = when (data[Config82.LOCK_DIRECTION.byte].unSignedInt()) {
+                0xA0 -> BleV2Lock.Direction.RIGHT.value
+                0xA1 -> BleV2Lock.Direction.LEFT.value
+                0xA2 -> BleV2Lock.Direction.UNKNOWN.value
+                else -> BleV2Lock.Direction.NOT_SUPPORT.value
+            },
+            vacationMode = when (data[Config82.VACATION_MODE.byte].unSignedInt()) {
+                0 -> BleV2Lock.VacationMode.CLOSE.value
+                1 -> BleV2Lock.VacationMode.OPEN.value
+                else -> BleV2Lock.VacationMode.NOT_SUPPORT.value
+            },
+            deadBolt = when (data[Config82.DEAD_BOLT.byte].unSignedInt()) {
+                0 -> BleV2Lock.DeadBolt.NOT_PROTRUDE.value
+                1 -> BleV2Lock.DeadBolt.PROTRUDE.value
+                else -> BleV2Lock.DeadBolt.NOT_SUPPORT.value
+            },
+            doorState = when (data[Config82.DOOR_STATE.byte].unSignedInt()) {
+                0 -> BleV2Lock.DoorState.OPEN.value
+                1 -> BleV2Lock.DoorState.CLOSE.value
+                else -> BleV2Lock.DoorState.NOT_SUPPORT.value
+            },
+            lockState = when (data[Config82.LOCK_STATE.byte].unSignedInt()) {
+                0 -> BleV2Lock.LockState.UNLOCKED.value
+                1 -> BleV2Lock.LockState.LOCKED.value
+                else -> BleV2Lock.LockState.UNKNOWN.value
+            },
+            securityBolt = when (data[Config82.SECURITY_BOLT.byte].unSignedInt()) {
+                0 -> BleV2Lock.SecurityBolt.NOT_PROTRUDE.value
+                1 -> BleV2Lock.SecurityBolt.PROTRUDE.value
+                else -> BleV2Lock.SecurityBolt.NOT_SUPPORT.value
+            },
+            battery = data[Config82.BATTERY.byte].unSignedInt(),
+            batteryState = when (data[Config82.LOW_BATTERY.byte].unSignedInt()) {
+                0 -> BleV2Lock.BatteryState.NORMAL.value
+                1 -> BleV2Lock.BatteryState.WEAK_CURRENT.value
+                else -> BleV2Lock.BatteryState.DANGEROUS.value
+            }
+        )
+        Timber.d("resolve82: $lockSetting")
+        return lockSetting
+    }
+
+    private fun resolve85(data: ByteArray): BleV3Lock.UserAbility {
+        val response = BleV3Lock.UserAbility(
+            isMatter = data.component1().unSignedInt() == 0x01,
+            weekDayScheduleCount = data.component2().unSignedInt(),
+            yearDayScheduleCount = data.component3().unSignedInt(),
+            codeCredentialCount = data.component4().unSignedInt(),
+            cardCredentialCount = data.component5().unSignedInt(),
+            fpCredentialCount = data.copyOfRange(5, 6).toInt(),
+            faceCredentialCount = data.copyOfRange(6, 7).toInt(),
+        )
+        Timber.d("resolve85: $response")
+        return response
+    }
+
+    private fun resolve86(data: ByteArray): BleV3Lock.UserCount {
+        val response = BleV3Lock.UserCount(
+            matterCount = data.copyOfRange(0, 2).toInt(),
+            codeCount = data.copyOfRange(2, 4).toInt(),
+            cardCount = data.copyOfRange(4, 6).toInt(),
+            fpCount = data.copyOfRange(6, 8).toInt(),
+            faceCount = data.copyOfRange(8, 10).toInt(),
+        )
+        Timber.d("resolve86: $response")
+        return response
     }
 
     private fun resolveA0(data: ByteArray): LockConfig.A0 {

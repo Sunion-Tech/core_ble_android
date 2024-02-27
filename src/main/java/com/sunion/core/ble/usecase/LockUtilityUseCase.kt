@@ -4,6 +4,7 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.BleV2Lock
+import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.exception.NotConnectedException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -136,6 +137,90 @@ class LockUtilityUseCase @Inject constructor(
             .flowOn(Dispatchers.IO)
             .catch { e ->
                 Timber.e("LockUtilityUseCase.getFirmwareVersion $type exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun queryUserAbility(): BleV3Lock.UserAbility {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0x85,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.queryUserAbility")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0x85)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0x85,
+                    statefulConnection.key(),
+                    notification
+                ) as BleV3Lock.UserAbility
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.queryUserAbility exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun queryUserCount(): BleV3Lock.UserCount {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0x86,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.queryUserCount")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0x86)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0x86,
+                    statefulConnection.key(),
+                    notification
+                ) as BleV3Lock.UserCount
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.queryUserCount exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun isMatterDevice(): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0x87,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.isMatterDevice")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0x87)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0x87,
+                    statefulConnection.key(),
+                    notification
+                ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.isMatterDevice exception $e")
                 throw e
             }
             .single()

@@ -26,4 +26,17 @@ sealed class DeviceStatus: SunionBleNotification() {
         val connectWifi: Int,
         val plugState: Int,
     ) : DeviceStatus()
+
+    data class EightTwo(
+        val mainVersion: Int,
+        val subVersion: Int,
+        val direction: Int,
+        val vacationMode: Int,
+        val deadBolt: Int,
+        val doorState: Int,
+        val lockState: Int,
+        val securityBolt: Int,
+        val battery: Int,
+        val batteryState: Int,
+    ) : DeviceStatus()
 }

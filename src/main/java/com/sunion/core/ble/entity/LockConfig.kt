@@ -30,4 +30,33 @@ sealed class LockConfig {
         val soundValue: Int,
         val showFastTrackMode: Int
     ): LockConfig()
+
+    data class Eighty(
+        val size: Int,
+        val mainVersion: Int,
+        val subVersion: Int,
+        val formatVersion: Int,
+        val serverVersion: Int,
+        val latitude: Double,
+        val longitude: Double,
+        val direction: Int,
+        val guidingCode: Int,
+        val virtualCode: Int,
+        val twoFA: Int,
+        val vacationMode: Int,
+        val autoLock: Int,
+        val autoLockTime: Int,
+        val autoLockTimeLowerLimit: Int,
+        val autoLockTimeUpperLimit: Int,
+        val operatingSound: Int,
+        val soundType: Int,
+        val soundValue: Int,
+        val showFastTrackMode: Int,
+        val sabbathMode: Int,
+    ): LockConfig()
+
+    data class EightyOne(
+        val isSuccess: Boolean,
+        val version: Int? = null,
+    ): LockConfig()
 }

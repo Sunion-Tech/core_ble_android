@@ -571,7 +571,7 @@ class BleCmdRepository @Inject constructor(){
                         byteArrayData
                     }
                     0xC2 -> {
-                        // Version String
+                        // BleV3Lock.LockVersion
                         resolveC2(byteArrayData)
                     }
                     0xC3 -> {
@@ -1084,11 +1084,13 @@ class BleCmdRepository @Inject constructor(){
         return response
     }
 
-    private fun resolveC2(data: ByteArray): String {
-        val versionName = data.component1().unSignedInt()
-        val version = data.copyOfRange(1, 3)
-        Timber.d("resolveC2: ${String(version)}")
-        return String(version)
+    private fun resolveC2(data: ByteArray): BleV3Lock.LockVersion {
+        val lockVersion = BleV3Lock.LockVersion(
+            target = data.component1().unSignedInt(),
+            version = data.copyOfRange(1, 3).toInt()
+        )
+        Timber.d("resolveC2: $lockVersion")
+        return lockVersion
     }
 
     private fun resolveC3(data: ByteArray): BleV2Lock.OTAStatus {

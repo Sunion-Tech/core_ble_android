@@ -187,4 +187,9 @@ data class BleV3Lock(
         val fpCount: Int,
         val faceCount: Int,
     )
+
+    data class LockVersion(
+        val target: Int,
+        val version: Int,
+    )
 }

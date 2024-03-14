@@ -20,7 +20,6 @@ class LockTokenUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
 
-    /** E4 **/
     suspend fun queryTokenArray(): List<Int> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -53,7 +52,6 @@ class LockTokenUseCase @Inject constructor(
             .single()
     }
 
-    /** E5 **/
     suspend fun queryToken(index: Int): DeviceToken.PermanentToken {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -83,7 +81,6 @@ class LockTokenUseCase @Inject constructor(
             .single()
     }
 
-    /** E6 **/
     suspend fun addOneTimeToken(permission: String, name: String): AddUserResponse {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = permission.toByteArray() + name.toByteArray()
@@ -114,7 +111,6 @@ class LockTokenUseCase @Inject constructor(
             .single()
     }
 
-    /** E7: **/
     suspend fun editToken(index: Int, permission: String, name: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.toByteArray()

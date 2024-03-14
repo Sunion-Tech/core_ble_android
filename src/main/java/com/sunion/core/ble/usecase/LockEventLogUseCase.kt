@@ -14,7 +14,6 @@ class LockEventLogUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
 
-    /** E0 **/
     suspend fun getEventQuantity(): Int {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -42,7 +41,6 @@ class LockEventLogUseCase @Inject constructor(
             .single()
     }
 
-    /** E1 **/
     suspend fun getEvent(index: Int): EventLog {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -72,7 +70,6 @@ class LockEventLogUseCase @Inject constructor(
             .single()
     }
 
-    /** E2 **/
     suspend fun deleteEvent(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = byteArrayOf(index.toByte())

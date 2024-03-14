@@ -18,7 +18,6 @@ class LockAccessCodeUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    /** EA **/
     suspend fun getAccessCodeArray(): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -53,7 +52,6 @@ class LockAccessCodeUseCase @Inject constructor(
             .single()
     }
 
-    /** EB **/
     suspend fun queryAccessCode(index: Int): Access.Code {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(
@@ -84,7 +82,6 @@ class LockAccessCodeUseCase @Inject constructor(
             .single()
     }
 
-    /** EC **/
     suspend fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
@@ -121,7 +118,6 @@ class LockAccessCodeUseCase @Inject constructor(
             .single()
     }
 
-    /** ED **/
     suspend fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendBytes = bleCmdRepository.combineUserCodeCommand(
@@ -158,7 +154,6 @@ class LockAccessCodeUseCase @Inject constructor(
             .single()
     }
 
-    /** EE **/
     suspend fun deleteAccessCode(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = bleCmdRepository.createCommand(

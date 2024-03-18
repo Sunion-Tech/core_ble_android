@@ -5,8 +5,8 @@ import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.User
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.toBooleanList
 import com.sunion.core.ble.toLittleEndianByteArrayInt16
-import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.experimental.and
-import kotlin.math.pow
 
 class LockUserUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
@@ -44,9 +42,7 @@ class LockUserUseCase @Inject constructor(
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
-                decoded.data.forEach { byte: Byte ->
-                    byteBooleanArray(list, byte)
-                }
+                decoded.data.forEach { it.toBooleanList(list) }
                 list.toList()
                 list
             }
@@ -229,9 +225,7 @@ class LockUserUseCase @Inject constructor(
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
-                decoded.data.forEach { byte: Byte ->
-                    byteBooleanArray(list, byte)
-                }
+                decoded.data.forEach { it.toBooleanList(list) }
                 list.toList()
                 list
             }
@@ -553,11 +547,4 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    fun byteBooleanArray(mapTo: MutableList<Boolean>, byte: Byte) {
-        (0..7).forEach { index ->
-            mapTo.add(
-                (byte and ((2.0.pow(index.toDouble()).toInt()).toByte())).unSignedInt() != 0
-            )
-        }
-    }
 }

@@ -8,8 +8,6 @@ import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.experimental.and
-import kotlin.math.pow
 
 @Singleton
 class LockAccessUseCase @Inject constructor(
@@ -38,9 +36,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
-                decoded.data.forEach { byte: Byte ->
-                    byteBooleanArray(list, byte)
-                }
+                decoded.data.forEach { it.toBooleanList(list) }
                 list.toList()
                 list
             }
@@ -246,14 +242,6 @@ class LockAccessUseCase @Inject constructor(
     suspend fun deleteAccessCard(index: Int): Boolean = deleteAccess(1, index)
     suspend fun deleteFingerprint(index: Int): Boolean = deleteAccess(2, index)
     suspend fun deleteFace(index: Int): Boolean = deleteAccess(3, index)
-
-    fun byteBooleanArray(mapTo: MutableList<Boolean>, byte: Byte) {
-        (0..7).forEach { index ->
-            mapTo.add(
-                (byte and ((2.0.pow(index.toDouble()).toInt()).toByte())).unSignedInt() != 0
-            )
-        }
-    }
 
 }
 

@@ -4,14 +4,12 @@ import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.exception.NotConnectedException
-import com.sunion.core.ble.unSignedInt
+import com.sunion.core.ble.toBooleanList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.experimental.and
-import kotlin.math.pow
 
 @Singleton
 class LockAccessCodeUseCase @Inject constructor(
@@ -39,9 +37,7 @@ class LockAccessCodeUseCase @Inject constructor(
             }
             .map { decoded ->
                 val list = mutableListOf<Boolean>()
-                decoded.forEach { byte: Byte ->
-                    byteBooleanArray(list, byte)
-                }
+                decoded.forEach { it.toBooleanList(list) }
                 list.toList()
                 list
             }
@@ -183,12 +179,5 @@ class LockAccessCodeUseCase @Inject constructor(
             .single()
     }
 
-    fun byteBooleanArray(mapTo: MutableList<Boolean>, byte: Byte) {
-        (0..7).forEach { index ->
-            mapTo.add(
-                (byte and ((2.0.pow(index.toDouble()).toInt()).toByte())).unSignedInt() != 0
-            )
-        }
-    }
 }
 

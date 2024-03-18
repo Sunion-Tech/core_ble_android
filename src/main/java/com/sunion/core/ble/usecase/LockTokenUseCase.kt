@@ -41,8 +41,8 @@ class LockTokenUseCase @Inject constructor(
             }
             .map { bytes ->
                 val indexIterable = bytes
-                    .mapIndexed { index, byte -> if (byte.unSignedInt() != 0x00) index else -1 }
-                    .filter { index -> index != -1 }
+                    .mapIndexed { index, byte -> if (byte.unSignedInt() != 0x00) index else null }
+                    .filterNotNull()
                 indexIterable
             }
             .flowOn(Dispatchers.IO)

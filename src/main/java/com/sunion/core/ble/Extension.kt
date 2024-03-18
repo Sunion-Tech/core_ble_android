@@ -11,6 +11,13 @@ fun Byte.toHexString(): String {
     return String.format("%02X", this)
 }
 
+fun Byte.toBooleanList(list: MutableList<Boolean> = mutableListOf()): List<Boolean> {
+    (0..7).forEach { index ->
+        list.add((this.toInt() and (1 shl index)) != 0)
+    }
+    return list
+}
+
 //ByteArray
 fun ByteArray.toHexPrint(): String {
     return joinToString(", ") { "%02X".format(it) }

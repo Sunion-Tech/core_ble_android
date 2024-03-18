@@ -23,7 +23,7 @@ class DeviceStatus82Command(private val bleCmdRepository: BleCmdRepository) :
         ) as DeviceStatus.EightTwo
     }
 
-    /** receive A2 or EF **/
+    /** receive 82 or EF **/
     override fun match(key: String, data: ByteArray): Boolean {
         return bleCmdRepository.isValidNotification(key.hexToByteArray(), data, function)
     }

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import com.sunion.core.ble.entity.*
 import com.sunion.core.ble.exception.LockStatusException
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -216,26 +217,26 @@ class BleCmdRepository @Inject constructor(){
         data: ByteArray = byteArrayOf()
     ): ByteArray {
         return when (function) {
-            0x80, 0x82, 0x85, 0x86, 0x87, 0xA0, 0xA2, 0xA4, 0xB0, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
+            0x80, 0x82, 0x85, 0x86, 0x87, 0x90, 0x94, 0x9A, 0x9B, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
                 cmd(function, key)
             }
-            0x81, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
+            0x81, 0x92, 0x96, 0x9C, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
                 cmd(function, key, data.size, data)
             }
-            0x83, 0x84, 0xA3 -> {
+            0x83, 0x84, 0x91, 0x93, 0x98, 0xA3 -> {
                 cmd(function, key, 2, data)
+            }
+            0x95, 0xA6, 0xAA -> {
+                cmd(function, key, 3, data)
+            }
+            0x97, 0xA9, 0xD3 -> {
+                cmd(function, key, 4, data)
+            }
+            0x99, 0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE3, 0xE5, 0xEB, 0xEE -> {
+                cmd(function, key, 1, data)
             }
             0xA1 -> {
                 cmd(function, key, 28, data)
-            }
-            0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE3, 0xE5, 0xEB, 0xEE -> {
-                cmd(function, key, 1, data)
-            }
-            0xA6, 0xAA -> {
-                cmd(function, key, 3, data)
-            }
-            0xA9, 0xD3 -> {
-                cmd(function, key, 4, data)
             }
             0xC0 -> {
                 commandSerial.set(0)
@@ -373,6 +374,56 @@ class BleCmdRepository @Inject constructor(){
         }
         val data = typeByte + indexByte + isEnabledByte + scheduleByte + nameLenByte + nameByte + codeByte
         return data
+    }
+
+    fun combineUserNinetyTwoCommand(user92Cmd: User.NinetyTwoCmd): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user92Cmd.action)
+        outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
+        outputStream.write(user92Cmd.name.toByteArray())
+        outputStream.write(user92Cmd.uid.toByteArray())
+        outputStream.write(user92Cmd.status)
+        outputStream.write(user92Cmd.type)
+        outputStream.write(user92Cmd.credentialRule)
+        user92Cmd.credentialList?.forEach { credential ->
+            outputStream.write(credential.type)
+            outputStream.write(credential.index.toLittleEndianByteArrayInt16())
+        }
+        user92Cmd.weekDayScheduleList?.forEach { schedule ->
+            outputStream.write(schedule.status)
+            outputStream.write(schedule.dayMask)
+            outputStream.write(schedule.startHour)
+            outputStream.write(schedule.startMinute)
+            outputStream.write(schedule.endHour)
+            outputStream.write(schedule.endMinute)
+        }
+        user92Cmd.yearDayScheduleList?.forEach { schedule ->
+            outputStream.write(schedule.status)
+            outputStream.write(schedule.start.toLittleEndianByteArrayInt32())
+            outputStream.write(schedule.end.toLittleEndianByteArrayInt32())
+        }
+        return outputStream.toByteArray()
+    }
+
+    fun combineUserNinetySixCommand(user96Cmd: User.NinetySixCmd): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user96Cmd.action)
+        outputStream.write(user96Cmd.index.toLittleEndianByteArrayInt16())
+        if(user96Cmd.credentialDetail != null){
+            outputStream.write(user96Cmd.credentialDetail.status)
+            outputStream.write(user96Cmd.credentialDetail.type)
+            outputStream.write(user96Cmd.credentialDetail.userIndex.toLittleEndianByteArrayInt16())
+            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArray())
+        }
+        return outputStream.toByteArray()
+    }
+
+    fun combineUserNinetyCCommand(user9BCmd: User.NinetyB): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user9BCmd.type)
+        outputStream.write(user9BCmd.time.toLittleEndianByteArray())
+        outputStream.write(user9BCmd.index.toLittleEndianByteArrayInt16())
+        return outputStream.toByteArray()
     }
 
     fun settingBytes81(setting: LockConfig.Eighty): ByteArray {
@@ -514,7 +565,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.EightyTwo
                         resolve82(byteArrayData)
                     }
-                    0x84, 0x87, 0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
+                    0x84, 0x87, 0x9A, 0x9D, 0xA1, 0xC7, 0xC8, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
@@ -529,6 +580,38 @@ class BleCmdRepository @Inject constructor(){
                     0x86 -> {
                         // BleV3Lock.UserCount
                         resolve86(byteArrayData)
+                    }
+                    0x90, 0x94 -> {
+                        // User.Ninety
+                        resolve90(byteArrayData)
+                    }
+                    0x91 -> {
+                        // User.NinetyOne
+                        resolve91(byteArrayData)
+                    }
+                    0x92, 0x93, 0x96, 0x98 -> {
+                        // User.NinetyTwo
+                        resolve92(byteArrayData)
+                    }
+                    0x95 -> {
+                        // User.NinetyFive
+                        resolve95(byteArrayData)
+                    }
+                    0x97 -> {
+                        // User.NinetySeven
+                        resolve97(byteArrayData)
+                    }
+                    0x99 -> {
+                        // User.NinetyNine
+                        resolve99(byteArrayData)
+                    }
+                    0x9B -> {
+                        // User.NinetyB
+                        resolve9B(byteArrayData)
+                    }
+                    0x9C -> {
+                        // User.NinetyC
+                        resolve9C(byteArrayData)
                     }
                     0xA0 -> {
                         // LockConfig.A0
@@ -823,6 +906,178 @@ class BleCmdRepository @Inject constructor(){
         )
         Timber.d("resolve86: $response")
         return response
+    }
+
+    private fun resolve90(data: ByteArray): User.Ninety {
+        val transferComplete = data.component1().unSignedInt()
+        val dataByteArray = data.copyOfRange(1, data.size)
+        val user90 = User.Ninety(transferComplete, dataByteArray)
+        Timber.d("resolveA5: $user90")
+        return user90
+    }
+
+    private fun resolve91(data: ByteArray): User.NinetyOne {
+        val index = data.copyOfRange(0, 2).toInt()
+        val name = String(data.copyOfRange(2, 12))
+        val uid = data.copyOfRange(12, 16).toInt()
+        val status = data[16].unSignedInt()
+        val type = data[17].unSignedInt()
+        val credentialRule = data[18].unSignedInt()
+        val credentialListCount = data[19].unSignedInt()
+        val weekDayScheduleListCount = data[20].unSignedInt()
+        val yearDayScheduleListCount = data[21].unSignedInt()
+        val credentialListData = data.copyOfRange(22, 22 + credentialListCount * 3)
+        val weekDayScheduleListData = data.copyOfRange(
+            22 + credentialListCount * 3,
+            22 + credentialListCount * 3 + weekDayScheduleListCount * 6
+        )
+        val yearDayScheduleListData = data.copyOfRange(
+            22 + credentialListCount * 3 + weekDayScheduleListCount * 6,
+            22 + credentialListCount * 3 + weekDayScheduleListCount * 6 + yearDayScheduleListCount * 9
+        )
+        val credentialList:MutableList<BleV3Lock.Credential> = mutableListOf()
+        if(credentialListCount > 0) {
+            for (i in 0 until credentialListCount) {
+                credentialList.add(
+                    BleV3Lock.Credential(
+                        type = credentialListData.copyOfRange(i * 3 + 0, i * 3 + 1).toInt(),
+                        index = credentialListData.copyOfRange(i * 3 + 1, i * 3 + 3).toInt()
+                    )
+                )
+            }
+        }
+        val weekDayScheduleList:MutableList<BleV3Lock.WeekDaySchedule> = mutableListOf()
+        if(weekDayScheduleListCount > 0) {
+            for (i in 0 until weekDayScheduleListCount) {
+                weekDayScheduleList.add(
+                    BleV3Lock.WeekDaySchedule(
+                        status = weekDayScheduleListData.copyOfRange(i * 6 + 0, i * 6 + 1).toInt(),
+                        dayMask = weekDayScheduleListData.copyOfRange(i * 6 + 1, i * 6 + 2).toInt(),
+                        startHour = weekDayScheduleListData.copyOfRange(i * 6 + 2, i * 6 + 3).toInt(),
+                        startMinute = weekDayScheduleListData.copyOfRange(i * 6 + 3, i * 6 + 4).toInt(),
+                        endHour = weekDayScheduleListData.copyOfRange(i * 6 + 4, i * 6 + 5).toInt(),
+                        endMinute = weekDayScheduleListData.copyOfRange(i * 6 + 5, i * 6 + 6).toInt()
+                    )
+                )
+            }
+        }
+        val yearDayScheduleList:MutableList<BleV3Lock.YearDaySchedule> = mutableListOf()
+        if(yearDayScheduleListCount > 0) {
+            for (i in 0 until yearDayScheduleListCount) {
+                yearDayScheduleList.add(
+                    BleV3Lock.YearDaySchedule(
+                        status = yearDayScheduleListData.copyOfRange(i * 9 + 0, i * 9 + 1).toInt(),
+                        start = yearDayScheduleListData.copyOfRange(i * 9 + 1, i * 9 + 5).toLong(),
+                        end = yearDayScheduleListData.copyOfRange(i * 9 + 5, i * 9 + 9).toLong()
+                    )
+                )
+            }
+        }
+        val user91 = User.NinetyOne(
+            index = index,
+            name = name,
+            uid = uid,
+            status = status,
+            type = type,
+            credentialRule = credentialRule,
+            credentialListCount = credentialListCount,
+            weekDayScheduleListCount = weekDayScheduleListCount,
+            yearDayScheduleListCount = yearDayScheduleListCount,
+            credentialList = credentialList,
+            weekDayScheduleList = weekDayScheduleList,
+            yearDayScheduleList = yearDayScheduleList,
+        )
+        Timber.d("resolve91: $user91")
+        return user91
+    }
+
+    private fun resolve92(data: ByteArray): User.NinetyTwo {
+        val user92 = User.NinetyTwo(
+            index = data.copyOfRange(0, 2).toInt(),
+            isSuccess = data.component3().unSignedInt() == 1,
+        )
+        Timber.d("resolve92: $user92")
+        return user92
+    }
+
+    private fun resolve95(data: ByteArray): User.NinetyFive {
+        val format = data.component1().unSignedInt()
+        val index = data.copyOfRange(1, 3).toInt()
+        val user95 = if(format == 0) {
+            User.NinetyFive(
+                format = format,
+                index = index,
+                credentialDetail = BleV3Lock.CredentialDetail(
+                    status = data.component4().unSignedInt(),
+                    type = data.component5().unSignedInt(),
+                    userIndex = data.copyOfRange(5, 7).toInt(),
+                    index = data.copyOfRange(7, 15).toLong()
+                )
+            )
+        } else {
+            val credentialDetailSize = (data.size - 3) / 10
+            val credentialDetailList:MutableList<BleV3Lock.UserDetail> = mutableListOf()
+            if(credentialDetailSize > 0){
+                for (i in 0 until credentialDetailSize) {
+                    credentialDetailList.add(
+                        BleV3Lock.UserDetail(
+                            status = data.copyOfRange(3 + i * 10, 4 + i * 10).toInt(),
+                            type = data.copyOfRange(4 + i * 10, 5 + i * 10).toInt(),
+                            index = data.copyOfRange(5 + i * 10, 13 + i * 10).toInt()
+                        )
+                    )
+                }
+                User.NinetyFive(
+                    format = format,
+                    index = index,
+                    userDetail = credentialDetailList
+                )
+            } else {
+                User.NinetyFive(
+                    format = format,
+                    index = index
+                )
+            }
+        }
+        Timber.d("resolve95: $user95")
+        return user95
+    }
+
+    private fun resolve97(data: ByteArray): User.NinetySeven {
+        val type = data.component1().unSignedInt()
+        val state = data.component2().unSignedInt()
+        val index = data.copyOfRange(2, 4).toInt()
+        val status = data.component5().unSignedInt()
+        val dataInfo = data.copyOfRange(5, data.size)
+        val code = dataInfo.accessByteArrayToString()
+        val user97 = User.NinetySeven(type, state, index, status, dataInfo)
+        Timber.d("resolve97: $user97, codeString=$code")
+        return user97
+    }
+
+    private fun resolve99(data: ByteArray): User.NinetyNine {
+        val target = data.component1().unSignedInt()
+        val sha256 = String(data.copyOfRange(1, 33))
+        val user99 = User.NinetyNine(target, sha256)
+        Timber.d("resolve99: $user99")
+        return user99
+    }
+
+    private fun resolve9B(data: ByteArray): User.NinetyB {
+        val type = data.component1().unSignedInt()
+        val time = data.copyOfRange(1, 5).toInt()
+        val index = data.copyOfRange(5, 7).toInt()
+        val user9B = User.NinetyB(type, time, index)
+        Timber.d("resolve9B: $user9B")
+        return user9B
+    }
+
+    private fun resolve9C(data: ByteArray): User.NinetyC {
+        val isSuccess = data.component1().unSignedInt() == 1
+        val hasUnsyncedData = data.component2().unSignedInt()
+        val user9C = User.NinetyC(isSuccess, hasUnsyncedData)
+        Timber.d("resolve9C: $user9C")
+        return user9C
     }
 
     private fun resolveA0(data: ByteArray): LockConfig.A0 {

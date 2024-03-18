@@ -143,6 +143,66 @@ data class BleV3Lock(
         NOT_SUPPORT(0xFF)
     }
 
+    enum class UserStatus(val value: Int) {
+        AVAILABLE(0x00), // 可用
+        OCCUPIED_ENABLED(0x01), // 已使用, 目前啟用
+        OCCUPIED_DISABLED(0x03), // 已使用, 目前停用
+        UNKNOWN(2)
+    }
+
+    enum class UserType(val value: Int) {
+        UNRESTRICTED(0x00),
+        YEAR_DAY_SCHEDULE(0x01),
+        WEEK_DAY_SCHEDULE(0x02),
+        PROGRAMMING(0x03), // app不顯示此選項
+        NON_ACCESS(0x04),
+        FORCED(0x05),
+        DISPOSABLE(0x06),
+        EXPIRING(0x07), // 不支援
+        SCHEDULE_RESTRICTED(0x08),
+        REMOTE_ONLY(0x09),
+        UNKNOWN(10)
+    }
+
+    enum class CredentialRule(val value: Int) {
+        SINGLE(0x00),
+        DUAL(0x01),
+        TRI(0x02),
+        UNKNOWN(3)
+    }
+
+    enum class CredentialType(val value: Int) {
+        PROGRAMMING_PIN(0x00), // 不支援
+        PIN(0x01),
+        RFID(0x02),
+        FINGERPRINT(0x03),
+        FINGER_VEIN(0x04),
+        FACE(0x05),
+        UNKNOWN(6)
+    }
+
+    enum class ScheduleStatus(val value: Int) {
+        AVAILABLE(0x00), // 可用
+        OCCUPIED_ENABLED(0x01), // 已使用, 目前啟用
+        OCCUPIED_DISABLED(0x03), // 已使用, 目前停用
+        UNKNOWN(2)
+    }
+
+    enum class DaysMaskMap(val value: Int) {
+        SUNDAY(0x01),
+        MONDAY(0x02),
+        TUESDAY(0x04),
+        WEDNESDAY(0x08),
+        THURSDAY(0x10),
+        FRIDAY(0x20),
+        SATURDAY(0x40),
+    }
+
+    enum class UserAction(val value: Int) {
+        CREATE(0x00),
+        EDIT(0x01),
+    }
+
     enum class AlertType(val value: Int) {
         ERROR_ACCESS_CODE(0),
         CURRENT_ACCESS_CODE_AT_WRONG_TIME(1),
@@ -192,4 +252,38 @@ data class BleV3Lock(
         val target: Int,
         val version: Int,
     )
+
+    data class Credential(
+        val type: Int,
+        val index: Int
+    )
+
+    data class CredentialDetail(
+        val status: Int,
+        val type: Int,
+        val userIndex: Int,
+        val index: Long
+    )
+
+    data class UserDetail(
+        val type: Int,
+        val status: Int,
+        val index: Int
+    )
+
+    data class WeekDaySchedule(
+        val status: Int,
+        val dayMask: Int,
+        val startHour: Int,
+        val startMinute: Int,
+        val endHour: Int,
+        val endMinute: Int
+    )
+
+    data class YearDaySchedule(
+        val status: Int,
+        val start: Long,
+        val end: Long
+    )
+
 }

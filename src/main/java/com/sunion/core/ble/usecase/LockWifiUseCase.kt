@@ -218,6 +218,75 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
+    suspend fun setLockState82(state: Int, identityId:String): DeviceStatus.EightTwo {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val function = 0xF1
+        val resolveFunction = 0x82
+        if (state == BleV2Lock.LockState.UNKNOWN.value) throw IllegalArgumentException("Unknown desired lock state.")
+        val lockState = if (state == BleV2Lock.LockState.UNLOCKED.value) byteArrayOf(0x00) else byteArrayOf(0x01)
+        val data = byteArrayOf(BleV2Lock.LockStateAction.LOCK_STATE.value.toByte()) + lockState + identityId.toByteArray()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+            data = data
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockWifiUseCase.setLockState82")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    resolveFunction,
+                    statefulConnection.key(),
+                    notification
+                ) as DeviceStatus.EightTwo
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockWifiUseCase.setLockState82 exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun setSecurityBolt82(state: Int, identityId:String): DeviceStatus.EightTwo {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val function = 0xF1
+        val resolveFunction = 0x82
+        if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("setSecurityBolt82 not support.")
+        val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
+        val data = byteArrayOf(BleV2Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState + identityId.toByteArray()
+
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+            data = data
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockWifiUseCase.setSecurityBolt82")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    resolveFunction,
+                    statefulConnection.key(),
+                    notification
+                ) as DeviceStatus.EightTwo
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockWifiUseCase.setSecurityBolt82 exception $e")
+                throw e
+            }
+            .single()
+    }
+
     suspend fun autoUnlockLockState(identityId:String): Boolean{
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val data = byteArrayOf(BleV2Lock.LockStateAction.LOCK_STATE.value.toByte()) + byteArrayOf(0x00) + identityId.toByteArray()

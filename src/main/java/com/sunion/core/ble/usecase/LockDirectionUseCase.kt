@@ -33,6 +33,7 @@ class LockDirectionUseCase @Inject constructor(
                         0xEF -> throw LockStatusException.AdminCodeNotSetException()
                         0xD6 -> true
                         0xA2 -> true
+                        0x82 -> true
                         else -> false
                     }
                 } ?: false
@@ -57,6 +58,13 @@ class LockDirectionUseCase @Inject constructor(
                                 statefulConnection.key(),
                                 notification
                             )as DeviceStatus.A2
+                        }
+                        0x82 -> {
+                            result = bleCmdRepository.resolve(
+                                0x82,
+                                statefulConnection.key(),
+                                notification
+                            )as DeviceStatus.EightTwo
                         }
                         else -> {}
                     }

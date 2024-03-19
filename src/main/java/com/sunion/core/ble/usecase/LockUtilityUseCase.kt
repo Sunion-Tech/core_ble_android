@@ -142,6 +142,34 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
+    suspend fun restart(): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = 0xCB,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "LockUtilityUseCase.restart")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xCB)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    0xCB,
+                    statefulConnection.key(),
+                    notification
+                ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("LockUtilityUseCase.restart exception $e")
+                throw e
+            }
+            .single()
+    }
+
     suspend fun queryUserAbility(): BleV3Lock.UserAbility {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val sendCmd = bleCmdRepository.createCommand(

@@ -14,21 +14,25 @@ class LockNameUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockNameUseCase"
+
     suspend fun getName():String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::getName.name
+        val function = 0xD0
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xD0,
+            function = function,
             key = statefulConnection.key(),
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.getLockName")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD0)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xD0,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as String
@@ -36,7 +40,7 @@ class LockNameUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockNameUseCase.getLockName exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()
@@ -44,21 +48,23 @@ class LockNameUseCase @Inject constructor(
 
     suspend fun setName(name: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setName.name
+        val function = 0xD1
         if (name.toByteArray().size > 20) throw IllegalArgumentException("Limit of lock name length is 20 bytes.")
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xD1,
+            function = function,
             key = statefulConnection.key(),
             name.toByteArray()
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD1)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xD1,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Boolean
@@ -66,7 +72,7 @@ class LockNameUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockNameUseCase.setLockName exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()

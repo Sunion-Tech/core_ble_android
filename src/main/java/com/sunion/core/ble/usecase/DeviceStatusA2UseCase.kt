@@ -17,6 +17,8 @@ class DeviceStatusA2UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "DeviceStatusA2UseCase"
+
     suspend operator fun invoke(): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = DeviceStatusA2Command(bleCmdRepository)
@@ -25,7 +27,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             data = Unit
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusA2UseCase")
+            .setupSingleNotificationThenSendCommand(sendCmd, className)
             .filter { notification -> command.match(statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
             .take(1)
             .map { notification ->
@@ -34,7 +36,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("DeviceStatusA2UseCase exception $e")
+                Timber.e("$className exception $e")
                 throw e
             }
             .single()
@@ -42,23 +44,26 @@ class DeviceStatusA2UseCase @Inject constructor(
 
     suspend fun setLockState(state: Int): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setLockState.name
+        val function = 0xA3
+        val resolveFunction = 0xA2
         if (state == BleV2Lock.LockState.UNKNOWN.value) throw IllegalArgumentException("Unknown desired lock state.")
         val lockState = if (state == BleV2Lock.LockState.UNLOCKED.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV2Lock.LockStateAction.LOCK_STATE.value.toByte()) + lockState
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xA3,
+            function = function,
             key = statefulConnection.key(),
             data = data
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusA2UseCase.setLockState")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA2)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA2,
+                    resolveFunction,
                     statefulConnection.key(),
                     notification
                 )
@@ -66,7 +71,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("DeviceStatusA2UseCase.setLockState exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()
@@ -74,24 +79,27 @@ class DeviceStatusA2UseCase @Inject constructor(
 
     suspend fun setSecurityBolt(state: Int): DeviceStatus.A2 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("SecurityBolt not support.")
+        val functionName = ::setSecurityBolt.name
+        val function = 0xA3
+        val resolveFunction = 0xA2
+        if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
         val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV2Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState
 
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xA3,
+            function = function,
             key = statefulConnection.key(),
             data = data
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusA2UseCase.setSecurityBolt")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA2)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA2,
+                    resolveFunction,
                     statefulConnection.key(),
                     notification
                 )
@@ -99,7 +107,7 @@ class DeviceStatusA2UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("DeviceStatusA2UseCase.setSecurityBolt exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()

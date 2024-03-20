@@ -19,7 +19,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
     operator fun invoke(): Flow<SunionBleNotification> {
-        return statefulConnection.rxBleConnection!!
+        return statefulConnection.rxBleConnection
             .setupNotification(NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
             .asFlow()
@@ -29,11 +29,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                         statefulConnection.key(), notification
                     )?.let { decrypted ->
                         when(decrypted.component3().unSignedInt()){
-                            0xD6 -> true
-                            0xA2 -> true
-                            0xAF -> true
-                            0xA9 -> true
-                            0xB0 -> true
+                            0xA2, 0xA9, 0xAF, 0xB0, 0xD6 -> true
                             else -> false
                         }
                     } ?: false
@@ -45,41 +41,41 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                 bleCmdRepository.decrypt(
                     statefulConnection.key(), notification
                 )?.let { decrypted ->
-                    when (decrypted.component3().unSignedInt()) {
-                        0xD6 -> {
-                            result = bleCmdRepository.resolve(
-                                0xD6,
-                                statefulConnection.key(),
-                                notification
-                            ) as DeviceStatus.D6
-                        }
+                    when (val function = decrypted.component3().unSignedInt()) {
                         0xA2 -> {
                             result = bleCmdRepository.resolve(
-                                0xA2,
+                                function,
                                 statefulConnection.key(),
                                 notification
                             ) as DeviceStatus.A2
                         }
-                        0xAF -> {
-                            result = bleCmdRepository.resolve(
-                                0xAF,
-                                statefulConnection.key(),
-                                notification
-                            ) as Alert.AF
-                        }
                         0xA9 -> {
                             result = bleCmdRepository.resolve(
-                                0xA9,
+                                function,
                                 statefulConnection.key(),
                                 notification
                             ) as Access.A9
                         }
+                        0xAF -> {
+                            result = bleCmdRepository.resolve(
+                                function,
+                                statefulConnection.key(),
+                                notification
+                            ) as Alert.AF
+                        }
                         0xB0 -> {
                             result = bleCmdRepository.resolve(
-                                0xB0,
+                                function,
                                 statefulConnection.key(),
                                 notification
                             ) as DeviceStatus.B0
+                        }
+                        0xD6 -> {
+                            result = bleCmdRepository.resolve(
+                                function,
+                                statefulConnection.key(),
+                                notification
+                            ) as DeviceStatus.D6
                         }
                         else -> {}
                     }

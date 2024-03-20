@@ -17,23 +17,24 @@ class LockDirectionUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockDirectionUseCase"
+
     suspend operator fun invoke(): DeviceStatus {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val function = 0xCC
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xCC,
+            function = function,
             key = statefulConnection.key()
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockNameUseCase.setLockName")
+            .setupSingleNotificationThenSendCommand(sendCmd, className)
             .filter { notification ->
                 bleCmdRepository.decrypt(
                     statefulConnection.key(), notification
                 )?.let { decrypted ->
                     when(decrypted.component3().unSignedInt()){
+                        0x82, 0xA2, 0xD6 -> true
                         0xEF -> throw LockStatusException.AdminCodeNotSetException()
-                        0xD6 -> true
-                        0xA2 -> true
-                        0x82 -> true
                         else -> false
                     }
                 } ?: false
@@ -44,27 +45,27 @@ class LockDirectionUseCase @Inject constructor(
                 bleCmdRepository.decrypt(
                     statefulConnection.key(), notification
                 )?.let { decrypted ->
-                    when (decrypted.component3().unSignedInt()) {
-                        0xD6 -> {
+                    when (val resolveFunction = decrypted.component3().unSignedInt()) {
+                        0x82 -> {
                             result = bleCmdRepository.resolve(
-                                0xD6,
+                                resolveFunction,
                                 statefulConnection.key(),
                                 notification
-                            ) as DeviceStatus.D6
+                            ) as DeviceStatus.EightTwo
                         }
                         0xA2 -> {
                             result = bleCmdRepository.resolve(
-                                0xA2,
+                                resolveFunction,
                                 statefulConnection.key(),
                                 notification
-                            )as DeviceStatus.A2
+                            ) as DeviceStatus.A2
                         }
-                        0x82 -> {
+                        0xD6 -> {
                             result = bleCmdRepository.resolve(
-                                0x82,
+                                resolveFunction,
                                 statefulConnection.key(),
                                 notification
-                            )as DeviceStatus.EightTwo
+                            ) as DeviceStatus.D6
                         }
                         else -> {}
                     }
@@ -73,7 +74,7 @@ class LockDirectionUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockDirectionUseCase exception $e")
+                Timber.e("$className exception $e")
                 throw e
             }
             .single()

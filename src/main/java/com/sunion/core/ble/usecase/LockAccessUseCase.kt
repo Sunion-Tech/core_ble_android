@@ -14,22 +14,26 @@ class LockAccessUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockAccessUseCase"
+
     private suspend fun getAccessArray(type: Int): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xA5,
+        val functionName = ::getAccessArray.name
+        val function = 0xA5
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = byteArrayOf(type.toByte())
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "getAccessArray type: $type")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA5)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 bleCmdRepository.resolve(
-                    0xA5,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A5
@@ -42,7 +46,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("getAccessCodeArray exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
@@ -54,28 +58,30 @@ class LockAccessUseCase @Inject constructor(
 
     private suspend fun queryAccess(type: Int, index: Int): Access.A6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xA6,
+        val functionName = ::queryAccess.name
+        val function = 0xA6
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "queryAccess type:$type index:$index")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA6)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA6,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A6
                 result
             }
             .flowOn(Dispatchers.IO)
-            .catch { e -> Timber.e("queryAccess exception $e") }
+            .catch { e -> Timber.e("$functionName exception $e") }
             .single()
     }
 
@@ -86,7 +92,9 @@ class LockAccessUseCase @Inject constructor(
 
     private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val data = bleCmdRepository.combineAccessA7Command(
+        val functionName = ::addAccess.name
+        val function = 0xA7
+        val data = bleCmdRepository.combineAccessA7Cmd(
             Access.A7Cmd(
                 type = type,
                 index = index,
@@ -97,21 +105,21 @@ class LockAccessUseCase @Inject constructor(
                 code = code
             )
         )
-        val command = bleCmdRepository.createCommand(
-            function = 0xA7,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = data
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "addAccess type:$type index:$index")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA7)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA7,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A7
@@ -119,7 +127,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("addAccessCode exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
@@ -131,7 +139,9 @@ class LockAccessUseCase @Inject constructor(
 
     private suspend fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val data = bleCmdRepository.combineAccessA7Command(
+        val functionName = ::editAccess.name
+        val function = 0xA8
+        val data = bleCmdRepository.combineAccessA7Cmd(
             Access.A7Cmd(
                 type = type,
                 index = index,
@@ -142,21 +152,21 @@ class LockAccessUseCase @Inject constructor(
                 code = code
             )
         )
-        val command = bleCmdRepository.createCommand(
-            function = 0xA8,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = data
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "editAccess type:$type index:$index")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA8)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA8,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A7
@@ -164,7 +174,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("editAccessCode exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
@@ -176,21 +186,23 @@ class LockAccessUseCase @Inject constructor(
 
     private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.A9 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xA9,
+        val functionName = ::deviceGetAccess.name
+        val function = 0xA9
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = byteArrayOf(type.toByte(), state.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "deviceGetAccess type:$type state:$state index:$index")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xA9)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xA9,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A9
@@ -198,7 +210,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("deviceGetAccess exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
@@ -212,21 +224,23 @@ class LockAccessUseCase @Inject constructor(
 
     private suspend fun deleteAccess(type: Int, index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xAA,
+        val functionName = ::deleteAccess.name
+        val function = 0xAA
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = byteArrayOf(type.toByte()) + index.toLittleEndianByteArrayInt16()
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "deleteAccess type:$type index:$index")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xAA)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xAA,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Access.A7
@@ -234,7 +248,7 @@ class LockAccessUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("deleteAccessCode exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }

@@ -279,7 +279,224 @@ class BleCmdRepository @Inject constructor(){
         }
     }
 
-    fun combineUserCodeCommand(
+    fun combineLockConfig81Cmd(lockConfig80: LockConfig.Eighty): ByteArray {
+        val settingBytes = ByteArray(lockConfig80.size)
+
+        val latitudeBigDecimal = BigDecimal.valueOf(lockConfig80.latitude)
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[Config81.LATITUDE_INTEGER.byte + i] =
+            latitudeIntPartBytes[i]
+        val latitudeDecimalInt =
+            latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
+                .toInt()
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LATITUDE_DECIMAL.byte + i] =
+            latitudeDecimalPartBytes[i]
+        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
+
+        val longitudeBigDecimal = BigDecimal.valueOf(lockConfig80.longitude)
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_INTEGER.byte + i] =
+            longitudeIntPartBytes[i]
+        val longitudeDecimalInt =
+            longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
+                .scaleByPowerOfTen(9).toInt()
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_DECIMAL.byte + i] =
+            longitudeDecimalPartBytes[i]
+        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
+
+        Timber.d("LockConfig.80: $lockConfig80")
+        settingBytes[Config81.LOCK_DIRECTION.byte] = lockConfig80.direction.toByte()
+        settingBytes[Config81.GUIDING_CODE.byte] = lockConfig80.guidingCode.toByte()
+        settingBytes[Config81.VIRTUAL_CODE.byte] = lockConfig80.virtualCode.toByte()
+        settingBytes[Config81.TWO_FA.byte] = lockConfig80.twoFA.toByte()
+        settingBytes[Config81.VACATION_MODE.byte] = lockConfig80.vacationMode.toByte()
+        settingBytes[Config81.AUTOLOCK.byte] = lockConfig80.autoLock.toByte()
+        val autoLockDelayBytes = lockConfig80.autoLockTime.toLittleEndianByteArrayInt16()
+        for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[Config81.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
+        settingBytes[Config81.OPERATING_SOUND.byte] = lockConfig80.operatingSound.toByte()
+        settingBytes[Config81.SOUND_TYPE.byte] = lockConfig80.soundType.toByte()
+        settingBytes[Config81.SOUND_VALUE.byte] = lockConfig80.soundValue.toByte()
+        settingBytes[Config81.SHOW_FAST_TRACK_MODE.byte] = lockConfig80.showFastTrackMode.toByte()
+        settingBytes[Config81.SABBATH_MODE.byte] = lockConfig80.sabbathMode.toByte()
+        Timber.d("combineLockConfig81Cmd: ${settingBytes.toHexPrint()}")
+
+        return settingBytes
+    }
+
+    fun combineUser92Cmd(user92Cmd: User.NinetyTwoCmd): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user92Cmd.action)
+        outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
+        outputStream.write(user92Cmd.name.toByteArray())
+        outputStream.write(user92Cmd.uid.toByteArray())
+        outputStream.write(user92Cmd.status)
+        outputStream.write(user92Cmd.type)
+        outputStream.write(user92Cmd.credentialRule)
+        user92Cmd.credentialList?.forEach { credential ->
+            outputStream.write(credential.type)
+            outputStream.write(credential.index.toLittleEndianByteArrayInt16())
+        }
+        user92Cmd.weekDayScheduleList?.forEach { schedule ->
+            outputStream.write(schedule.status)
+            outputStream.write(schedule.dayMask)
+            outputStream.write(schedule.startHour)
+            outputStream.write(schedule.startMinute)
+            outputStream.write(schedule.endHour)
+            outputStream.write(schedule.endMinute)
+        }
+        user92Cmd.yearDayScheduleList?.forEach { schedule ->
+            outputStream.write(schedule.status)
+            outputStream.write(schedule.start.toLittleEndianByteArrayInt32())
+            outputStream.write(schedule.end.toLittleEndianByteArrayInt32())
+        }
+        return outputStream.toByteArray()
+    }
+
+    fun combineUser96Cmd(user96Cmd: User.NinetySixCmd): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user96Cmd.action)
+        outputStream.write(user96Cmd.index.toLittleEndianByteArrayInt16())
+        if(user96Cmd.credentialDetail != null){
+            outputStream.write(user96Cmd.credentialDetail.status)
+            outputStream.write(user96Cmd.credentialDetail.type)
+            outputStream.write(user96Cmd.credentialDetail.userIndex.toLittleEndianByteArrayInt16())
+            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArray())
+        }
+        return outputStream.toByteArray()
+    }
+
+    fun combineUser9CCmd(user9BCmd: User.NinetyB): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        outputStream.write(user9BCmd.type)
+        outputStream.write(user9BCmd.time.toLittleEndianByteArray())
+        outputStream.write(user9BCmd.index.toLittleEndianByteArrayInt16())
+        return outputStream.toByteArray()
+    }
+
+    fun combineLockConfigA1Cmd(lockConfigA0: LockConfig.A0): ByteArray {
+        val settingBytes = ByteArray(ConfigA1.SIZE.byte)
+
+        val latitudeBigDecimal = BigDecimal.valueOf(lockConfigA0.latitude ?: 0.0)
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_INTEGER.byte + i] =
+            latitudeIntPartBytes[i]
+        val latitudeDecimalInt =
+            latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
+                .toInt()
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_DECIMAL.byte + i] =
+            latitudeDecimalPartBytes[i]
+        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
+
+        val longitudeBigDecimal = BigDecimal.valueOf(lockConfigA0.longitude ?: 0.0)
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_INTEGER.byte + i] =
+            longitudeIntPartBytes[i]
+        val longitudeDecimalInt =
+            longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
+                .scaleByPowerOfTen(9).toInt()
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_DECIMAL.byte + i] =
+            longitudeDecimalPartBytes[i]
+        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
+
+        Timber.d("LockConfig.A0: $lockConfigA0")
+        settingBytes[ConfigA1.LOCK_DIRECTION.byte] = lockConfigA0.direction.toByte()
+        settingBytes[ConfigA1.GUIDING_CODE.byte] = lockConfigA0.guidingCode.toByte()
+        settingBytes[ConfigA1.VIRTUAL_CODE.byte] = lockConfigA0.virtualCode.toByte()
+        settingBytes[ConfigA1.TWO_FA.byte] = lockConfigA0.twoFA.toByte()
+        settingBytes[ConfigA1.VACATION_MODE.byte] = lockConfigA0.vacationMode.toByte()
+        settingBytes[ConfigA1.AUTOLOCK.byte] = lockConfigA0.autoLock.toByte()
+        val autoLockDelayBytes = lockConfigA0.autoLockTime.toLittleEndianByteArrayInt16()
+        for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[ConfigA1.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
+        settingBytes[ConfigA1.OPERATING_SOUND.byte] = lockConfigA0.operatingSound.toByte()
+        settingBytes[ConfigA1.SOUND_TYPE.byte] = lockConfigA0.soundType.toByte()
+        settingBytes[ConfigA1.SOUND_VALUE.byte] = lockConfigA0.soundValue.toByte()
+        settingBytes[ConfigA1.SHOW_FAST_TRACK_MODE.byte] = lockConfigA0.showFastTrackMode.toByte()
+        Timber.d("combineLockConfigA1Cmd: ${settingBytes.toHexPrint()}")
+
+        return settingBytes
+    }
+
+    fun combineAccessA7Cmd(
+        accessA7Cmd: Access.A7Cmd
+    ): ByteArray {
+        val typeByte = byteArrayOf(accessA7Cmd.type.toByte())
+        val indexByte = accessA7Cmd.index.toLittleEndianByteArrayInt16()
+        val isEnabledByte = byteArrayOf(if (accessA7Cmd.isEnable) 0x01.toByte() else 0x00.toByte())
+        val scheduleByte = ByteArray(12)
+        scheduleByte[0] = accessA7Cmd.scheduleType.getByteOfType()
+        val nameLenByte = accessA7Cmd.nameLen.toByte()
+        val nameByte = accessA7Cmd.name.toByteArray()
+        val codeByte = accessA7Cmd.code
+
+        when (accessA7Cmd.scheduleType) {
+            is AccessScheduleType.ValidTimeRange -> {
+                Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
+
+                val fromTimeByteArray = accessA7Cmd.scheduleType.from.limitValidTimeRange().toLittleEndianByteArrayInt32()
+                for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
+
+                val toTimeByteArray = accessA7Cmd.scheduleType.to.limitValidTimeRange().toLittleEndianByteArrayInt32()
+                for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
+            }
+            is AccessScheduleType.ScheduleEntry -> {
+                Timber.d("ScheduleEntry weekdays: ${accessA7Cmd.scheduleType.weekdayBits}, ${Integer.toBinaryString(accessA7Cmd.scheduleType.weekdayBits)}, from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
+                val weekBuffer = ByteBuffer.allocate(1)
+                weekBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                weekBuffer.put(accessA7Cmd.scheduleType.weekdayBits.toByte())
+                weekBuffer.flip()
+                scheduleByte[1] = weekBuffer.get()
+
+                val fromBuffer = ByteBuffer.allocate(1)
+                fromBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                fromBuffer.put(accessA7Cmd.scheduleType.from.toByte())
+                fromBuffer.flip()
+                scheduleByte[2] = fromBuffer.get()
+
+                val toBuffer = ByteBuffer.allocate(1)
+                toBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                toBuffer.put(accessA7Cmd.scheduleType.to.toByte())
+                toBuffer.flip()
+                scheduleByte[3] = toBuffer.get()
+            }
+            else -> {}
+        }
+        val data = typeByte + indexByte + isEnabledByte + scheduleByte + nameLenByte + nameByte + codeByte
+        return data
+    }
+
+    fun combineLockConfigD5Cmd(lockConfigD4: LockConfig.D4): ByteArray {
+        val settingBytes = ByteArray(ConfigD4.SIZE.byte)
+        settingBytes[ConfigD4.LOCK_DIRECTION.byte] = 0xA3.toByte()
+        settingBytes[ConfigD4.KEYPRESS_BEEP.byte] = (if (lockConfigD4.isSoundOn) 0x01.toByte() else 0x00.toByte())
+        settingBytes[ConfigD4.VACATION_MODE.byte] = if (lockConfigD4.isVacationModeOn) 0x01.toByte() else 0x00.toByte()
+        settingBytes[ConfigD4.AUTOLOCK.byte] = if (lockConfigD4.isAutoLock) 0x01.toByte() else 0x00.toByte()
+        settingBytes[ConfigD4.AUTOLOCK_DELAY.byte] = lockConfigD4.autoLockTime.toByte()
+        settingBytes[ConfigD4.GUIDING_CODE.byte] = (if (lockConfigD4.isGuidingCodeOn) 0x01.toByte() else 0x00.toByte())
+
+        val latitudeBigDecimal = BigDecimal.valueOf(lockConfigD4.latitude ?: 0.0)
+        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_INTEGER.byte + i] = latitudeIntPartBytes[i]
+        val latitudeDecimalInt = latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
+        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_DECIMAL.byte + i] = latitudeDecimalPartBytes[i]
+        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
+
+        val longitudeBigDecimal = BigDecimal.valueOf(lockConfigD4.longitude ?: 0.0)
+        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
+        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_INTEGER.byte + i] = longitudeIntPartBytes[i]
+        val longitudeDecimalInt = longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
+        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
+        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_DECIMAL.byte + i] = longitudeDecimalPartBytes[i]
+        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
+
+        return settingBytes
+    }
+
+    fun combineAccessCodeCmd(
         index: Int,
         isEnabled: Boolean,
         name: String,
@@ -328,223 +545,6 @@ class BleCmdRepository @Inject constructor(){
         return bytes
     }
 
-    fun combineAccessA7Command(
-        accessA7Cmd: Access.A7Cmd
-    ): ByteArray {
-        val typeByte = byteArrayOf(accessA7Cmd.type.toByte())
-        val indexByte = accessA7Cmd.index.toLittleEndianByteArrayInt16()
-        val isEnabledByte = byteArrayOf(if (accessA7Cmd.isEnable) 0x01.toByte() else 0x00.toByte())
-        val scheduleByte = ByteArray(12)
-        scheduleByte[0] = accessA7Cmd.scheduleType.getByteOfType()
-        val nameLenByte = accessA7Cmd.nameLen.toByte()
-        val nameByte = accessA7Cmd.name.toByteArray()
-        val codeByte = accessA7Cmd.code
-
-        when (accessA7Cmd.scheduleType) {
-            is AccessScheduleType.ValidTimeRange -> {
-                Timber.d("ValidTimeRange from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
-
-                val fromTimeByteArray = accessA7Cmd.scheduleType.from.limitValidTimeRange().toLittleEndianByteArrayInt32()
-                for (i in 0..fromTimeByteArray.lastIndex) scheduleByte[i + 4] = fromTimeByteArray[i]
-
-                val toTimeByteArray = accessA7Cmd.scheduleType.to.limitValidTimeRange().toLittleEndianByteArrayInt32()
-                for (i in 0..toTimeByteArray.lastIndex) scheduleByte[i + 8] = toTimeByteArray[i]
-            }
-            is AccessScheduleType.ScheduleEntry -> {
-                Timber.d("ScheduleEntry weekdays: ${accessA7Cmd.scheduleType.weekdayBits}, ${Integer.toBinaryString(accessA7Cmd.scheduleType.weekdayBits)}, from: ${accessA7Cmd.scheduleType.from}, to: ${accessA7Cmd.scheduleType.to}")
-                val weekBuffer = ByteBuffer.allocate(1)
-                weekBuffer.order(ByteOrder.LITTLE_ENDIAN)
-                weekBuffer.put(accessA7Cmd.scheduleType.weekdayBits.toByte())
-                weekBuffer.flip()
-                scheduleByte[1] = weekBuffer.get()
-
-                val fromBuffer = ByteBuffer.allocate(1)
-                fromBuffer.order(ByteOrder.LITTLE_ENDIAN)
-                fromBuffer.put(accessA7Cmd.scheduleType.from.toByte())
-                fromBuffer.flip()
-                scheduleByte[2] = fromBuffer.get()
-
-                val toBuffer = ByteBuffer.allocate(1)
-                toBuffer.order(ByteOrder.LITTLE_ENDIAN)
-                toBuffer.put(accessA7Cmd.scheduleType.to.toByte())
-                toBuffer.flip()
-                scheduleByte[3] = toBuffer.get()
-            }
-            else -> {}
-        }
-        val data = typeByte + indexByte + isEnabledByte + scheduleByte + nameLenByte + nameByte + codeByte
-        return data
-    }
-
-    fun combineUserNinetyTwoCommand(user92Cmd: User.NinetyTwoCmd): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        outputStream.write(user92Cmd.action)
-        outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
-        outputStream.write(user92Cmd.name.toByteArray())
-        outputStream.write(user92Cmd.uid.toByteArray())
-        outputStream.write(user92Cmd.status)
-        outputStream.write(user92Cmd.type)
-        outputStream.write(user92Cmd.credentialRule)
-        user92Cmd.credentialList?.forEach { credential ->
-            outputStream.write(credential.type)
-            outputStream.write(credential.index.toLittleEndianByteArrayInt16())
-        }
-        user92Cmd.weekDayScheduleList?.forEach { schedule ->
-            outputStream.write(schedule.status)
-            outputStream.write(schedule.dayMask)
-            outputStream.write(schedule.startHour)
-            outputStream.write(schedule.startMinute)
-            outputStream.write(schedule.endHour)
-            outputStream.write(schedule.endMinute)
-        }
-        user92Cmd.yearDayScheduleList?.forEach { schedule ->
-            outputStream.write(schedule.status)
-            outputStream.write(schedule.start.toLittleEndianByteArrayInt32())
-            outputStream.write(schedule.end.toLittleEndianByteArrayInt32())
-        }
-        return outputStream.toByteArray()
-    }
-
-    fun combineUserNinetySixCommand(user96Cmd: User.NinetySixCmd): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        outputStream.write(user96Cmd.action)
-        outputStream.write(user96Cmd.index.toLittleEndianByteArrayInt16())
-        if(user96Cmd.credentialDetail != null){
-            outputStream.write(user96Cmd.credentialDetail.status)
-            outputStream.write(user96Cmd.credentialDetail.type)
-            outputStream.write(user96Cmd.credentialDetail.userIndex.toLittleEndianByteArrayInt16())
-            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArray())
-        }
-        return outputStream.toByteArray()
-    }
-
-    fun combineUserNinetyCCommand(user9BCmd: User.NinetyB): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        outputStream.write(user9BCmd.type)
-        outputStream.write(user9BCmd.time.toLittleEndianByteArray())
-        outputStream.write(user9BCmd.index.toLittleEndianByteArrayInt16())
-        return outputStream.toByteArray()
-    }
-
-    fun settingBytes81(setting: LockConfig.Eighty): ByteArray {
-        val settingBytes = ByteArray(setting.size)
-
-        val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude)
-        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[Config81.LATITUDE_INTEGER.byte + i] =
-            latitudeIntPartBytes[i]
-        val latitudeDecimalInt =
-            latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
-                .toInt()
-        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LATITUDE_DECIMAL.byte + i] =
-            latitudeDecimalPartBytes[i]
-        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
-
-        val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude)
-        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_INTEGER.byte + i] =
-            longitudeIntPartBytes[i]
-        val longitudeDecimalInt =
-            longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
-                .scaleByPowerOfTen(9).toInt()
-        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[Config81.LONGITUDE_DECIMAL.byte + i] =
-            longitudeDecimalPartBytes[i]
-        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
-
-        Timber.d("LockConfig.A0: $setting")
-        settingBytes[Config81.LOCK_DIRECTION.byte] = setting.direction.toByte()
-        settingBytes[Config81.GUIDING_CODE.byte] = setting.guidingCode.toByte()
-        settingBytes[Config81.VIRTUAL_CODE.byte] = setting.virtualCode.toByte()
-        settingBytes[Config81.TWO_FA.byte] = setting.twoFA.toByte()
-        settingBytes[Config81.VACATION_MODE.byte] = setting.vacationMode.toByte()
-        settingBytes[Config81.AUTOLOCK.byte] = setting.autoLock.toByte()
-        val autoLockDelayBytes = setting.autoLockTime.toLittleEndianByteArrayInt16()
-        for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[Config81.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
-        settingBytes[Config81.OPERATING_SOUND.byte] = setting.operatingSound.toByte()
-        settingBytes[Config81.SOUND_TYPE.byte] = setting.soundType.toByte()
-        settingBytes[Config81.SOUND_VALUE.byte] = setting.soundValue.toByte()
-        settingBytes[Config81.SHOW_FAST_TRACK_MODE.byte] = setting.showFastTrackMode.toByte()
-        settingBytes[Config81.SABBATH_MODE.byte] = setting.sabbathMode.toByte()
-        Timber.d("settingBytes81: ${settingBytes.toHexPrint()}")
-
-        return settingBytes
-    }
-
-    fun settingBytesA1(setting: LockConfig.A0): ByteArray {
-        val settingBytes = ByteArray(ConfigA1.SIZE.byte)
-
-        val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude ?: 0.0)
-        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_INTEGER.byte + i] =
-            latitudeIntPartBytes[i]
-        val latitudeDecimalInt =
-            latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9)
-                .toInt()
-        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LATITUDE_DECIMAL.byte + i] =
-            latitudeDecimalPartBytes[i]
-        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
-
-        val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude ?: 0.0)
-        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_INTEGER.byte + i] =
-            longitudeIntPartBytes[i]
-        val longitudeDecimalInt =
-            longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt()))
-                .scaleByPowerOfTen(9).toInt()
-        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigA1.LONGITUDE_DECIMAL.byte + i] =
-            longitudeDecimalPartBytes[i]
-        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
-
-        Timber.d("LockConfig.A0: $setting")
-        settingBytes[ConfigA1.LOCK_DIRECTION.byte] = setting.direction.toByte()
-        settingBytes[ConfigA1.GUIDING_CODE.byte] = setting.guidingCode.toByte()
-        settingBytes[ConfigA1.VIRTUAL_CODE.byte] = setting.virtualCode.toByte()
-        settingBytes[ConfigA1.TWO_FA.byte] = setting.twoFA.toByte()
-        settingBytes[ConfigA1.VACATION_MODE.byte] = setting.vacationMode.toByte()
-        settingBytes[ConfigA1.AUTOLOCK.byte] = setting.autoLock.toByte()
-        val autoLockDelayBytes = setting.autoLockTime.toLittleEndianByteArrayInt16()
-        for (i in 0..autoLockDelayBytes.lastIndex) settingBytes[ConfigA1.AUTOLOCK_DELAY.byte + i] = autoLockDelayBytes[i]
-        settingBytes[ConfigA1.OPERATING_SOUND.byte] = setting.operatingSound.toByte()
-        settingBytes[ConfigA1.SOUND_TYPE.byte] = setting.soundType.toByte()
-        settingBytes[ConfigA1.SOUND_VALUE.byte] = setting.soundValue.toByte()
-        settingBytes[ConfigA1.SHOW_FAST_TRACK_MODE.byte] = setting.showFastTrackMode.toByte()
-        Timber.d("settingBytesA1: ${settingBytes.toHexPrint()}")
-
-        return settingBytes
-    }
-
-    fun settingBytesD4(setting: LockConfig.D4): ByteArray {
-        val settingBytes = ByteArray(ConfigD4.SIZE.byte)
-        settingBytes[ConfigD4.LOCK_DIRECTION.byte] = 0xA3.toByte()
-        settingBytes[ConfigD4.KEYPRESS_BEEP.byte] = (if (setting.isSoundOn) 0x01.toByte() else 0x00.toByte())
-        settingBytes[ConfigD4.VACATION_MODE.byte] = if (setting.isVacationModeOn) 0x01.toByte() else 0x00.toByte()
-        settingBytes[ConfigD4.AUTOLOCK.byte] = if (setting.isAutoLock) 0x01.toByte() else 0x00.toByte()
-        settingBytes[ConfigD4.AUTOLOCK_DELAY.byte] = setting.autoLockTime.toByte()
-        settingBytes[ConfigD4.GUIDING_CODE.byte] = (if (setting.isGuidingCodeOn) 0x01.toByte() else 0x00.toByte())
-
-        val latitudeBigDecimal = BigDecimal.valueOf(setting.latitude ?: 0.0)
-        val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..latitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_INTEGER.byte + i] = latitudeIntPartBytes[i]
-        val latitudeDecimalInt = latitudeBigDecimal.subtract(BigDecimal(latitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
-        val latitudeDecimalPartBytes = latitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..latitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LATITUDE_DECIMAL.byte + i] = latitudeDecimalPartBytes[i]
-        Timber.d("latitudeBigDecimal: $latitudeBigDecimal, latitudeIntPart: ${latitudeBigDecimal.toInt()}, latitudeDecimalInt: $latitudeDecimalInt")
-
-        val longitudeBigDecimal = BigDecimal.valueOf(setting.longitude ?: 0.0)
-        val longitudeIntPartBytes = longitudeBigDecimal.toInt().toLittleEndianByteArray()
-        for (i in 0..longitudeIntPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_INTEGER.byte + i] = longitudeIntPartBytes[i]
-        val longitudeDecimalInt = longitudeBigDecimal.subtract(BigDecimal(longitudeBigDecimal.toInt())).scaleByPowerOfTen(9).toInt()
-        val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
-        for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_DECIMAL.byte + i] = longitudeDecimalPartBytes[i]
-        Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
-
-        return settingBytes
-    }
-
     fun resolve(function: Int, key: ByteArray, notification: ByteArray, index: Int = 0): Any {
         return decrypt(key, notification)?.let { decrypted ->
             val checkFunction = decrypted.component3().unSignedInt()
@@ -562,7 +562,7 @@ class BleCmdRepository @Inject constructor(){
                         resolve81(byteArrayData)
                     }
                     0x82 -> {
-                        // DeviceStatus.EightyTwo
+                        // DeviceStatus.EightyTwo & 0x83
                         resolve82(byteArrayData)
                     }
                     0x84, 0x87, 0x9A, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
@@ -618,7 +618,7 @@ class BleCmdRepository @Inject constructor(){
                         resolveA0(byteArrayData)
                     }
                     0xA2 -> {
-                        // DeviceStatus.A2
+                        // DeviceStatus.A2 & 0xA3
                         resolveA2(byteArrayData)
                     }
                     0xA4 -> {
@@ -646,7 +646,7 @@ class BleCmdRepository @Inject constructor(){
                         resolveAF(byteArrayData)
                     }
                     0xB0 -> {
-                        // DeviceStatus.B0
+                        // DeviceStatus.B0 & 0xB1
                         resolveB0(byteArrayData)
                     }
                     0xC0, 0xC1, 0xD8, 0xE4, 0xEA -> {
@@ -678,10 +678,10 @@ class BleCmdRepository @Inject constructor(){
                         resolveD4(byteArrayData)
                     }
                     0xD6 -> {
-                        // DeviceStatus.D6
+                        // DeviceStatus.D6 & 0xD7
                         resolveD6(byteArrayData)
                     }
-                    0xE1 -> {
+                    0xE1, 0xE3 -> {
                         // EventLog
                         resolveE1(byteArrayData)
                     }
@@ -841,41 +841,41 @@ class BleCmdRepository @Inject constructor(){
             mainVersion = data[Config82.MAIN_VERSION.byte].unSignedInt(),
             subVersion = data[Config82.SUB_VERSION.byte].unSignedInt(),
             direction = when (data[Config82.LOCK_DIRECTION.byte].unSignedInt()) {
-                0xA0 -> BleV2Lock.Direction.RIGHT.value
-                0xA1 -> BleV2Lock.Direction.LEFT.value
-                0xA2 -> BleV2Lock.Direction.UNKNOWN.value
-                else -> BleV2Lock.Direction.NOT_SUPPORT.value
+                0xA0 -> BleV3Lock.Direction.RIGHT.value
+                0xA1 -> BleV3Lock.Direction.LEFT.value
+                0xA2 -> BleV3Lock.Direction.UNKNOWN.value
+                else -> BleV3Lock.Direction.NOT_SUPPORT.value
             },
             vacationMode = when (data[Config82.VACATION_MODE.byte].unSignedInt()) {
-                0 -> BleV2Lock.VacationMode.CLOSE.value
-                1 -> BleV2Lock.VacationMode.OPEN.value
-                else -> BleV2Lock.VacationMode.NOT_SUPPORT.value
+                0 -> BleV3Lock.VacationMode.CLOSE.value
+                1 -> BleV3Lock.VacationMode.OPEN.value
+                else -> BleV3Lock.VacationMode.NOT_SUPPORT.value
             },
             deadBolt = when (data[Config82.DEAD_BOLT.byte].unSignedInt()) {
-                0 -> BleV2Lock.DeadBolt.NOT_PROTRUDE.value
-                1 -> BleV2Lock.DeadBolt.PROTRUDE.value
-                else -> BleV2Lock.DeadBolt.NOT_SUPPORT.value
+                0 -> BleV3Lock.DeadBolt.NOT_PROTRUDE.value
+                1 -> BleV3Lock.DeadBolt.PROTRUDE.value
+                else -> BleV3Lock.DeadBolt.NOT_SUPPORT.value
             },
             doorState = when (data[Config82.DOOR_STATE.byte].unSignedInt()) {
-                0 -> BleV2Lock.DoorState.OPEN.value
-                1 -> BleV2Lock.DoorState.CLOSE.value
-                else -> BleV2Lock.DoorState.NOT_SUPPORT.value
+                0 -> BleV3Lock.DoorState.OPEN.value
+                1 -> BleV3Lock.DoorState.CLOSE.value
+                else -> BleV3Lock.DoorState.NOT_SUPPORT.value
             },
             lockState = when (data[Config82.LOCK_STATE.byte].unSignedInt()) {
-                0 -> BleV2Lock.LockState.UNLOCKED.value
-                1 -> BleV2Lock.LockState.LOCKED.value
-                else -> BleV2Lock.LockState.UNKNOWN.value
+                0 -> BleV3Lock.LockState.UNLOCKED.value
+                1 -> BleV3Lock.LockState.LOCKED.value
+                else -> BleV3Lock.LockState.UNKNOWN.value
             },
             securityBolt = when (data[Config82.SECURITY_BOLT.byte].unSignedInt()) {
-                0 -> BleV2Lock.SecurityBolt.NOT_PROTRUDE.value
-                1 -> BleV2Lock.SecurityBolt.PROTRUDE.value
-                else -> BleV2Lock.SecurityBolt.NOT_SUPPORT.value
+                0 -> BleV3Lock.SecurityBolt.NOT_PROTRUDE.value
+                1 -> BleV3Lock.SecurityBolt.PROTRUDE.value
+                else -> BleV3Lock.SecurityBolt.NOT_SUPPORT.value
             },
             battery = data[Config82.BATTERY.byte].unSignedInt(),
             batteryState = when (data[Config82.LOW_BATTERY.byte].unSignedInt()) {
-                0 -> BleV2Lock.BatteryState.NORMAL.value
-                1 -> BleV2Lock.BatteryState.WEAK_CURRENT.value
-                else -> BleV2Lock.BatteryState.DANGEROUS.value
+                0 -> BleV3Lock.BatteryState.NORMAL.value
+                1 -> BleV3Lock.BatteryState.WEAK_CURRENT.value
+                else -> BleV3Lock.BatteryState.DANGEROUS.value
             }
         )
         Timber.d("resolve82: $lockSetting")
@@ -1318,8 +1318,8 @@ class BleCmdRepository @Inject constructor(){
                 3 -> BleV2Lock.AlertType.ACTIVELY_PRESS_THE_CLEAR_KEY.value
                 20 -> BleV2Lock.AlertType.MANY_ERROR_KEY_LOCKED.value
                 40 -> BleV2Lock.AlertType.LOCK_BREAK_ALERT.value
-                0xFF -> BleV2Lock.AlertType.NONE.value
-                else -> BleV2Lock.AlertType.UNKNOWN_ALERT_TYPE.value
+                0xFF -> BleV3Lock.AlertType.NONE.value
+                else -> BleV3Lock.AlertType.UNKNOWN_ALERT_TYPE.value
             }
         )
         Timber.d("resolveAF: $alertType")

@@ -172,8 +172,6 @@ data class BleV2Lock(
         ACTIVELY_PRESS_THE_CLEAR_KEY(3),
         MANY_ERROR_KEY_LOCKED(20),
         LOCK_BREAK_ALERT(40),
-        NONE(0xFF),
-        UNKNOWN_ALERT_TYPE(-1),
     }
     
     enum class PlugState(val value: Int) {

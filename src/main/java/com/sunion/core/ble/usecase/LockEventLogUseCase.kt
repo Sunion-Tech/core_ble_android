@@ -13,22 +13,25 @@ class LockEventLogUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockEventLogUseCase"
 
     suspend fun getEventQuantity(): Int {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE0,
+        val functionName = ::getEventQuantity.name
+        val function = 0xE0
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "getEventQuantity")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE0)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE0,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Int
@@ -36,28 +39,30 @@ class LockEventLogUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("getEventQuantity exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun getEvent(index: Int): EventLog {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE1,
+        val functionName = ::getEvent.name
+        val function = 0xE1
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             byteArrayOf(index.toByte())
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "getEvent")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE1)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE1,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as EventLog
@@ -65,30 +70,32 @@ class LockEventLogUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("getEvent exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun deleteEvent(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val sendBytes = byteArrayOf(index.toByte())
+        val functionName = ::deleteEvent.name
+        val function = 0xE2
+        val data = byteArrayOf(index.toByte())
 
-        val command = bleCmdRepository.createCommand(
-            function = 0xE2,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
-            sendBytes
+            data = data
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "deleteEvent")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE2)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE2,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Boolean
@@ -96,30 +103,32 @@ class LockEventLogUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("deleteEvent exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun getEventByAddress(offset: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val sendBytes = byteArrayOf(offset.toByte())
+        val functionName = ::getEventByAddress.name
+        val function = 0xE3
+        val data = byteArrayOf(offset.toByte())
 
-        val command = bleCmdRepository.createCommand(
-            function = 0xE3,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
-            sendBytes
+            data = data
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "getEventByAddress")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE1)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE1,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Boolean
@@ -127,7 +136,7 @@ class LockEventLogUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("getEventByAddress exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }

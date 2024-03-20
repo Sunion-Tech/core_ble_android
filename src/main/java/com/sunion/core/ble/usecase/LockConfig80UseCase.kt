@@ -18,23 +18,26 @@ class LockConfig80UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockConfig80UseCase"
     private var currentLockConfig80: LockConfig.Eighty? = null
 
     suspend fun query(): LockConfig.Eighty {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::query.name
+        val function = 0x80
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0x80,
+            function = function,
             key = statefulConnection.key()
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockConfig80UseCase.query")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0x80)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0x80,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as LockConfig.Eighty
@@ -43,7 +46,7 @@ class LockConfig80UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockConfig80UseCase.query exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()
@@ -51,21 +54,23 @@ class LockConfig80UseCase @Inject constructor(
 
     private suspend fun updateConfig(lockConfig80: LockConfig.Eighty): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = bleCmdRepository.settingBytes81(lockConfig80)
+        val functionName = ::updateConfig.name
+        val function = 0x81
+        val bytes = bleCmdRepository.combineLockConfig81Cmd(lockConfig80)
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0x81,
+            function = function,
             key = statefulConnection.key(),
             bytes
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockConfig80UseCase.set")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0x81)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0x81,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as LockConfig.EightyOne
@@ -74,7 +79,7 @@ class LockConfig80UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockConfig80UseCase.updateConfig exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()

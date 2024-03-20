@@ -17,6 +17,8 @@ class DeviceStatusD6UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "DeviceStatusD6UseCase"
+
     suspend operator fun invoke(): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = DeviceStatusD6Command(bleCmdRepository)
@@ -25,7 +27,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             data = Unit
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusD6UseCase")
+            .setupSingleNotificationThenSendCommand(sendCmd, className)
             .filter { notification -> command.match(statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
             .take(1)
             .map { notification ->
@@ -34,7 +36,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("DeviceStatusD6UseCase exception $e")
+                Timber.e("$className exception $e")
                 throw e
             }
             .single()
@@ -42,21 +44,24 @@ class DeviceStatusD6UseCase @Inject constructor(
 
     suspend fun setLockState(desiredState: Int): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setLockState.name
+        val function = 0xD7
+        val resolveFunction = 0xD6
         if (desiredState!=LockState.LOCKED && desiredState!=LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xD7,
+            function = function,
             key = statefulConnection.key(),
             if (desiredState == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "DeviceStatusD6UseCase.setLockState")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD6)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xD6,
+                    resolveFunction,
                     statefulConnection.key(),
                     notification
                 )
@@ -64,7 +69,7 @@ class DeviceStatusD6UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("DeviceStatusD6UseCase.setLockState exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()

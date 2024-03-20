@@ -15,23 +15,26 @@ class LockConfigD4UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockConfigD4UseCase"
     private var currentLockConfigD4: LockConfig.D4? = null
 
     suspend fun query(): LockConfig.D4  {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::query.name
+        val function = 0xD4
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xD4,
+            function = function,
             key = statefulConnection.key()
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigD4UseCase.query")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD4)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xD4,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as LockConfig.D4
@@ -40,7 +43,7 @@ class LockConfigD4UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockConfigD4UseCase.query exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()
@@ -48,21 +51,23 @@ class LockConfigD4UseCase @Inject constructor(
 
     private suspend fun updateConfig(lockConfigD4: LockConfig.D4): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val bytes = bleCmdRepository.settingBytesD4(lockConfigD4)
+        val functionName = ::updateConfig.name
+        val function = 0xD5
+        val bytes = bleCmdRepository.combineLockConfigD5Cmd(lockConfigD4)
         val sendCmd = bleCmdRepository.createCommand(
-            function = 0xD5,
+            function = function,
             key = statefulConnection.key(),
             bytes
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "LockConfigD4UseCase.set")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xD5)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xD5,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Boolean
@@ -71,7 +76,7 @@ class LockConfigD4UseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("LockConfigD4UseCase.updateConfig exception $e")
+                Timber.e("$functionName exception $e")
                 throw e
             }
             .single()

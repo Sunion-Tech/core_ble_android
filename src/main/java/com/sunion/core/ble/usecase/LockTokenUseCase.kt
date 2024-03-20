@@ -19,22 +19,25 @@ class LockTokenUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
+    private val className = this::class.simpleName ?: "LockTokenUseCase"
 
     suspend fun queryTokenArray(): List<Int> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE4,
+        val functionName = ::queryTokenArray.name
+        val function = 0xE4
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
         )
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "queryTokenArray")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE4)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 bleCmdRepository.resolve(
-                    0xE4,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as ByteArray
@@ -47,28 +50,30 @@ class LockTokenUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("queryTokenArray exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun queryToken(index: Int): DeviceToken.PermanentToken {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE5,
+        val functionName = ::queryToken.name
+        val function = 0xE5
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             byteArrayOf(index.toByte())
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "queryToken")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE5)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE5,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as DeviceToken.PermanentToken
@@ -76,29 +81,31 @@ class LockTokenUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("queryToken exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun addOneTimeToken(permission: String, name: String): AddUserResponse {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::addOneTimeToken.name
+        val function = 0xE6
         val bytes = permission.toByteArray() + name.toByteArray()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE6,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = bytes
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "addOneTimeToken")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE6)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val addUserResponse = bleCmdRepository.resolve(
-                    0xE6,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as AddUserResponse
@@ -106,29 +113,31 @@ class LockTokenUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("addOneTimeToken exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
 
     suspend fun editToken(index: Int, permission: String, name: String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::editToken.name
+        val function = 0xE7
         val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.toByteArray()
-        val command = bleCmdRepository.createCommand(
-            function = 0xE7,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
             data = bytes
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "editToken")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE7)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE7,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as UpdateTokenResponse
@@ -136,7 +145,7 @@ class LockTokenUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("editToken exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }
@@ -144,26 +153,28 @@ class LockTokenUseCase @Inject constructor(
     /** E8, code is required when delete owner token. **/
     suspend fun deleteToken(index: Int, code: String = ""): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val sendBytes = if (code.isNotEmpty())
+        val functionName = ::deleteToken.name
+        val function = 0xE8
+        val data = if (code.isNotEmpty())
             byteArrayOf(0x00.toByte()) + byteArrayOf(code.accessCodeToHex().size.toByte()) + code.accessCodeToHex()
         else
             byteArrayOf(index.toByte())
 
-        val command = bleCmdRepository.createCommand(
-            function = 0xE8,
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
             key = statefulConnection.key(),
-            sendBytes
+            data = data
         )
 
         return statefulConnection
-            .setupSingleNotificationThenSendCommand(command, "deleteToken")
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
             .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, 0xE8)
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
             }
             .take(1)
             .map { notification ->
                 val result = bleCmdRepository.resolve(
-                    0xE8,
+                    function,
                     statefulConnection.key(),
                     notification
                 ) as Boolean
@@ -171,7 +182,7 @@ class LockTokenUseCase @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                Timber.e("deleteToken exception $e")
+                Timber.e("$functionName exception $e")
             }
             .single()
     }

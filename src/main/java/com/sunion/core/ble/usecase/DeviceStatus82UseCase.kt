@@ -6,6 +6,7 @@ import com.sunion.core.ble.command.DeviceStatus82Command
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.DeviceStatus
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.isNotSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -82,7 +83,7 @@ class DeviceStatus82UseCase @Inject constructor(
         val functionName = ::setSecurityBolt.name
         val function = 0x83
         val resolveFunction = 0x82
-        if (state == BleV3Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
         val securityBoltState = if (state == BleV3Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState
 
@@ -118,7 +119,7 @@ class DeviceStatus82UseCase @Inject constructor(
         val functionName = ::setAutoUnlockLockState.name
         val function = 0x84
         if (state == BleV3Lock.LockState.UNKNOWN.value) throw IllegalArgumentException("Unknown desired lock state.")
-        val lockState = if (state == BleV3Lock.LockState.UNLOCKED.value) byteArrayOf(0x00) else byteArrayOf(0x01)
+        val lockState = if (state == BleV3Lock.LockState.LOCKED.value) byteArrayOf(0x01) else return false
         val data = byteArrayOf(BleV3Lock.LockStateAction.LOCK_STATE.value.toByte()) + lockState
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -151,10 +152,9 @@ class DeviceStatus82UseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::setAutoUnlockSecurityBolt.name
         val function = 0x84
-        if (state == BleV3Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
-        val securityBoltState = if (state == BleV3Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
+        val securityBoltState = if (state == BleV3Lock.SecurityBolt.PROTRUDE.value) byteArrayOf(0x01) else return false
         val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState
-
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),

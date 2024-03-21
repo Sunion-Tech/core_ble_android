@@ -495,7 +495,7 @@ lockDirectionUseCase()
                 updateStatus(deviceStatus)
             }
             is DeviceStatus.A2 -> {
-                if(deviceStatus.direction == BleV2Lock.Direction.NOT_SUPPORT.value) {
+                if(deviceStatus.direction.isNotSupport()) {
                     throw LockStatusException.LockFunctionNotSupportException()
                 }
                 updateStatus(deviceStatus)
@@ -870,7 +870,7 @@ Parameter
 
 Example
 ```
-if (configA0.guidingCode != BleV2Lock.GuidingCode.NOT_SUPPORT.value) {
+if (configA0.guidingCode.isSupport()) {
     val isGuidingCodeOn = configA0.guidingCode == BleV2Lock.GuidingCode.CLOSE.value
         lockConfigA0UseCase.setGuidingCode(isGuidingCodeOn)
         .map { result ->
@@ -903,7 +903,7 @@ Parameter
 
 Example
 ```
-if (configA0.virtualCode != BleV2Lock.VirtualCode.NOT_SUPPORT.value) {
+if (configA0.virtualCode.isSupport()) {
     val isVirtualCodeOn = configA0.virtualCode == BleV2Lock.VirtualCode.CLOSE.value
         lockConfigA0UseCase.setVirtualCode(isVirtualCodeOn)
         .map { result ->
@@ -936,7 +936,7 @@ Parameter
 
 Example
 ```
-if (configA0.twoFA != BleV2Lock.TwoFA.NOT_SUPPORT.value) {
+if (configA0.twoFA.isSupport()) {
     val isTwoFAOn = configA0.twoFA == BleV2Lock.TwoFA.CLOSE.value
         lockConfigA0UseCase.setTwoFA(isTwoFAOn)
         .map { result ->
@@ -969,7 +969,7 @@ Parameter
 
 Example
 ```
-if (configA0.vacationMode != BleV2Lock.VacationMode.NOT_SUPPORT.value) {
+if (configA0.vacationMode.isSupport()) {
     val isVacationModeOn = configA0.vacationMode == BleV2Lock.VacationMode.CLOSE.value
     lockConfigA0UseCase.setVacationMode(isVacationModeOn)
         .map { result ->
@@ -1003,7 +1003,7 @@ Parameter
 
 Example
 ```
-if (configA0.autoLock != BleV2Lock.AutoLock.NOT_SUPPORT.value) {
+if (configA0.autoLock.isSupport()) {
     val isAutoLock = configA0.autoLock == BleV2Lock.AutoLock.CLOSE.value
     if (autoLockTime < configA0.autoLockTimeUpperLimit || autoLockTime > configA0.autoLockTimeLowerLimit) {
         Timer.d("Set auto lock will fail because autoLockTime is not support value")
@@ -1040,7 +1040,7 @@ Parameter
 
 Example
 ```
-if (configA0.operatingSound != BleV2Lock.OperatingSound.NOT_SUPPORT.value) {
+if (configA0.operatingSound.isSupport()) {
     val isOperatingSoundOn = configA0.operatingSound == BleV2Lock.OperatingSound.CLOSE.value
         lockConfigA0UseCase.setOperatingSound(isOperatingSoundOn)
         .map { result ->
@@ -1074,7 +1074,7 @@ Parameter
 
 Example
 ```
-if (configA0.soundType != BleV2Lock.SoundType.NOT_SUPPORT.value) {
+if (configA0.soundType.isSupport()) {
     lockConfigA0UseCase.setSoundValue(configA0.soundType)
         .map { result ->
             // return true when succeed
@@ -1106,7 +1106,7 @@ Parameter
 
 Example
 ```
-if (configA0.showFastTrackMode != BleV2Lock.ShowFastTrackMode.NOT_SUPPORT.value) {
+if (configA0.showFastTrackMode.isSupport()) {
     val isShowFastTrackModeOn = configA0.showFastTrackMode == BleV2Lock.ShowFastTrackMode.CLOSE.value
         lockConfigA0UseCase.setShowFastTrackMode(isShowFastTrackModeOn)
         .map { result ->
@@ -1484,7 +1484,7 @@ getAccessCodeArray(): Flow<List<Boolean>>
 
 Example
 ```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCodeQuantity.isSupport2Byte()) {
     lockAccessUseCase.getAccessCodeArray()
         .map { accessCodeArray ->
             // return accessCodeArray
@@ -1547,7 +1547,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCodeQuantity.isSupport2Byte()) {
     lockAccessUseCase.addAccessCode(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = Access.A7
@@ -1583,7 +1583,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCodeQuantity.isSupport2Byte()) {
     lockAccessUseCase.editAccessCode(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = true when succeed
@@ -1615,7 +1615,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCodeQuantity.isSupport2Byte()) {
     lockAccessUseCase.deleteAccessCode(index)
         .map { result ->
             result = true when succeed
@@ -1642,7 +1642,7 @@ getAccessCardArray(): Flow<List<Boolean>>
 
 Example
 ```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCodeQuantity.isSupport2Byte()) {
     lockAccessUseCase.getAccessCardArray()
         .map { accessCardArray ->
             // return accessCardArray
@@ -1705,7 +1705,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCardQuantity.isSupport2Byte()) {
     lockAccessUseCase.addAccessCard(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = Access.A7
@@ -1741,7 +1741,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCardQuantity.isSupport2Byte()) {
     lockAccessUseCase.editAccessCard(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = true when succeed
@@ -1773,7 +1773,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCardQuantity.isSupport2Byte()) {
     lockAccessUseCase.deleteAccessCard(index)
         .map { result ->
             result = true when succeed
@@ -1806,7 +1806,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.accessCardQuantity.isSupport2Byte()) {
     lockAccessUseCase.deviceGetAccessCard(state, index)
         .map { result ->
             result = Access.A9
@@ -1833,7 +1833,7 @@ getFingerprintArray(): Flow<List<Boolean>>
 
 Example
 ```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.fingerprintQuantity.isSupport2Byte()) {
     lockAccessUseCase.getFingerprintArray()
         .map { fingerprintArray ->
             // return fingerprintArray
@@ -1896,7 +1896,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.fingerprintQuantity.isSupport2Byte()) {
     lockAccessUseCase.addFingerprint(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = Access.A7
@@ -1932,7 +1932,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.fingerprintQuantity.isSupport2Byte()) {
     lockAccessUseCase.editFingerprint(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = true when succeed
@@ -1964,7 +1964,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.fingerprintQuantity.isSupport2Byte()) {
     lockAccessUseCase.deleteFingerprint(index)
         .map { result ->
             result = true when succeed
@@ -1997,7 +1997,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.fingerprintQuantity.isSupport2Byte()) {
     lockAccessUseCase.deviceGetFingerprint(state, index)
         .map { result ->
             result = Access.A9
@@ -2024,7 +2024,7 @@ getFaceArray(): Flow<List<Boolean>>
 
 Example
 ```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.faceQuantity.isSupport2Byte()) {
     lockAccessUseCase.getFaceArray()
         .map { faceArray ->
             // return faceArray
@@ -2087,7 +2087,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.faceQuantity.isSupport2Byte()) {
     lockAccessUseCase.addFace(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = Access.A7
@@ -2123,7 +2123,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
+if(lockSupportedTypes.faceQuantity.isSupport2Byte()) {
     lockAccessUseCase.editFace(index, isEnabled, scheduleType, name, code)
         .map { result ->
             result = true when succeed
@@ -2155,7 +2155,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
+if(lockSupportedTypes.faceQuantity.isSupport2Byte()) {
     lockAccessUseCase.deleteFace(index)
         .map { result ->
             result = true when succeed
@@ -2188,7 +2188,7 @@ Parameter
 
 Example
 ```
-if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
+if(lockSupportedTypes.faceQuantity.isSupport2Byte()) {
     lockAccessUseCase.deviceGetFace(state, index)
         .map { result ->
             result = Access.A9

@@ -6,6 +6,7 @@ import com.sunion.core.ble.command.DeviceStatusA2Command
 import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.DeviceStatus
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.isNotSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -82,7 +83,7 @@ class DeviceStatusA2UseCase @Inject constructor(
         val functionName = ::setSecurityBolt.name
         val function = 0xA3
         val resolveFunction = 0xA2
-        if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
         val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV2Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState
 

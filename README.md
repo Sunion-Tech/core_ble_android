@@ -490,7 +490,7 @@ flow { emit(lockDirectionUseCase()) }
                 updateStatus(deviceStatus)
             }
             is DeviceStatus.A2 -> {
-                if(deviceStatus.direction == BleV2Lock.Direction.NOT_SUPPORT.value) {
+                if(deviceStatus.direction.isNotSupport()) {
                     throw LockStatusException.LockFunctionNotSupportException()
                 }
                 updateStatus(deviceStatus)

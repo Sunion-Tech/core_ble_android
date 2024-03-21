@@ -15,6 +15,7 @@ import com.sunion.core.ble.entity.LockState
 import com.sunion.core.ble.entity.WifiConnectState
 import com.sunion.core.ble.entity.WifiList
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.isNotSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -199,7 +200,7 @@ class LockWifiUseCase @Inject constructor(
         val functionName = ::setSecurityBoltA2.name
         val function = 0xF1
         val resolveFunction = 0xA2
-        if (state == BleV2Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
         val securityBoltState = if (state == BleV2Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV2Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState + identityId.toByteArray()
 
@@ -270,7 +271,7 @@ class LockWifiUseCase @Inject constructor(
         val functionName = ::setSecurityBolt82.name
         val function = 0xF1
         val resolveFunction = 0x82
-        if (state == BleV3Lock.SecurityBolt.NOT_SUPPORT.value) throw IllegalArgumentException("$functionName not support.")
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
         val securityBoltState = if (state == BleV3Lock.SecurityBolt.NOT_PROTRUDE.value) byteArrayOf(0x00) else byteArrayOf(0x01)
         val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState + identityId.toByteArray()
 
@@ -301,12 +302,13 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun autoUnlockLockState(identityId:String): Boolean{
+    suspend fun autoUnlockLockState(state: Int, identityId:String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::autoUnlockLockState.name
         val function = 0xF2
-        val data = byteArrayOf(BleV3Lock.LockStateAction.LOCK_STATE.value.toByte()) + byteArrayOf(0x00) + identityId.toByteArray()
-
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
+        val lockState = if (state == BleV3Lock.LockState.LOCKED.value) byteArrayOf(0x01) else return false
+        val data = byteArrayOf(BleV3Lock.LockStateAction.LOCK_STATE.value.toByte()) + lockState + identityId.toByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
@@ -334,12 +336,13 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun autoUnlockSecurityBolt(identityId:String): Boolean{
+    suspend fun autoUnlockSecurityBolt(state: Int, identityId:String): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::autoUnlockSecurityBolt.name
         val function = 0xF2
-        val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + byteArrayOf(0x00) + identityId.toByteArray()
-
+        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
+        val securityBoltState = if (state == BleV3Lock.SecurityBolt.PROTRUDE.value) byteArrayOf(0x01) else return false
+        val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState + identityId.toByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),

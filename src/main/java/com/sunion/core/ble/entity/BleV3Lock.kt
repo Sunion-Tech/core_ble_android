@@ -1,6 +1,7 @@
 package com.sunion.core.ble.entity
 
 import android.net.wifi.hotspot2.pps.Credential.CertificateCredential
+import com.sunion.core.ble.accessByteArrayToString
 
 data class BleV3Lock(
     /** 82 **/
@@ -144,20 +145,20 @@ data class BleV3Lock(
     }
 
     enum class UserStatus(val value: Int) {
-        AVAILABLE(0x00), // 可用
+        AVAILABLE(0x00), // 未使用可放資料
         OCCUPIED_ENABLED(0x01), // 已使用, 目前啟用
         OCCUPIED_DISABLED(0x03), // 已使用, 目前停用
         UNKNOWN(2)
     }
 
     enum class UserType(val value: Int) {
-        UNRESTRICTED(0x00),
-        YEAR_DAY_SCHEDULE(0x01),
-        WEEK_DAY_SCHEDULE(0x02),
+        UNRESTRICTED(0x00), // 永久性密碼 All
+        YEAR_DAY_SCHEDULE(0x01), // 時間區段密碼 ValidTimeRange
+        WEEK_DAY_SCHEDULE(0x02), // 週期性密碼 ScheduleEntry
         PROGRAMMING(0x03), // app不顯示此選項
         NON_ACCESS(0x04),
-        FORCED(0x05),
-        DISPOSABLE(0x06),
+        FORCED(0x05), // 永久性密碼但有警報
+        DISPOSABLE(0x06), // 一次性密碼 SingleEntry
         EXPIRING(0x07), // 不支援
         SCHEDULE_RESTRICTED(0x08),
         REMOTE_ONLY(0x09),
@@ -165,9 +166,9 @@ data class BleV3Lock(
     }
 
     enum class CredentialRule(val value: Int) {
-        SINGLE(0x00),
-        DUAL(0x01),
-        TRI(0x02),
+        SINGLE(0x00), // 驗證1個Credential
+        DUAL(0x01), // 驗證2個Credential
+        TRI(0x02), // 驗證3個Credential
         UNKNOWN(3)
     }
 
@@ -179,6 +180,19 @@ data class BleV3Lock(
         FINGER_VEIN(0x04),
         FACE(0x05),
         UNKNOWN(6)
+    }
+
+    enum class CredentialFormat(val value: Int) {
+        CREDENTIAL(0),
+        USER(1)
+    }
+
+    enum class UnsyncedDataType(val value: Int) {
+        CREDENTIAL(0),
+        USER(1),
+        LOG(2),
+        TOKEN(3),
+        SETTING(4),
     }
 
     enum class ScheduleStatus(val value: Int) {
@@ -198,7 +212,7 @@ data class BleV3Lock(
         SATURDAY(0x40),
     }
 
-    enum class UserAction(val value: Int) {
+    enum class Action(val value: Int) {
         CREATE(0x00),
         EDIT(0x01),
     }
@@ -230,6 +244,8 @@ data class BleV3Lock(
         val isSuccess: Int,
     )
 
+    // Matter: 1 user has sum 4 type credential count
+    // Not Matter: 1 user only 1 type credential
     data class UserAbility(
         val isMatter: Boolean,
         val weekDayScheduleCount: Int,
@@ -240,6 +256,8 @@ data class BleV3Lock(
         val faceCredentialCount: Int,
     )
 
+    // Matter: only get matter count = user count
+    // Not Matter: get 4 type count sum = user count
     data class UserCount(
         val matterCount: Int,
         val codeCount: Int,
@@ -262,13 +280,15 @@ data class BleV3Lock(
         val status: Int,
         val type: Int,
         val userIndex: Int,
-        val index: Long
+        val code: ByteArray,
+        val codeString: String = code.accessByteArrayToString()
     )
 
     data class UserDetail(
         val type: Int,
         val status: Int,
-        val index: Int
+        val code: ByteArray,
+        val codeString: String = code.accessByteArrayToString()
     )
 
     data class WeekDaySchedule(

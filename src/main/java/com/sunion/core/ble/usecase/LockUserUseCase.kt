@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.User
 import com.sunion.core.ble.exception.NotConnectedException
@@ -23,7 +24,7 @@ class LockUserUseCase @Inject constructor(
 ) {
     private val className = this::class.simpleName ?: "LockUserUseCase"
 
-    private suspend fun getUserArray(): List<Boolean> {
+    suspend fun getUserArray(): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getUserArray.name
         val function = 0x90
@@ -57,7 +58,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun queryUser(index: Int): User.NinetyOne {
+    suspend fun queryUser(index: Int): User.NinetyOne {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::queryUser.name
         val function = 0x91
@@ -85,10 +86,10 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun createUser(
+    suspend fun addUser(
         index: Int,
         name: String,
-        uid: String,
+        uid: Int,
         status: Int,
         type: Int,
         credentialRule: Int,
@@ -97,7 +98,7 @@ class LockUserUseCase @Inject constructor(
         yearDayScheduleList: MutableList<BleV3Lock.YearDaySchedule>? = null
     ): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::createUser.name
+        val functionName = ::addUser.name
         val function = 0x92
         val data = bleCmdRepository.combineUser92Cmd(User.NinetyTwoCmd(
             action = 0x00,
@@ -135,10 +136,10 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun editUser(
+    suspend fun editUser(
         index: Int,
         name: String,
-        uid: String,
+        uid: Int,
         status: Int,
         type: Int,
         credentialRule: Int,
@@ -186,7 +187,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun deleteUser(index: Int): Boolean {
+    suspend fun deleteUser(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::deleteUser.name
         val function = 0x93
@@ -216,7 +217,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun getCredentialArray(): List<Boolean> {
+    suspend fun getCredentialArray(): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getCredentialArray.name
         val function = 0x94
@@ -250,6 +251,9 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
+    suspend fun getCredentialByUser(index: Int): User.NinetyFive = getCredential(BleV3Lock.CredentialFormat.USER.value, index)
+    suspend fun getCredentialByCredential(index: Int): User.NinetyFive = getCredential(BleV3Lock.CredentialFormat.CREDENTIAL.value, index)
+
     private suspend fun getCredential(format: Int, index: Int): User.NinetyFive {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getCredential.name
@@ -280,12 +284,18 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun createCredential(
+    suspend fun addCredentialCode(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.PIN.value, userIndex, code))
+    suspend fun addCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.RFID.value, userIndex, code))
+    suspend fun addCredentialFingerPrint(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGERPRINT.value, userIndex, code))
+    suspend fun addCredentialFingerVein(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGER_VEIN.value, userIndex, code))
+    suspend fun addCredentialFace(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FACE.value, userIndex, code))
+
+    private suspend fun addCredential(
         index: Int,
         credentialDetail: BleV3Lock.CredentialDetail? = null,
     ): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::createCredential.name
+        val functionName = ::addCredential.name
         val function = 0x96
         val data = bleCmdRepository.combineUser96Cmd(
             User.NinetySixCmd(
@@ -317,6 +327,12 @@ class LockUserUseCase @Inject constructor(
             .catch { e -> Timber.e("$functionName exception $e") }
             .single()
     }
+
+    suspend fun editCredentialCode(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.PIN.value, userIndex, code))
+    suspend fun editCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.RFID.value, userIndex, code))
+    suspend fun editCredentialFingerPrint(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGERPRINT.value, userIndex, code))
+    suspend fun editCredentialFingerVein(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGER_VEIN.value, userIndex, code))
+    suspend fun editCredentialFace(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FACE.value, userIndex, code))
 
     private suspend fun editCredential(
         index: Int,
@@ -387,17 +403,17 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun deviceGetCredentialCard(index: Int): User.NinetySeven = deviceGetCredential(2, 1, index)
-    suspend fun deviceGetCredentialFingerprint(index: Int): User.NinetySeven = deviceGetCredential(3, 1, index)
-    suspend fun deviceGetCredentialFingerVein(index: Int): User.NinetySeven = deviceGetCredential(4, 1 ,index)
-    suspend fun deviceGetCredentialFace(index: Int): User.NinetySeven = deviceGetCredential(5, 1 ,index)
+    suspend fun deviceGetCredentialCard(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.RFID.value , 1, index)
+    suspend fun deviceGetCredentialFingerprint(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FINGERPRINT.value, 1, index)
+    suspend fun deviceGetCredentialFingerVein(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FINGER_VEIN.value, 1 ,index)
+    suspend fun deviceGetCredentialFace(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FACE.value, 1 ,index)
 
-    suspend fun deviceExitCredentialCard(index: Int): User.NinetySeven = deviceGetCredential(2, 0, index)
-    suspend fun deviceExitCredentialFingerprint(index: Int): User.NinetySeven = deviceGetCredential(3, 0, index)
-    suspend fun deviceExitCredentialFingerVein(index: Int): User.NinetySeven = deviceGetCredential(4, 0 ,index)
-    suspend fun deviceExitCredentialFace(index: Int): User.NinetySeven = deviceGetCredential(5, 0 ,index)
+    suspend fun deviceExitCredentialCard(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.RFID.value, 0, index)
+    suspend fun deviceExitCredentialFingerprint(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FINGERPRINT.value, 0, index)
+    suspend fun deviceExitCredentialFingerVein(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FINGER_VEIN.value, 0 ,index)
+    suspend fun deviceExitCredentialFace(index: Int): User.NinetySeven = deviceGetCredential(BleV3Lock.CredentialType.FACE.value, 0 ,index)
 
-    private suspend fun deleteCredential(index: Int): Boolean {
+    suspend fun deleteCredential(index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::deleteCredential.name
         val function = 0x98
@@ -426,6 +442,9 @@ class LockUserUseCase @Inject constructor(
             }
             .single()
     }
+
+    suspend fun getCredentialHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.CREDENTIAL.value)
+    suspend fun getUserHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.USER.value)
 
     private suspend fun getHash(index: Int): User.NinetyNine {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -457,7 +476,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun hasUnsyncedData(): Boolean {
+    suspend fun hasUnsyncedData(): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::hasUnsyncedData.name
         val function = 0x9A
@@ -486,7 +505,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun getUnsyncedData(): User.NinetyB {
+    suspend fun getUnsyncedData(): User.NinetyB {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getUnsyncedData.name
         val function = 0x9B
@@ -514,6 +533,12 @@ class LockUserUseCase @Inject constructor(
             }
             .single()
     }
+
+    suspend fun setCredentialUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.CREDENTIAL.value, System.currentTimeMillis(), index)
+    suspend fun setUserUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.USER.value, System.currentTimeMillis(), index)
+    suspend fun setLogUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.LOG.value, System.currentTimeMillis() ,index)
+    suspend fun setTokenUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.TOKEN.value, System.currentTimeMillis() ,index)
+    suspend fun setSettingUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.SETTING.value, System.currentTimeMillis() ,index)
 
     private suspend fun setUnsyncedData(type: Int, time: Long, index: Int): User.NinetyC {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -552,7 +577,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    private suspend fun setAllDataSynced(): Boolean {
+    suspend fun setAllDataSynced(): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::setAllDataSynced.name
         val function = 0x9D

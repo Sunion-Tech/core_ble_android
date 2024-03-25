@@ -25,7 +25,7 @@ sealed class User {
         val action: Int,
         val index: Int,
         val name: String,
-        val uid: String,
+        val uid: Int,
         val status: Int,
         val type: Int,
         val credentialRule: Int,

@@ -330,7 +330,7 @@ class BleCmdRepository @Inject constructor(){
         outputStream.write(user92Cmd.action)
         outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
         outputStream.write(user92Cmd.name.toByteArray())
-        outputStream.write(user92Cmd.uid.toByteArray())
+        outputStream.write(user92Cmd.uid.toLittleEndianByteArrayInt16())
         outputStream.write(user92Cmd.status)
         outputStream.write(user92Cmd.type)
         outputStream.write(user92Cmd.credentialRule)
@@ -362,7 +362,7 @@ class BleCmdRepository @Inject constructor(){
             outputStream.write(user96Cmd.credentialDetail.status)
             outputStream.write(user96Cmd.credentialDetail.type)
             outputStream.write(user96Cmd.credentialDetail.userIndex.toLittleEndianByteArrayInt16())
-            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArray())
+            outputStream.write(user96Cmd.credentialDetail.code)
         }
         return outputStream.toByteArray()
     }
@@ -1011,7 +1011,7 @@ class BleCmdRepository @Inject constructor(){
                     status = data.component4().unSignedInt(),
                     type = data.component5().unSignedInt(),
                     userIndex = data.copyOfRange(5, 7).toInt(),
-                    index = data.copyOfRange(7, 15).toLong()
+                    code = data.copyOfRange(7, 15)
                 )
             )
         } else {
@@ -1023,7 +1023,7 @@ class BleCmdRepository @Inject constructor(){
                         BleV3Lock.UserDetail(
                             status = data.copyOfRange(3 + i * 10, 4 + i * 10).toInt(),
                             type = data.copyOfRange(4 + i * 10, 5 + i * 10).toInt(),
-                            index = data.copyOfRange(5 + i * 10, 13 + i * 10).toInt()
+                            code = data.copyOfRange(5 + i * 10, 13 + i * 10)
                         )
                     )
                 }

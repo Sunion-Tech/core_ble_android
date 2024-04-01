@@ -113,11 +113,11 @@ fun Int.isSupport2Byte(): Boolean {
 }
 
 fun Int.isNotSupport(): Boolean {
-    return this != 0xFF
+    return this == 0xFF
 }
 
 fun Int.isNotSupport2Byte(): Boolean {
-    return this != 0xFFFF
+    return this == 0xFFFF
 }
 
 fun Int.toHexString(): String {

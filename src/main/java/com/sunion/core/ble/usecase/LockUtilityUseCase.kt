@@ -122,13 +122,17 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getFirmwareVersion(type: Int): Int {
+    suspend fun getMcuVersion(): String = getFirmwareVersion(BleV3Lock.VersionType.MCU.value)
+    suspend fun getRfVersion(): String = getFirmwareVersion(BleV3Lock.VersionType.RF.value)
+
+    private suspend fun getFirmwareVersion(type: Int): String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = "getFirmwareVersion"
         val function = 0xC2
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
+            data = byteArrayOf(type.toByte())
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
@@ -142,7 +146,7 @@ class LockUtilityUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ) as BleV3Lock.LockVersion
-                result.version
+                "mainVersion:${result.mainVersion} subVersion:${result.subVersion}"
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

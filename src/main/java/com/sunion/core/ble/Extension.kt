@@ -2,6 +2,7 @@ package com.sunion.core.ble
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.Charset
 import java.util.*
 
 //Byte
@@ -46,6 +47,16 @@ fun ByteArray.accessByteArrayToString(): String{
     return this.map { it.unSignedInt().toString() }.joinToString(separator = "") { it }
 }
 
+fun ByteArray.toAsciiString(): String {
+    return this.toString(Charsets.US_ASCII)
+}
+
+fun ByteArray.extendedByteArray(length: Int): ByteArray {
+    val extendedByteArray = ByteArray(length)
+    System.arraycopy(this, 0, extendedByteArray, 0, this.size)
+    return extendedByteArray
+}
+
 //String
 fun String.hexToByteArray(): ByteArray {
     val hex: CharArray = this.toCharArray()
@@ -85,6 +96,21 @@ fun String.toUpperCaseMac(): String {
 
 fun String.isDeviceUuid(): Boolean {
     return this.length == 16
+}
+
+fun String.toPaddedByteArray(length: Int, charset: Charset = Charsets.UTF_8): ByteArray {
+    val byteArray = this.toByteArray(charset)
+    return if (byteArray.size >= length) {
+        throw Exception("Name must be less than or equal to $length bytes")
+    } else {
+        val paddedByteArray = ByteArray(length) { 0x00 }
+        System.arraycopy(byteArray, 0, paddedByteArray, 0, byteArray.size)
+        paddedByteArray
+    }
+}
+
+fun String.toAsciiByteArray(): ByteArray {
+    return this.toByteArray(Charsets.US_ASCII)
 }
 
 //Int

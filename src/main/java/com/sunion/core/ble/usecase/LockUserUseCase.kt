@@ -6,6 +6,7 @@ import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.User
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.toAsciiByteArray
 import com.sunion.core.ble.toBooleanList
 import com.sunion.core.ble.toLittleEndianByteArrayInt16
 import kotlinx.coroutines.Dispatchers
@@ -251,10 +252,10 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getCredentialByUser(index: Int): User.NinetyFive = getCredential(BleV3Lock.CredentialFormat.USER.value, index)
-    suspend fun getCredentialByCredential(index: Int): User.NinetyFive = getCredential(BleV3Lock.CredentialFormat.CREDENTIAL.value, index)
+    suspend fun getCredentialByUser(index: Int): User.NinetyFiveUser = getCredential(BleV3Lock.CredentialFormat.USER.value, index) as User.NinetyFiveUser
+    suspend fun getCredentialByCredential(index: Int): User.NinetyFiveCredential = getCredential(BleV3Lock.CredentialFormat.CREDENTIAL.value, index) as User.NinetyFiveCredential
 
-    private suspend fun getCredential(format: Int, index: Int): User.NinetyFive {
+    private suspend fun getCredential(format: Int, index: Int): User {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getCredential.name
         val function = 0x95
@@ -274,7 +275,7 @@ class LockUserUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyFive
+                ) as User
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -284,14 +285,14 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun addCredentialCode(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.PIN.value, userIndex, code))
-    suspend fun addCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.RFID.value, userIndex, code))
-    suspend fun addCredentialFingerPrint(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGERPRINT.value, userIndex, code))
-    suspend fun addCredentialFingerVein(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGER_VEIN.value, userIndex, code))
-    suspend fun addCredentialFace(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FACE.value, userIndex, code))
+    suspend fun addCredentialCode(index: Int, status: Int, userIndex:Int, code: String): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.PIN.value, code.toAsciiByteArray()))
+    suspend fun addCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.RFID.value, code))
+    suspend fun addCredentialFingerPrint(index: Int, status: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FINGERPRINT.value, byteArrayOf()))
+    suspend fun addCredentialFingerVein(index: Int, status: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FINGER_VEIN.value, byteArrayOf()))
+    suspend fun addCredentialFace(index: Int, status: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FACE.value, byteArrayOf()))
 
     private suspend fun addCredential(
-        index: Int,
+        userIndex: Int,
         credentialDetail: BleV3Lock.CredentialDetail? = null,
     ): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -300,7 +301,7 @@ class LockUserUseCase @Inject constructor(
         val data = bleCmdRepository.combineUser96Cmd(
             User.NinetySixCmd(
                 action = 0x00,
-                index = index,
+                userIndex = userIndex,
                 credentialDetail = credentialDetail
             )
         )
@@ -328,14 +329,14 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun editCredentialCode(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.PIN.value, userIndex, code))
-    suspend fun editCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.RFID.value, userIndex, code))
-    suspend fun editCredentialFingerPrint(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGERPRINT.value, userIndex, code))
-    suspend fun editCredentialFingerVein(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FINGER_VEIN.value, userIndex, code))
-    suspend fun editCredentialFace(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(index, BleV3Lock.CredentialDetail(status, BleV3Lock.CredentialType.FACE.value, userIndex, code))
+    suspend fun editCredentialCode(index: Int, status: Int, userIndex:Int, code: String): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.PIN.value, code.toAsciiByteArray()))
+    suspend fun editCredentialCard(index: Int, status: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.RFID.value, code))
+    suspend fun editCredentialFingerPrint(index: Int, status: Int, userIndex:Int,): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FINGERPRINT.value, byteArrayOf()))
+    suspend fun editCredentialFingerVein(index: Int, status: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FINGER_VEIN.value, byteArrayOf()))
+    suspend fun editCredentialFace(index: Int, status: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, status, BleV3Lock.CredentialType.FACE.value, byteArrayOf()))
 
     private suspend fun editCredential(
-        index: Int,
+        userIndex: Int,
         credentialDetail: BleV3Lock.CredentialDetail? = null,
     ): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -344,7 +345,7 @@ class LockUserUseCase @Inject constructor(
         val data = bleCmdRepository.combineUser96Cmd(
             User.NinetySixCmd(
                 action = 0x01,
-                index = index,
+                userIndex = userIndex,
                 credentialDetail = credentialDetail
             )
         )

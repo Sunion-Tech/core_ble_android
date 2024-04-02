@@ -29,7 +29,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                         statefulConnection.key(), notification
                     )?.let { decrypted ->
                         when(decrypted.component3().unSignedInt()){
-                            0xA2, 0xA9, 0xAF, 0xB0, 0xD6 -> true
+                            0x82, 0xA2, 0xA9, 0xAF, 0xB0, 0xD6 -> true
                             else -> false
                         }
                     } ?: false
@@ -42,6 +42,13 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                     statefulConnection.key(), notification
                 )?.let { decrypted ->
                     when (val function = decrypted.component3().unSignedInt()) {
+                        0x82 -> {
+                            result = bleCmdRepository.resolve(
+                                function,
+                                statefulConnection.key(),
+                                notification
+                            ) as DeviceStatus.EightTwo
+                        }
                         0xA2 -> {
                             result = bleCmdRepository.resolve(
                                 function,

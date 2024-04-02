@@ -14,6 +14,11 @@ data class LockConnectionInfo(
     var keyTwo: String? = null,
     var permission: String? = null,
     var permanentToken: String? = null,
+    var workOrderNumber: String? = null,
+    var code: String? = null,
+    var uuid: String? = code,
+    var gatewayToken: String? = null,
+    var broadcastName: String? = null,
 ) {
     companion object {
         fun from(content: QRCodeContent): LockConnectionInfo = LockConnectionInfo(
@@ -24,6 +29,19 @@ data class LockConnectionInfo(
             serialNumber = content.s,
             isFrom = content.f,
             deviceName = content.l ?: ("BT_Lock_" + content.a.noColonMac().takeLast(6)),
+        )
+
+        fun from(productionGetResponse: ProductionGetResponse, macAddress: String? = null): LockConnectionInfo = LockConnectionInfo(
+            workOrderNumber = productionGetResponse.workOrderNumber,
+            code = productionGetResponse.code,
+            model = productionGetResponse.model,
+            uuid = productionGetResponse.uuid,
+            oneTimeToken = productionGetResponse.token,
+            gatewayToken = productionGetResponse.gatewayToken,
+            keyOne = productionGetResponse.key,
+            macAddress = macAddress?.colonMac() ?: productionGetResponse.address ?: "",
+            broadcastName = productionGetResponse.broadcastName,
+            serialNumber = productionGetResponse.serialNumber,
         )
     }
 }

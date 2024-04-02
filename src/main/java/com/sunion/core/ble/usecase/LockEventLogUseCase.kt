@@ -108,7 +108,7 @@ class LockEventLogUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getEventByAddress(offset: Int): Boolean {
+    suspend fun getEventByAddress(offset: Int): EventLog {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getEventByAddress.name
         val function = 0xE3
@@ -131,7 +131,7 @@ class LockEventLogUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as Boolean
+                ) as EventLog
                 result
             }
             .flowOn(Dispatchers.IO)

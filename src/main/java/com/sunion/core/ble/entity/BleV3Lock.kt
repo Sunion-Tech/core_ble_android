@@ -1,7 +1,7 @@
 package com.sunion.core.ble.entity
 
-import android.net.wifi.hotspot2.pps.Credential.CertificateCredential
 import com.sunion.core.ble.accessByteArrayToString
+import com.sunion.core.ble.toAsciiString
 
 data class BleV3Lock(
     /** 82 **/
@@ -144,6 +144,12 @@ data class BleV3Lock(
         NOT_SUPPORT(0xFF)
     }
 
+    enum class VersionType(val value: Int) {
+        MCU(0),
+        RF(1),
+        NOT_SUPPORT(0xFFFF)
+    }
+
     enum class UserStatus(val value: Int) {
         AVAILABLE(0x00), // 未使用可放資料
         OCCUPIED_ENABLED(0x01), // 已使用, 目前啟用
@@ -268,7 +274,8 @@ data class BleV3Lock(
 
     data class LockVersion(
         val target: Int,
-        val version: Int,
+        val mainVersion: Int,
+        val subVersion: Int,
     )
 
     data class Credential(
@@ -277,18 +284,11 @@ data class BleV3Lock(
     )
 
     data class CredentialDetail(
+        val index: Int,
         val status: Int,
         val type: Int,
-        val userIndex: Int,
         val code: ByteArray,
-        val codeString: String = code.accessByteArrayToString()
-    )
-
-    data class UserDetail(
-        val type: Int,
-        val status: Int,
-        val code: ByteArray,
-        val codeString: String = code.accessByteArrayToString()
+        val codeString: String = if(type == CredentialType.PIN.value) code.toAsciiString() else code.accessByteArrayToString()
     )
 
     data class WeekDaySchedule(

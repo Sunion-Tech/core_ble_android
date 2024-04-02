@@ -141,6 +141,7 @@ class BleCmdRepository @Inject constructor(){
     }
 
     enum class Config81(val byte: Int){
+        SIZE(29),
         LATITUDE_INTEGER (0),
         LATITUDE_DECIMAL (4),
         LONGITUDE_INTEGER (8),
@@ -220,7 +221,7 @@ class BleCmdRepository @Inject constructor(){
             0x80, 0x82, 0x85, 0x86, 0x87, 0x90, 0x94, 0x9A, 0x9B, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
                 cmd(function, key)
             }
-            0x81, 0x92, 0x96, 0x9C, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2 -> {
+            0x81, 0x92, 0x96, 0x9C, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4-> {
                 cmd(function, key, data.size, data)
             }
             0x83, 0x84, 0x91, 0x93, 0x98, 0xA3 -> {
@@ -259,28 +260,29 @@ class BleCmdRepository @Inject constructor(){
         data: ByteArray? = null,
         serial: ByteArray = serialIncrementAndGet(),
     ): ByteArray {
+        val functionName = ::cmd.name
         if (function == 0xC0 && serial.size != 2) throw IllegalArgumentException("Invalid serial")
         val sendByte = ByteArray(2)
         sendByte[0] = function.toByte()
         if(function == 0xC0 && dataSize != null){
             sendByte[1] = dataSize.toByte()
-            Timber.d("cmd[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize")
+            Timber.d("$functionName[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize")
             return encrypt(key, pad(serial + sendByte + generateRandomBytes(dataSize)))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         } else if(data != null && dataSize != null){
             sendByte[1] = dataSize.toByte()
-            Timber.d("cmd[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize, ${data.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize, ${data.toHexPrint()}")
             return encrypt(key, pad(serial + sendByte + data))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         }else {
-            Timber.d("cmd[${function.toHexString()}]: ${sendByte.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${sendByte.toHexPrint()}")
             return encrypt(key, pad(serial + sendByte))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         }
     }
 
     fun combineLockConfig81Cmd(lockConfig80: LockConfig.Eighty): ByteArray {
-        val settingBytes = ByteArray(lockConfig80.size)
+        val settingBytes = ByteArray(Config81.SIZE.byte)
 
         val latitudeBigDecimal = BigDecimal.valueOf(lockConfig80.latitude)
         val latitudeIntPartBytes = latitudeBigDecimal.toInt().toLittleEndianByteArray()
@@ -320,8 +322,6 @@ class BleCmdRepository @Inject constructor(){
         settingBytes[Config81.SOUND_VALUE.byte] = lockConfig80.soundValue.toByte()
         settingBytes[Config81.SHOW_FAST_TRACK_MODE.byte] = lockConfig80.showFastTrackMode.toByte()
         settingBytes[Config81.SABBATH_MODE.byte] = lockConfig80.sabbathMode.toByte()
-        Timber.d("combineLockConfig81Cmd: ${settingBytes.toHexPrint()}")
-
         return settingBytes
     }
 
@@ -329,8 +329,8 @@ class BleCmdRepository @Inject constructor(){
         val outputStream = ByteArrayOutputStream()
         outputStream.write(user92Cmd.action)
         outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
-        outputStream.write(user92Cmd.name.toByteArray())
-        outputStream.write(user92Cmd.uid.toLittleEndianByteArrayInt16())
+        outputStream.write(user92Cmd.name.toPaddedByteArray(10))
+        outputStream.write(user92Cmd.uid.toLittleEndianByteArray())
         outputStream.write(user92Cmd.status)
         outputStream.write(user92Cmd.type)
         outputStream.write(user92Cmd.credentialRule)
@@ -357,12 +357,12 @@ class BleCmdRepository @Inject constructor(){
     fun combineUser96Cmd(user96Cmd: User.NinetySixCmd): ByteArray {
         val outputStream = ByteArrayOutputStream()
         outputStream.write(user96Cmd.action)
-        outputStream.write(user96Cmd.index.toLittleEndianByteArrayInt16())
+        outputStream.write(user96Cmd.userIndex.toLittleEndianByteArrayInt16())
         if(user96Cmd.credentialDetail != null){
+            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArrayInt16())
             outputStream.write(user96Cmd.credentialDetail.status)
             outputStream.write(user96Cmd.credentialDetail.type)
-            outputStream.write(user96Cmd.credentialDetail.userIndex.toLittleEndianByteArrayInt16())
-            outputStream.write(user96Cmd.credentialDetail.code)
+            outputStream.write(user96Cmd.credentialDetail.code.extendedByteArray(8))
         }
         return outputStream.toByteArray()
     }
@@ -415,8 +415,6 @@ class BleCmdRepository @Inject constructor(){
         settingBytes[ConfigA1.SOUND_TYPE.byte] = lockConfigA0.soundType.toByte()
         settingBytes[ConfigA1.SOUND_VALUE.byte] = lockConfigA0.soundValue.toByte()
         settingBytes[ConfigA1.SHOW_FAST_TRACK_MODE.byte] = lockConfigA0.showFastTrackMode.toByte()
-        Timber.d("combineLockConfigA1Cmd: ${settingBytes.toHexPrint()}")
-
         return settingBytes
     }
 
@@ -492,7 +490,6 @@ class BleCmdRepository @Inject constructor(){
         val longitudeDecimalPartBytes = longitudeDecimalInt.toLittleEndianByteArray()
         for (i in 0..longitudeDecimalPartBytes.lastIndex) settingBytes[ConfigD4.LONGITUDE_DECIMAL.byte + i] = longitudeDecimalPartBytes[i]
         Timber.d("longitudeBigDecimal: $longitudeBigDecimal longitudeBigDecimal: ${longitudeBigDecimal.toInt()}, longitudeDecimalInt: $longitudeDecimalInt")
-
         return settingBytes
     }
 
@@ -547,10 +544,11 @@ class BleCmdRepository @Inject constructor(){
 
     fun resolve(function: Int, key: ByteArray, notification: ByteArray, index: Int = 0): Any {
         return decrypt(key, notification)?.let { decrypted ->
+            val functionName = ::resolve.name
             val checkFunction = decrypted.component3().unSignedInt()
             val byteArrayData = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
             val booleanData = decrypted.component5().unSignedInt()
-            Timber.d("resolve[${function.toHexString()}]: ${checkFunction.toHexString()}, ${byteArrayData.size}, ${byteArrayData.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${checkFunction.toHexString()}, ${byteArrayData.size}, ${byteArrayData.toHexPrint()}")
             if (checkFunction == function) {
                 when (function) {
                     0x80 -> {
@@ -565,7 +563,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.EightyTwo & 0x83
                         resolve82(byteArrayData)
                     }
-                    0x84, 0x87, 0x9A, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF2 -> {
+                    0x84, 0x87, 0x9A, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF4 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
@@ -665,7 +663,7 @@ class BleCmdRepository @Inject constructor(){
                         // HexString
                         byteArrayData.toHexPrint()
                     }
-                    0xD0, 0xF0 -> {
+                    0xD0, 0xF0, 0xF2 -> {
                         // String
                         String(byteArrayData)
                     }
@@ -710,11 +708,12 @@ class BleCmdRepository @Inject constructor(){
     }
 
     private fun resolve80(data: ByteArray): LockConfig.Eighty {
-        val autoLockTimeInt = data.copyOfRange(Config80.AUTOLOCK_DELAY.byte,Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
+        val functionName = ::resolve80.name
+        val autoLockTimeInt = data.copyOfRange(Config80.AUTOLOCK_DELAY.byte, Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
         Timber.d("autoLockTimeInt: $autoLockTimeInt")
-        val autoLockTimeLowerLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte,Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
+        val autoLockTimeLowerLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_LOWER_LIMIT.byte, Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
         Timber.d("autoLockTimeLowerLimitInt: $autoLockTimeLowerLimitInt")
-        val autoLockTimeUpperLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte,Config80.OPERATING_SOUND.byte).toInt()
+        val autoLockTimeUpperLimitInt = data.copyOfRange(Config80.AUTOLOCK_DELAY_UPPER_LIMIT.byte, Config80.OPERATING_SOUND.byte).toInt()
         Timber.d("autoLockTimeUpperLimitInt: $autoLockTimeUpperLimitInt")
 
         val latIntPart = data.copyOfRange(Config80.LATITUDE_INTEGER.byte, Config80.LATITUDE_DECIMAL.byte).toInt()
@@ -822,21 +821,22 @@ class BleCmdRepository @Inject constructor(){
                 else -> BleV3Lock.SabbathMode.NOT_SUPPORT.value
             },
         )
-        Timber.d("resolve80: $lockConfig80")
+        Timber.d("$functionName: $lockConfig80")
         return lockConfig80
     }
 
     private fun resolve81(data: ByteArray): LockConfig.EightyOne {
-        var lockConfig81 = LockConfig.EightyOne(
-            isSuccess = data.component1().unSignedInt() == 0x01
+        val functionName = ::resolve81.name
+        val lockConfig81 = LockConfig.EightyOne(
+            isSuccess = data.component1().unSignedInt() == 0x01,
+            version = data.copyOfRange(1, 5).toInt()
         )
-        if(lockConfig81.isSuccess){
-            lockConfig81 = lockConfig81.copy(version = data.copyOfRange(1, 5).toInt())
-        }
+        Timber.d("$functionName: $lockConfig81")
         return lockConfig81
     }
 
     private fun resolve82(data: ByteArray): DeviceStatus.EightTwo {
+        val functionName = ::resolve82.name
         val lockSetting = DeviceStatus.EightTwo(
             mainVersion = data[Config82.MAIN_VERSION.byte].unSignedInt(),
             subVersion = data[Config82.SUB_VERSION.byte].unSignedInt(),
@@ -878,11 +878,12 @@ class BleCmdRepository @Inject constructor(){
                 else -> BleV3Lock.BatteryState.DANGEROUS.value
             }
         )
-        Timber.d("resolve82: $lockSetting")
+        Timber.d("$functionName: $lockSetting")
         return lockSetting
     }
 
     private fun resolve85(data: ByteArray): BleV3Lock.UserAbility {
+        val functionName = ::resolve85.name
         val response = BleV3Lock.UserAbility(
             isMatter = data.component1().unSignedInt() == 0x01,
             weekDayScheduleCount = data.component2().unSignedInt(),
@@ -892,11 +893,12 @@ class BleCmdRepository @Inject constructor(){
             fpCredentialCount = data.copyOfRange(5, 6).toInt(),
             faceCredentialCount = data.copyOfRange(6, 7).toInt(),
         )
-        Timber.d("resolve85: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolve86(data: ByteArray): BleV3Lock.UserCount {
+        val functionName = ::resolve86.name
         val response = BleV3Lock.UserCount(
             matterCount = data.copyOfRange(0, 2).toInt(),
             codeCount = data.copyOfRange(2, 4).toInt(),
@@ -904,19 +906,21 @@ class BleCmdRepository @Inject constructor(){
             fpCount = data.copyOfRange(6, 8).toInt(),
             faceCount = data.copyOfRange(8, 10).toInt(),
         )
-        Timber.d("resolve86: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolve90(data: ByteArray): User.Ninety {
+        val functionName = ::resolve90.name
         val transferComplete = data.component1().unSignedInt()
         val dataByteArray = data.copyOfRange(1, data.size)
         val user90 = User.Ninety(transferComplete, dataByteArray)
-        Timber.d("resolveA5: $user90")
+        Timber.d("$functionName: $user90")
         return user90
     }
 
     private fun resolve91(data: ByteArray): User.NinetyOne {
+        val functionName = ::resolve91.name
         val index = data.copyOfRange(0, 2).toInt()
         val name = String(data.copyOfRange(2, 12))
         val uid = data.copyOfRange(12, 16).toInt()
@@ -987,63 +991,73 @@ class BleCmdRepository @Inject constructor(){
             weekDayScheduleList = weekDayScheduleList,
             yearDayScheduleList = yearDayScheduleList,
         )
-        Timber.d("resolve91: $user91")
+        Timber.d("$functionName: $user91")
         return user91
     }
 
     private fun resolve92(data: ByteArray): User.NinetyTwo {
+        val functionName = ::resolve92.name
         val user92 = User.NinetyTwo(
             index = data.copyOfRange(0, 2).toInt(),
             isSuccess = data.component3().unSignedInt() == 1,
         )
-        Timber.d("resolve92: $user92")
+        Timber.d("$functionName: $user92")
         return user92
     }
 
-    private fun resolve95(data: ByteArray): User.NinetyFive {
+    private fun resolve95(data: ByteArray): User {
+        val functionName = ::resolve95.name
         val format = data.component1().unSignedInt()
         val index = data.copyOfRange(1, 3).toInt()
         val user95 = if(format == 0) {
-            User.NinetyFive(
-                format = format,
-                index = index,
-                credentialDetail = BleV3Lock.CredentialDetail(
-                    status = data.component4().unSignedInt(),
-                    type = data.component5().unSignedInt(),
-                    userIndex = data.copyOfRange(5, 7).toInt(),
+            val credentialDetailSize = (data.size - 3) / 12
+            if(credentialDetailSize > 0) {
+                User.NinetyFiveCredential(
+                    format = format,
+                    index = index,
+                    userIndex = data.copyOfRange(3, 5).toInt(),
+                    status = data.copyOfRange(5, 6).toInt(),
+                    type = data.copyOfRange(6, 7).toInt(),
                     code = data.copyOfRange(7, 15)
                 )
-            )
+            } else {
+                User.NinetyFiveCredential(
+                    format = format,
+                    index = index,
+                )
+            }
         } else {
-            val credentialDetailSize = (data.size - 3) / 10
-            val credentialDetailList:MutableList<BleV3Lock.UserDetail> = mutableListOf()
+            val credentialDetailSize = (data.size - 3) / 12
+            val credentialDetailList:MutableList<BleV3Lock.CredentialDetail> = mutableListOf()
             if(credentialDetailSize > 0){
                 for (i in 0 until credentialDetailSize) {
                     credentialDetailList.add(
-                        BleV3Lock.UserDetail(
-                            status = data.copyOfRange(3 + i * 10, 4 + i * 10).toInt(),
-                            type = data.copyOfRange(4 + i * 10, 5 + i * 10).toInt(),
-                            code = data.copyOfRange(5 + i * 10, 13 + i * 10)
+                        BleV3Lock.CredentialDetail(
+                            index = data.copyOfRange(3 + i * 12, 5 + i * 12).toInt(),
+                            status = data.copyOfRange(5 + i * 12, 6 + i * 12).toInt(),
+                            type = data.copyOfRange(6 + i * 12, 7 + i * 12).toInt(),
+                            code = data.copyOfRange(7 + i * 12, 15 + i * 12)
                         )
                     )
                 }
-                User.NinetyFive(
+                User.NinetyFiveUser(
                     format = format,
-                    index = index,
-                    userDetail = credentialDetailList
+                    userIndex = index,
+                    credentialDetail = credentialDetailList
                 )
             } else {
-                User.NinetyFive(
+                User.NinetyFiveUser(
                     format = format,
-                    index = index
+                    userIndex = index
                 )
             }
         }
-        Timber.d("resolve95: $user95")
+        Timber.d("$functionName: $user95")
         return user95
     }
 
     private fun resolve97(data: ByteArray): User.NinetySeven {
+        val functionName = ::resolve97.name
         val type = data.component1().unSignedInt()
         val state = data.component2().unSignedInt()
         val index = data.copyOfRange(2, 4).toInt()
@@ -1051,36 +1065,40 @@ class BleCmdRepository @Inject constructor(){
         val dataInfo = data.copyOfRange(5, data.size)
         val code = dataInfo.accessByteArrayToString()
         val user97 = User.NinetySeven(type, state, index, status, dataInfo)
-        Timber.d("resolve97: $user97, codeString=$code")
+        Timber.d("$functionName: $user97 codeString: $code")
         return user97
     }
 
     private fun resolve99(data: ByteArray): User.NinetyNine {
+        val functionName = ::resolve99.name
         val target = data.component1().unSignedInt()
         val sha256 = String(data.copyOfRange(1, 33))
         val user99 = User.NinetyNine(target, sha256)
-        Timber.d("resolve99: $user99")
+        Timber.d("$functionName: $user99")
         return user99
     }
 
     private fun resolve9B(data: ByteArray): User.NinetyB {
+        val functionName = ::resolve9B.name
         val type = data.component1().unSignedInt()
         val time = data.copyOfRange(1, 5).toInt()
         val index = data.copyOfRange(5, 7).toInt()
         val user9B = User.NinetyB(type, time, index)
-        Timber.d("resolve9B: $user9B")
+        Timber.d("$functionName: $user9B")
         return user9B
     }
 
     private fun resolve9C(data: ByteArray): User.NinetyC {
+        val functionName = ::resolve9C.name
         val isSuccess = data.component1().unSignedInt() == 1
         val hasUnsyncedData = data.component2().unSignedInt()
         val user9C = User.NinetyC(isSuccess, hasUnsyncedData)
-        Timber.d("resolve9C: $user9C")
+        Timber.d("$functionName: $user9C")
         return user9C
     }
 
     private fun resolveA0(data: ByteArray): LockConfig.A0 {
+        val functionName = ::resolveA0.name
         val autoLockTimeInt = data.copyOfRange(ConfigA0.AUTOLOCK_DELAY.byte,ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte).toInt()
         Timber.d("autoLockTimeInt: $autoLockTimeInt")
         val autoLockTimeLowerLimitInt = data.copyOfRange(ConfigA0.AUTOLOCK_DELAY_LOWER_LIMIT.byte,ConfigA0.AUTOLOCK_DELAY_UPPER_LIMIT.byte).toInt()
@@ -1183,11 +1201,12 @@ class BleCmdRepository @Inject constructor(){
                 else -> BleV2Lock.ShowFastTrackMode.NOT_SUPPORT.value
             },
         )
-        Timber.d("resolveA0: $lockConfigA0")
+        Timber.d("$functionName: $lockConfigA0")
         return lockConfigA0
     }
 
     private fun resolveA2(data: ByteArray): DeviceStatus.A2 {
+        val functionName = ::resolveA2.name
         val lockSetting = DeviceStatus.A2(
             direction = when (data[ConfigA2.LOCK_DIRECTION.byte].unSignedInt()) {
                 0xA0 -> BleV2Lock.Direction.RIGHT.value
@@ -1227,11 +1246,12 @@ class BleCmdRepository @Inject constructor(){
                 else -> BleV2Lock.BatteryState.DANGEROUS.value
             }
         )
-        Timber.d("resolveA2: $lockSetting")
+        Timber.d("$functionName: $lockSetting")
         return lockSetting
     }
 
     private fun resolveA4(data: ByteArray): BleV2Lock.SupportedUnlockType {
+        val functionName = ::resolveA4.name
         val accessCodeQuantity  = data.copyOfRange(0, 2)
         val accessCardQuantity  = data.copyOfRange(2, 4)
         val fingerprintQuantity  = data.copyOfRange(4, 6)
@@ -1242,20 +1262,22 @@ class BleCmdRepository @Inject constructor(){
             fingerprintQuantity.toInt(),
             faceQuantity.toInt()
         )
-        Timber.d("resolveA4: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolveA5(data: ByteArray): Access.A5 {
+        val functionName = ::resolveA5.name
         val type = data.component1().unSignedInt()
         val transferComplete = data.component2().unSignedInt()
         val dataByteArray = data.copyOfRange(2, data.size)
         val accessA5 = Access.A5(type, transferComplete, dataByteArray)
-        Timber.d("resolveA5: $accessA5")
+        Timber.d("$functionName: $accessA5")
         return accessA5
     }
 
     private fun resolveA6(data: ByteArray): Access.A6 {
+        val functionName = ::resolveA6.name
         val type = data.component1().unSignedInt()
         val index = data.copyOfRange(1, 3).toInt()
         val isEnable = data.component4().unSignedInt() == 0x01
@@ -1284,20 +1306,22 @@ class BleCmdRepository @Inject constructor(){
             name = name,
             code = accessCode,
         )
-        Timber.d("resolveA6: $accessA6, codeString=$code")
+        Timber.d("$functionName: $accessA6 codeString: $code")
         return accessA6
     }
 
     private fun resolveA7(data: ByteArray): Access.A7 {
+        val functionName = ::resolveA7.name
         val type = data.component1().unSignedInt()
         val index = data.copyOfRange(1, 3).toInt()
         val isSuccess = data.component4().unSignedInt() == 0x01
         val accessA7 = Access.A7(type, index, isSuccess)
-        Timber.d("resolveA7: $accessA7")
+        Timber.d("$functionName: $accessA7")
         return accessA7
     }
 
     private fun resolveA9(data: ByteArray): Access.A9 {
+        val functionName = ::resolveA9.name
         val type = data.component1().unSignedInt()
         val state = data.component2().unSignedInt()
         val index = data.copyOfRange(2, 4).toInt()
@@ -1305,11 +1329,12 @@ class BleCmdRepository @Inject constructor(){
         val dataInfo = data.copyOfRange(5, data.size)
         val code = dataInfo.accessByteArrayToString()
         val accessA9 = Access.A9(type, state, index, status, dataInfo)
-        Timber.d("resolveA9: $accessA9, codeString=$code")
+        Timber.d("$functionName: $accessA9 codeString: $code")
         return accessA9
     }
 
     private fun resolveAF(data: ByteArray): Alert.AF {
+        val functionName = ::resolveAF.name
         val alertType = Alert.AF(
             alertType = when (data.toInt()) {
                 0 -> BleV2Lock.AlertType.ERROR_ACCESS_CODE.value
@@ -1322,11 +1347,12 @@ class BleCmdRepository @Inject constructor(){
                 else -> BleV3Lock.AlertType.UNKNOWN_ALERT_TYPE.value
             }
         )
-        Timber.d("resolveAF: $alertType")
+        Timber.d("$functionName: $alertType")
         return alertType
     }
 
     private fun resolveB0(data: ByteArray): DeviceStatus.B0 {
+        val functionName = ::resolveB0.name
         val setWifi  = data.component1()
         val connectWifi  = data.component2()
         val plugStatus  = data.component3()
@@ -1335,20 +1361,23 @@ class BleCmdRepository @Inject constructor(){
             connectWifi.toInt(),
             plugStatus.toInt(),
         )
-        Timber.d("resolveB0: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolveC2(data: ByteArray): BleV3Lock.LockVersion {
+        val functionName = ::resolveC2.name
         val lockVersion = BleV3Lock.LockVersion(
             target = data.component1().unSignedInt(),
-            version = data.copyOfRange(1, 3).toInt()
+            mainVersion = data.component2().unSignedInt(),
+            subVersion = data.component3().unSignedInt(),
         )
-        Timber.d("resolveC2: $lockVersion")
+        Timber.d("$functionName: $lockVersion")
         return lockVersion
     }
 
     private fun resolveC3(data: ByteArray): BleV2Lock.OTAStatus {
+        val functionName = ::resolveC3.name
         val target  = data.component1()
         val state  = data.component2()
         val isSuccess  = data.component3()
@@ -1357,11 +1386,12 @@ class BleCmdRepository @Inject constructor(){
             state.toInt(),
             isSuccess.toInt(),
         )
-        Timber.d("resolveC3: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolveD4(data: ByteArray): LockConfig.D4 {
+        val functionName = ::resolveD4.name
         val latIntPart = data.copyOfRange(ConfigD4.LATITUDE_INTEGER.byte, ConfigD4.LATITUDE_DECIMAL.byte).toInt()
         Timber.d("latIntPart: $latIntPart")
         val latDecimalPart = data.copyOfRange(ConfigD4.LATITUDE_DECIMAL.byte, ConfigD4.LONGITUDE_INTEGER.byte).toInt()
@@ -1393,11 +1423,12 @@ class BleCmdRepository @Inject constructor(){
             latitude = lat.toDouble(),
             longitude = lng.toDouble()
         )
-        Timber.d("resolveD4: $lockConfigD4")
+        Timber.d("$functionName: $lockConfigD4")
         return lockConfigD4
     }
 
     private fun resolveD6(data: ByteArray): DeviceStatus.D6 {
+        val functionName = ::resolveD6.name
         val autoLockTime = if (data[ConfigD6.AUTOLOCK_DELAY.byte].unSignedInt() !in 1..90) {
             1
         } else {
@@ -1430,10 +1461,12 @@ class BleCmdRepository @Inject constructor(){
             },
             timestamp = data.copyOfRange(ConfigD6.TIMESTAMP.byte, ConfigD6.SIZE.byte).toInt().toLong()
         )
+        Timber.d("$functionName: $lockSetting")
         return lockSetting
     }
 
     private fun resolveE1(data: ByteArray): EventLog {
+        val functionName = ::resolveE1.name
         val timestamp = data.copyOfRange(0, 4).toInt().toLong()
         val event = data.component5().unSignedInt()
         val name = data.copyOfRange(5, data.size)
@@ -1442,11 +1475,12 @@ class BleCmdRepository @Inject constructor(){
             event = event,
             name = String(name)
         )
-        Timber.d("resolveE1: $log")
+        Timber.d("$functionName: $log")
         return log
     }
 
     private fun resolveE5(data: ByteArray): DeviceToken.PermanentToken {
+        val functionName = ::resolveE5.name
         val user = DeviceToken.PermanentToken(
             isValid = data.component1().unSignedInt() == 1,
             isPermanent = data.component2().unSignedInt() == 1,
@@ -1455,11 +1489,12 @@ class BleCmdRepository @Inject constructor(){
             token = data.copyOfRange(4, 12).toHexString(),
             name = String(data.copyOfRange(12, data.size))
         )
-        Timber.d("resolveE5: $user")
+        Timber.d("$functionName: $user")
         return user
     }
 
     private fun resolveE6(data: ByteArray): AddUserResponse {
+        val functionName = ::resolveE6.name
         val isSuccessful = data.component1().unSignedInt() == 0x01
         val tokenIndexInDevice = data.component2().unSignedInt()
         val tokenBytes = data.copyOfRange(2, data.size)
@@ -1469,11 +1504,12 @@ class BleCmdRepository @Inject constructor(){
             tokenIndexInDevice,
             token
         )
-        Timber.d("resolveE6: $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolveE7(data: ByteArray): UpdateTokenResponse {
+        val functionName = ::resolveE7.name
         val isSuccessful = data.component1().unSignedInt() == 0x01
         val tokenIndexInDevice = data.component2().unSignedInt()
         val isPermanent = data.component3().unSignedInt() == 0x01
@@ -1489,11 +1525,12 @@ class BleCmdRepository @Inject constructor(){
             token,
             name
         )
-        Timber.d("resolveE7 $response")
+        Timber.d("$functionName: $response")
         return response
     }
 
     private fun resolveEB(data: ByteArray, index: Int): Access.Code {
+        val functionName = ::resolveEB.name
         val pinCodeLength = data.component2().unSignedInt()
         val pinCode = data.copyOfRange(2, 2 + pinCodeLength)
         val code = pinCode.accessByteArrayToString()
@@ -1517,7 +1554,7 @@ class BleCmdRepository @Inject constructor(){
             scheduleTo = scheduleTo,
             name = String(name)
         )
-        Timber.d("resolveEB: $userCode")
+        Timber.d("$functionName: $userCode")
         return userCode
     }
 

@@ -83,6 +83,10 @@ fun String.toUpperCaseMac(): String {
     return upperCaseParts.joinToString(":")
 }
 
+fun String.isDeviceUuid(): Boolean {
+    return this.length == 16
+}
+
 //Int
 fun Int.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(4)

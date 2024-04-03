@@ -5,8 +5,6 @@ import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.User
 import com.sunion.core.ble.exception.NotConnectedException
-import com.sunion.core.ble.toBooleanList
-import com.sunion.core.ble.toLittleEndianByteArrayInt16
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
@@ -17,19 +15,23 @@ import kotlinx.coroutines.flow.take
 import timber.log.Timber
 import javax.inject.Inject
 
-class LockUserUseCase @Inject constructor(
+class LockDataUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    private val className = this::class.simpleName ?: "LockUserUseCase"
+    private val className = this::class.simpleName ?: "LockDataUseCase"
 
-    suspend fun getUserArray(): List<Boolean> {
+    suspend fun getCredentialHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.CREDENTIAL.value)
+    suspend fun getUserHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.USER.value)
+
+    private suspend fun getHash(index: Int): User.NinetyNine {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::getUserArray.name
-        val function = 0x90
+        val functionName = ::getHash.name
+        val function = 0x99
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
+            data = byteArrayOf(index.toByte())
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
@@ -38,17 +40,12 @@ class LockUserUseCase @Inject constructor(
             }
             .take(1)
             .map { notification ->
-                bleCmdRepository.resolve(
+                val result = bleCmdRepository.resolve(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.Ninety
-            }
-            .map { decoded ->
-                val list = mutableListOf<Boolean>()
-                decoded.data.forEach { it.toBooleanList(list) }
-                list.toList()
-                list
+                ) as User.NinetyNine
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -57,14 +54,13 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryUser(index: Int): User.NinetyOne {
+    suspend fun hasUnsyncedData(): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryUser.name
-        val function = 0x91
+        val functionName = ::hasUnsyncedData.name
+        val function = 0x9A
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
-            data = index.toLittleEndianByteArrayInt16()
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
@@ -77,40 +73,62 @@ class LockUserUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyOne
+                ) as Boolean
                 result
             }
             .flowOn(Dispatchers.IO)
-            .catch { e -> Timber.e("$functionName exception $e") }
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+            }
             .single()
     }
 
-    suspend fun addUser(
-        index: Int,
-        name: String,
-        uid: Int,
-        status: Int,
-        type: Int,
-        credentialRule: Int,
-        credentialList: MutableList<BleV3Lock.Credential>? = null,
-        weekDayScheduleList: MutableList<BleV3Lock.WeekDaySchedule>? = null,
-        yearDayScheduleList: MutableList<BleV3Lock.YearDaySchedule>? = null
-    ): Boolean {
+    suspend fun getUnsyncedData(): User.NinetyB {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::addUser.name
-        val function = 0x92
-        val data = bleCmdRepository.combineUser92Cmd(User.NinetyTwoCmd(
-            action = 0x00,
-            index = index,
-            name = name,
-            uid = uid,
-            status = status,
-            type = type,
-            credentialRule = credentialRule,
-            credentialList = credentialList,
-            weekDayScheduleList = weekDayScheduleList,
-            yearDayScheduleList = yearDayScheduleList
-        ))
+        val functionName = ::getUnsyncedData.name
+        val function = 0x9B
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as User.NinetyB
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+            }
+            .single()
+    }
+
+    suspend fun setCredentialUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.CREDENTIAL.value, System.currentTimeMillis(), index)
+    suspend fun setUserUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.USER.value, System.currentTimeMillis(), index)
+    suspend fun setLogUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.LOG.value, System.currentTimeMillis() ,index)
+    suspend fun setTokenUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.TOKEN.value, System.currentTimeMillis() ,index)
+    suspend fun setSettingUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.SETTING.value, System.currentTimeMillis() ,index)
+
+    private suspend fun setUnsyncedData(type: Int, time: Long, index: Int): User.NinetyC {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setUnsyncedData.name
+        val function = 0x9C
+        val data = bleCmdRepository.combineUser9CCmd(
+            User.NinetyB(
+                type = type,
+                time = time.toInt(),
+                index = index
+            )
+        )
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
@@ -127,44 +145,23 @@ class LockUserUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyTwo
-                result.isSuccess
+                ) as User.NinetyC
+                result
             }
             .flowOn(Dispatchers.IO)
-            .catch { e -> Timber.e("$functionName exception $e") }
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+            }
             .single()
     }
 
-    suspend fun editUser(
-        index: Int,
-        name: String,
-        uid: Int,
-        status: Int,
-        type: Int,
-        credentialRule: Int,
-        credentialList: MutableList<BleV3Lock.Credential>? = null,
-        weekDayScheduleList: MutableList<BleV3Lock.WeekDaySchedule>? = null,
-        yearDayScheduleList: MutableList<BleV3Lock.YearDaySchedule>? = null
-    ): Boolean {
+    suspend fun setAllDataSynced(): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::editUser.name
-        val function = 0x92
-        val data = bleCmdRepository.combineUser92Cmd(User.NinetyTwoCmd(
-            action = 0x01,
-            index = index,
-            name = name,
-            uid = uid,
-            status = status,
-            type = type,
-            credentialRule = credentialRule,
-            credentialList = credentialList,
-            weekDayScheduleList = weekDayScheduleList,
-            yearDayScheduleList = yearDayScheduleList
-        ))
+        val functionName = ::setAllDataSynced.name
+        val function = 0x9D
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
-            data = data
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
@@ -177,37 +174,8 @@ class LockUserUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyTwo
-                result.isSuccess
-            }
-            .flowOn(Dispatchers.IO)
-
-            .catch { e -> Timber.e("$functionName exception $e") }
-            .single()
-    }
-
-    suspend fun deleteUser(index: Int): Boolean {
-        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::deleteUser.name
-        val function = 0x93
-        val sendCmd = bleCmdRepository.createCommand(
-            function = function,
-            key = statefulConnection.key(),
-            data = index.toLittleEndianByteArrayInt16()
-        )
-        return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
-            .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
-            }
-            .take(1)
-            .map { notification ->
-                val result = bleCmdRepository.resolve(
-                    function,
-                    statefulConnection.key(),
-                    notification
-                ) as User.NinetyTwo
-                result.isSuccess
+                ) as Boolean
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

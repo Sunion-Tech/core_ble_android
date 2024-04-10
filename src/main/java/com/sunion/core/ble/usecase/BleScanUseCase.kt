@@ -20,45 +20,34 @@ class BleScanUseCase @Inject constructor(
 ) : UseCase.Execute<Unit, Observable<ScanResult>> {
 
     override fun invoke(input: Unit): Observable<ScanResult> {
-        val scanSettings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH)
-            .build()
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
 
-        return rxBleClient
-            .scanBleDevices(scanSettings, ScanFilter.empty())
+        return rxBleClient.scanBleDevices(scanSettings, ScanFilter.empty())
     }
 
     fun scanAllManufacturerData(): Observable<ScanResult> {
         val functionName = ::scanAllManufacturerData.name
-        val scanSettings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH)
-            .build()
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
 
-        return rxBleClient
-                .scanBleDevices(scanSettings, ScanFilter.empty())
-                .map { scanResult ->
-                    scanResult.scanRecord.manufacturerSpecificData.forEach { key, value ->
-                        Timber.d("$functionName manufacturerId: ${key.toHexString()}, manufacturerData: ${value.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
-                    }
-                    scanResult
-                }
+        return rxBleClient.scanBleDevices(scanSettings, ScanFilter.empty()).map { scanResult ->
+            scanResult.scanRecord.manufacturerSpecificData.forEach { key, value ->
+                Timber.d("$functionName manufacturerId: ${key.toHexString()}, manufacturerData: ${value.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
+            }
+            scanResult
+        }
 
     }
 
     fun scanAllManufacturerIdDevices(manufacturerId: Int = 0x0CE3): Observable<ScanResult> {
         val functionName = ::scanAllManufacturerIdDevices.name
-        val scanSettings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH)
-            .build()
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        val scanFilter = ScanFilter.Builder().setManufacturerData(manufacturerId, byteArrayOf()).build()
 
         return rxBleClient
-            .scanBleDevices(scanSettings, ScanFilter.Builder().setManufacturerData(manufacturerId, byteArrayOf()).build())
+            .scanBleDevices(scanSettings, scanFilter)
             .filter { scanResult ->
                 val manufacturerData = scanResult.scanRecord?.getManufacturerSpecificData(manufacturerId)
-                Timber.d("$functionName manufacturerId: $manufacturerId manufacturerData: ${manufacturerData?.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
+                Timber.d("$functionName manufacturerId: ${manufacturerId.toHexString()} manufacturerData: ${manufacturerData?.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
                 manufacturerData != null && manufacturerData.isNotEmpty()
             }
 
@@ -66,17 +55,15 @@ class BleScanUseCase @Inject constructor(
 
     fun scanUuid(manufacturerId: Int = 0x0CE3, uuid: String): Observable<ScanResult> {
         val functionName = ::scanUuid.name
-        val scanSettings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH)
-            .build()
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        val scanFilter = ScanFilter.Builder().setManufacturerData(manufacturerId, uuid.hexToByteArray()).build()
 
         return rxBleClient
-            .scanBleDevices(scanSettings, ScanFilter.Builder().setManufacturerData(manufacturerId, uuid.hexToByteArray()).build())
+            .scanBleDevices(scanSettings, scanFilter)
             .filter { scanResult ->
                 val manufacturerData = scanResult.scanRecord?.getManufacturerSpecificData(manufacturerId)
-                Timber.d("$functionName manufacturerId: $manufacturerId uuid:$uuid manufacturerData: ${manufacturerData?.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
-                manufacturerData != null && manufacturerData.isNotEmpty() && manufacturerData.copyOfRange(0,8).toHexString() == uuid
+                Timber.d("$functionName manufacturerId: ${manufacturerId.toHexString()} uuid:$uuid manufacturerData: ${manufacturerData?.toHexString()} mac: ${scanResult.bleDevice.macAddress}")
+                manufacturerData != null && manufacturerData.isNotEmpty() && manufacturerData.copyOfRange(0, 8).toHexString() == uuid
             }
 
     }

@@ -138,6 +138,8 @@ class BleCmdRepository @Inject constructor(){
         SOUND_VALUE (37),
         SHOW_FAST_TRACK_MODE (38),
         SABBATH_MODE (39),
+        PHONETIC_LANGUAGE (40),
+        SUPPORT_PHONETIC_LANGUAGE (41),
     }
 
     enum class Config81(val byte: Int){
@@ -158,6 +160,7 @@ class BleCmdRepository @Inject constructor(){
         SOUND_VALUE (26),
         SHOW_FAST_TRACK_MODE (27),
         SABBATH_MODE (28),
+        PHONETIC_LANGUAGE (29),
     }
 
     @SuppressLint("GetInstance")
@@ -322,6 +325,7 @@ class BleCmdRepository @Inject constructor(){
         settingBytes[Config81.SOUND_VALUE.byte] = lockConfig80.soundValue.toByte()
         settingBytes[Config81.SHOW_FAST_TRACK_MODE.byte] = lockConfig80.showFastTrackMode.toByte()
         settingBytes[Config81.SABBATH_MODE.byte] = lockConfig80.sabbathMode.toByte()
+        settingBytes[Config81.PHONETIC_LANGUAGE.byte] = lockConfig80.phoneticLanguage.toByte()
         return settingBytes
     }
 
@@ -819,6 +823,14 @@ class BleCmdRepository @Inject constructor(){
                 0 -> BleV3Lock.SabbathMode.CLOSE.value
                 1 -> BleV3Lock.SabbathMode.OPEN.value
                 else -> BleV3Lock.SabbathMode.NOT_SUPPORT.value
+            },
+            phoneticLanguage = when (data[Config80.PHONETIC_LANGUAGE.byte].unSignedInt()) {
+                0 -> BleV3Lock.PhoneticLanguage.ENGLISH.value
+                else -> BleV3Lock.PhoneticLanguage.NOT_SUPPORT.value
+            },
+            supportPhoneticLanguage = when (data[Config80.SUPPORT_PHONETIC_LANGUAGE.byte].unSignedInt()) {
+                0 -> BleV3Lock.SupportPhoneticLanguage.NOT_SUPPORT.value
+                else -> data[Config80.SUPPORT_PHONETIC_LANGUAGE.byte].unSignedInt()
             },
         )
         Timber.d("$functionName: $lockConfig80")

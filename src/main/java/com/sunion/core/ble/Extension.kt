@@ -154,6 +154,20 @@ fun Int.toHexString(): String {
     return this.toString(16).uppercase(Locale.getDefault())
 }
 
+fun Int.toSupportPhoneticLanguageList(): List<Int> {
+    val result = mutableListOf<Int>()
+    var num = this
+    var index = 0
+    while (num > 0) {
+        if (num and 1 == 1) {
+            result.add(index)
+        }
+        num = num shr 1
+        index++
+    }
+    return result
+}
+
 //Long
 fun Long.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(8)

@@ -170,6 +170,14 @@ class LockConfig80UseCase @Inject constructor(
         }
     }
 
+    suspend fun setPhoneticLanguage(language: Int): Boolean {
+        if (getCurrentLockConfig80().phoneticLanguage.isSupport()) {
+            return updateConfig(getCurrentLockConfig80().copy(phoneticLanguage = language))
+        } else {
+            throw LockStatusException.LockFunctionNotSupportException()
+        }
+    }
+
     //update 80LockConfig after get()
     suspend fun getCurrentLockConfig80(): LockConfig.Eighty {
         return currentLockConfig80 ?: get()

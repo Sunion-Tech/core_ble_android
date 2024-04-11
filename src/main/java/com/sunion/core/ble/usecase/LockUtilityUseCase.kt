@@ -186,9 +186,9 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryUserAbility(): BleV3Lock.UserAbility {
+    suspend fun getUserAbility(): BleV3Lock.UserAbility {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryUserAbility.name
+        val functionName = ::getUserAbility.name
         val function = 0x85
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -216,9 +216,9 @@ class LockUtilityUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryUserCount(): BleV3Lock.UserCount {
+    suspend fun getUserCount(): BleV3Lock.UserCount {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryUserCount.name
+        val functionName = ::getUserCount.name
         val function = 0x86
         val sendCmd = bleCmdRepository.createCommand(
             function = function,

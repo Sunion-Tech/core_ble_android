@@ -20,9 +20,9 @@ class LockConfigA0UseCase @Inject constructor(
     private val className = this::class.simpleName ?: "LockConfigA0UseCase"
     private var currentLockConfigA0: LockConfig.A0? = null
     
-    suspend fun query(): LockConfig.A0 {
+    suspend fun get(): LockConfig.A0 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::query.name
+        val functionName = ::get.name
         val function = 0xA0
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -73,7 +73,7 @@ class LockConfigA0UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ) as Boolean
-                query()
+                get()
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -161,9 +161,9 @@ class LockConfigA0UseCase @Inject constructor(
         }
     }
 
-    //update A0LockConfig after query()
+    //update A0LockConfig after get()
     suspend fun getCurrentLockConfigA0(): LockConfig.A0 {
-        return currentLockConfigA0 ?: query()
+        return currentLockConfigA0 ?: get()
     }
 
     fun clearCurrentConfigA0() {

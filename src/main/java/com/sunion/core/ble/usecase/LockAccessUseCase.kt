@@ -56,9 +56,9 @@ class LockAccessUseCase @Inject constructor(
     suspend fun getFingerprintArray(): List<Boolean> = getAccessArray(2)
     suspend fun getFaceArray(): List<Boolean> = getAccessArray(3)
 
-    private suspend fun queryAccess(type: Int, index: Int): Access.A6 {
+    private suspend fun getAccess(type: Int, index: Int): Access.A6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryAccess.name
+        val functionName = ::getAccess.name
         val function = 0xA6
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -85,10 +85,10 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryAccessCode(index: Int): Access.A6 = queryAccess(0, index)
-    suspend fun queryAccessCard(index: Int): Access.A6 = queryAccess(1, index)
-    suspend fun queryFingerprint(index: Int): Access.A6 = queryAccess(2, index)
-    suspend fun queryFace(index: Int): Access.A6 = queryAccess(3, index)
+    suspend fun getAccessCode(index: Int): Access.A6 = getAccess(0, index)
+    suspend fun getAccessCard(index: Int): Access.A6 = getAccess(1, index)
+    suspend fun getFingerprint(index: Int): Access.A6 = getAccess(2, index)
+    suspend fun getFace(index: Int): Access.A6 = getAccess(3, index)
 
     private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()

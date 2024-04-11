@@ -273,7 +273,7 @@ _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
     .launchIn(viewModelScope)
 ```
 ### DeviceStatusD6UseCase
-#### Query device status from lock
+#### Get device status from lock
 ```
 operator fun invoke(): Flow<DeviceStatus.D6>
 ```
@@ -326,7 +326,7 @@ Exceptions
 | IllegalArgumentException     | Unknown desired lock state.     |
 
 ### DeviceStatusA2UseCase
-#### Query device status from lock
+#### Get device status from lock
 ```
 operator fun invoke(): Flow<DeviceStatus.A2>
 ```
@@ -642,16 +642,16 @@ Exception
 | IllegalArgumentException     | Limit of lock name length is 20 bytes.     |
 
 ### LockConfigD4UseCase
-#### Query lock config
+#### Get lock config
 Please refer to [LockConfigD4](###LockConfigD4)
 
 ```
-query(): Flow<LockConfig.D4>
+get(): Flow<LockConfig.D4>
 ```
 
 Example
 ```
-lockConfigD4UseCase.query()
+lockConfigD4UseCase.get()
     .map { lockConfig ->
         // return lock config
     }
@@ -806,16 +806,16 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 ### LockConfigA0UseCase
-#### Query lock config
+#### Get lock config
 Please refer to [LockConfigA0](###LockConfigA0)
 
 ```
-query(): Flow<LockConfig.A0>
+get(): Flow<LockConfig.A0>
 ```
 
 Example
 ```
-lockConfigA0UseCase.query()
+lockConfigA0UseCase.get()
     .map { lockConfig ->
         // return lock config
     }
@@ -1199,14 +1199,14 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 ### LockTokenUseCase
-#### Query token array
+#### Get token array
 ```
-queryTokenArray(): Flow<List<Int>>
+getTokenArray(): Flow<List<Int>>
 ```
 
 Example
 ```
-lockTokenUseCase.queryTokenArray()
+lockTokenUseCase.getTokenArray()
     .map { tokenArray ->
         // return useful token array index
     }
@@ -1221,19 +1221,19 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
-#### Query token
+#### Get token
 ```
-queryToken(index: Int): Flow<DeviceToken.PermanentToken>
+getToken(index: Int): Flow<DeviceToken.PermanentToken>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query token at index in array    |
+| index     | Int     | Get token at index in array    |
 
 Example
 ```
-lockTokenUseCase.queryToken(index)
+lockTokenUseCase.getToken(index)
     .map { deviceToken ->
         if(deviceToken.isPermanent){
             // return permanent token
@@ -1360,19 +1360,19 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
-#### Query access code
+#### Get access code
 ```
-queryAccessCode(index: Int): Flow<AccessCode>
+getAccessCode(index: Int): Flow<AccessCode>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access code at index in array     |
+| index     | Int     | Get access code at index in array     |
 
 Example
 ```
-lockAccessCodeUseCase.queryAccessCode(index)
+lockAccessCodeUseCase.getAccessCode(index)
     .map { accessCode ->
         // return accessCode info
     }
@@ -1504,19 +1504,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query access code
+#### Get access code
 ```
-queryAccessCode(index: Int): Flow<Access.A6>
+getAccessCode(index: Int): Flow<Access.A6>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access code at index in array     |
+| index     | Int     | Get access code at index in array     |
 
 Example
 ```
-lockAccessUseCase.queryAccessCode(index)
+lockAccessUseCase.getAccessCode(index)
     .map { accessCode ->
         // return accessCode info
     }
@@ -1662,19 +1662,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query access card
+#### Get access card
 ```
-queryAccessCard(index: Int): Flow<Access.A6>
+getAccessCard(index: Int): Flow<Access.A6>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access card at index in array     |
+| index     | Int     | Get access card at index in array     |
 
 Example
 ```
-lockAccessUseCase.queryAccessCard(index)
+lockAccessUseCase.getAccessCard(index)
     .map { accessCard ->
         // return accessCard info
     }
@@ -1853,19 +1853,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query fingerprint
+#### Get fingerprint
 ```
-queryFingerprint(index: Int): Flow<Access.A6>
+getFingerprint(index: Int): Flow<Access.A6>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query fingerprint at index in array     |
+| index     | Int     | Get fingerprint at index in array     |
 
 Example
 ```
-lockAccessUseCase.queryFingerprint(index)
+lockAccessUseCase.getFingerprint(index)
     .map { fingerprint ->
         // return fingerprint info
     }
@@ -2044,19 +2044,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query face
+#### Get face
 ```
-queryFace(index: Int): Flow<Access.A6>
+getFace(index: Int): Flow<Access.A6>
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query face at index in array     |
+| index     | Int     | Get face at index in array     |
 
 Example
 ```
-lockAccessUseCase.queryFace(index)
+lockAccessUseCase.getFace(index)
     .map { face ->
         // return face info
     }

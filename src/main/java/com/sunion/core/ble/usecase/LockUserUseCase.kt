@@ -57,9 +57,9 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryUser(index: Int): User.NinetyOne {
+    suspend fun getUser(index: Int): User.NinetyOne {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryUser.name
+        val functionName = ::getUser.name
         val function = 0x91
         val sendCmd = bleCmdRepository.createCommand(
             function = function,

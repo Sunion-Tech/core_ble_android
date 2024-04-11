@@ -18,9 +18,9 @@ class LockConfigD4UseCase @Inject constructor(
     private val className = this::class.simpleName ?: "LockConfigD4UseCase"
     private var currentLockConfigD4: LockConfig.D4? = null
 
-    suspend fun query(): LockConfig.D4  {
+    suspend fun get(): LockConfig.D4  {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::query.name
+        val functionName = ::get.name
         val function = 0xD4
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -71,7 +71,7 @@ class LockConfigD4UseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ) as Boolean
-                query()
+                get()
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -107,7 +107,7 @@ class LockConfigD4UseCase @Inject constructor(
     }
 
     suspend fun getCurrentLockConfigD4(): LockConfig.D4 {
-        return currentLockConfigD4 ?: query()
+        return currentLockConfigD4 ?: get()
     }
 
     fun clearCurrentConfigD4() {

@@ -21,9 +21,9 @@ class LockTokenUseCase @Inject constructor(
 ) {
     private val className = this::class.simpleName ?: "LockTokenUseCase"
 
-    suspend fun queryTokenArray(): List<Int> {
+    suspend fun getTokenArray(): List<Int> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryTokenArray.name
+        val functionName = ::getTokenArray.name
         val function = 0xE4
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
@@ -55,9 +55,9 @@ class LockTokenUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun queryToken(index: Int): DeviceToken.PermanentToken {
+    suspend fun getToken(index: Int): DeviceToken.PermanentToken {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::queryToken.name
+        val functionName = ::getToken.name
         val function = 0xE5
         val sendCmd = bleCmdRepository.createCommand(
             function = function,

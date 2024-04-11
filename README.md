@@ -636,16 +636,16 @@ Exception
 | IllegalArgumentException     | Limit of lock name length is 20 bytes.     |
 
 ### LockConfigD4UseCase
-#### Query lock config
+#### Get lock config
 Please refer to [LockConfigD4](###LockConfigD4)
 
 ```kotlin=
-suspend fun query(): LockConfig.D4
+suspend fun get(): LockConfig.D4
 ```
 
 Example
 ```kotlin=
-flow { emit(lockConfigD4UseCase.query()) }
+flow { emit(lockConfigD4UseCase.get()) }
     .map { lockConfig ->
         // return lock config
     }
@@ -800,16 +800,16 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 ### LockConfigA0UseCase
-#### Query lock config
+#### Get lock config
 Please refer to [LockConfigA0](###LockConfigA0)
 
 ```kotlin=
-suspend fun query(): LockConfig.A0
+suspend fun get(): LockConfig.A0
 ```
 
 Example
 ```kotlin=
-flow { emit(lockConfigA0UseCase.query()) }
+flow { emit(lockConfigA0UseCase.get()) }
     .map { lockConfig ->
         // return lock config
     }
@@ -1181,12 +1181,12 @@ Exception
 ### LockTokenUseCase
 #### Query token array
 ```kotlin=
-suspend fun queryTokenArray(): List<Int>
+suspend fun getTokenArray(): List<Int>
 ```
 
 Example
 ```kotlin=
-flow { emit(lockTokenUseCase.queryTokenArray()) }
+flow { emit(lockTokenUseCase.getTokenArray()) }
     .map { tokenArray ->
         // return useful token array index
     }
@@ -1203,17 +1203,17 @@ Exception
 
 #### Query token
 ```kotlin=
-suspend fun queryToken(index: Int): DeviceToken.PermanentToken
+suspend fun getToken(index: Int): DeviceToken.PermanentToken
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query token at index in array    |
+| index     | Int     | Get token at index in array    |
 
 Example
 ```kotlin=
-flow { emit(lockTokenUseCase.queryToken(index)) }
+flow { emit(lockTokenUseCase.getToken(index)) }
     .map { deviceToken ->
         if(deviceToken.isPermanent){
             // return permanent token
@@ -1342,17 +1342,17 @@ Exception
 
 #### Query access code
 ```kotlin=
-suspend fun queryAccessCode(index: Int): Access.Code
+suspend fun getAccessCode(index: Int): Access.Code
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access code at index in array     |
+| index     | Int     | Get access code at index in array     |
 
 Example
 ```kotlin=
-flow { emit(lockAccessCodeUseCase.queryAccessCode(index)) }
+flow { emit(lockAccessCodeUseCase.getAccessCode(index)) }
     .map { accessCode ->
         // return accessCode info
     }
@@ -1483,17 +1483,17 @@ Exception
 
 #### Query access code
 ```kotlin=
-suspend fun queryAccessCode(index: Int): Access.A6
+suspend fun getAccessCode(index: Int): Access.A6
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access code at index in array     |
+| index     | Int     | Get access code at index in array     |
 
 Example
 ```kotlin=
-flow { emit(lockAccessUseCase.queryAccessCode(index)) }
+flow { emit(lockAccessUseCase.getAccessCode(index)) }
     .map { accessCode ->
         // return accessCode info
     }
@@ -1627,19 +1627,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query access card
+#### Get access card
 ```kotlin=
-suspend fun queryAccessCard(index: Int): Access.A6
+suspend fun getAccessCard(index: Int): Access.A6
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query access card at index in array     |
+| index     | Int     | Get access card at index in array     |
 
 Example
 ```kotlin=
-flow { emit(lockAccessUseCase.queryAccessCard(index)) }
+flow { emit(lockAccessUseCase.getAccessCard(index)) }
     .map { accessCard ->
         // return accessCard info
     }
@@ -1803,19 +1803,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query fingerprint
+#### Get fingerprint
 ```kotlin=
-suspend fun queryFingerprint(index: Int): Access.A6
+suspend fun getFingerprint(index: Int): Access.A6
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query fingerprint at index in array     |
+| index     | Int     | Get fingerprint at index in array     |
 
 Example
 ```kotlin=
-flow { emit(lockAccessUseCase.queryFingerprint(index)) }
+flow { emit(lockAccessUseCase.getFingerprint(index)) }
     .map { fingerprint ->
         // return fingerprint info
     }
@@ -1979,19 +1979,19 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 | LockFunctionNotSupportException | Lock function not support.|
 
-#### Query face
+#### Get face
 ```kotlin=
-suspend fun queryFace(index: Int): Access.A6
+suspend fun getFace(index: Int): Access.A6
 ```
 
 Parameter
 | Parameter | Type | Description |
 | -------- | -------- | -------- |
-| index     | Int     | Query face at index in array     |
+| index     | Int     | Get face at index in array     |
 
 Example
 ```kotlin=
-flow { emit(lockAccessUseCase.queryFace(index)) }
+flow { emit(lockAccessUseCase.getFace(index)) }
     .map { face ->
         // return face info
     }

@@ -53,6 +53,8 @@ sealed class LockConfig {
         val soundValue: Int,
         val showFastTrackMode: Int,
         val sabbathMode: Int,
+        val phoneticLanguage: Int,
+        val supportPhoneticLanguage: Int
     ): LockConfig()
 
     data class EightyOne(

@@ -26,6 +26,8 @@ data class BleV3Lock(
     val soundValue: SoundValue,
     val showFastTrackMode: ShowFastTrackMode,
     val sabbathMode: SabbathMode,
+    val phoneticLanguage: PhoneticLanguage,
+    val supportPhoneticLanguage: SupportPhoneticLanguage,
 ) {
     enum class Direction(val value: Int) {
         RIGHT(0xA0),
@@ -142,6 +144,16 @@ data class BleV3Lock(
         CLOSE(0x00),
         OPEN(0x01),
         NOT_SUPPORT(0xFF)
+    }
+
+    enum class PhoneticLanguage(val value: Int) {
+        ENGLISH(0x00),
+        NOT_SUPPORT(0xFF)
+    }
+
+    enum class SupportPhoneticLanguage(val value: Int) {
+        ENGLISH(0b00000001),
+        NOT_SUPPORT(0b00000000)
     }
 
     enum class VersionType(val value: Int) {

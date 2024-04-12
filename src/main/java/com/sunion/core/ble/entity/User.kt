@@ -1,7 +1,5 @@
 package com.sunion.core.ble.entity
 
-import com.sunion.core.ble.accessByteArrayToString
-import com.sunion.core.ble.toAsciiString
 
 sealed class User {
     data class Ninety(
@@ -41,51 +39,4 @@ sealed class User {
         val index: Int,
         val isSuccess: Boolean,
     ) : User()
-
-    data class NinetyFiveCredential(
-        val format: Int,
-        val index: Int,
-        val userIndex: Int? = null,
-        val status: Int? = null,
-        val type: Int? = null,
-        val code: ByteArray? = null,
-        val codeString: String? = if(type == BleV3Lock.CredentialType.PIN.value) code?.toAsciiString() else code?.accessByteArrayToString()
-    ) : User()
-
-    data class NinetyFiveUser(
-        val format: Int,
-        val userIndex: Int,
-        val credentialDetail: MutableList<BleV3Lock.CredentialDetail>? = null,
-    ) : User()
-
-    data class NinetySixCmd(
-        val action: Int,
-        val userIndex: Int,
-        val credentialDetail: BleV3Lock.CredentialDetail? = null,
-    ) : User()
-
-    data class NinetySeven(
-        val type: Int,
-        val state: Int,
-        val index: Int,
-        val status: Int,
-        val data: ByteArray,
-    ) : User()
-
-    data class NinetyNine(
-        val target: Int,
-        val sha256: String,
-    ) : User()
-
-    data class NinetyB(
-        val type: Int,
-        val time: Int,
-        val index: Int,
-    ) : User()
-
-    data class NinetyC(
-        val isSuccess: Boolean,
-        val hasUnsyncedData: Int,
-    ) : User()
-
 }

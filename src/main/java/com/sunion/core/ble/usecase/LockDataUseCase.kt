@@ -3,7 +3,7 @@ package com.sunion.core.ble.usecase
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.BleV3Lock
-import com.sunion.core.ble.entity.User
+import com.sunion.core.ble.entity.Data
 import com.sunion.core.ble.exception.NotConnectedException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
@@ -21,10 +21,10 @@ class LockDataUseCase @Inject constructor(
 ) {
     private val className = this::class.simpleName ?: "LockDataUseCase"
 
-    suspend fun getCredentialHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.CREDENTIAL.value)
-    suspend fun getUserHash(): User.NinetyNine = getHash(BleV3Lock.CredentialFormat.USER.value)
+    suspend fun getCredentialHash(): Data.NinetyNine = getHash(BleV3Lock.CredentialFormat.CREDENTIAL.value)
+    suspend fun getUserHash(): Data.NinetyNine = getHash(BleV3Lock.CredentialFormat.USER.value)
 
-    private suspend fun getHash(index: Int): User.NinetyNine {
+    private suspend fun getHash(index: Int): Data.NinetyNine {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getHash.name
         val function = 0x99
@@ -44,7 +44,7 @@ class LockDataUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyNine
+                ) as Data.NinetyNine
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -83,7 +83,7 @@ class LockDataUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getUnsyncedData(): User.NinetyB {
+    suspend fun getUnsyncedData(): Data.NinetyB {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getUnsyncedData.name
         val function = 0x9B
@@ -102,7 +102,7 @@ class LockDataUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyB
+                ) as Data.NinetyB
                 result
             }
             .flowOn(Dispatchers.IO)
@@ -112,18 +112,18 @@ class LockDataUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun setCredentialUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.CREDENTIAL.value, System.currentTimeMillis(), index)
-    suspend fun setUserUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.USER.value, System.currentTimeMillis(), index)
-    suspend fun setLogUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.LOG.value, System.currentTimeMillis() ,index)
-    suspend fun setTokenUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.TOKEN.value, System.currentTimeMillis() ,index)
-    suspend fun setSettingUnsyncedData(index: Int): User.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.SETTING.value, System.currentTimeMillis() ,index)
+    suspend fun setCredentialUnsyncedData(index: Int): Data.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.CREDENTIAL.value, System.currentTimeMillis(), index)
+    suspend fun setUserUnsyncedData(index: Int): Data.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.USER.value, System.currentTimeMillis(), index)
+    suspend fun setLogUnsyncedData(index: Int): Data.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.LOG.value, System.currentTimeMillis() ,index)
+    suspend fun setTokenUnsyncedData(index: Int): Data.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.TOKEN.value, System.currentTimeMillis() ,index)
+    suspend fun setSettingUnsyncedData(index: Int): Data.NinetyC = setUnsyncedData(BleV3Lock.UnsyncedDataType.SETTING.value, System.currentTimeMillis() ,index)
 
-    private suspend fun setUnsyncedData(type: Int, time: Long, index: Int): User.NinetyC {
+    private suspend fun setUnsyncedData(type: Int, time: Long, index: Int): Data.NinetyC {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::setUnsyncedData.name
         val function = 0x9C
-        val data = bleCmdRepository.combineUser9CCmd(
-            User.NinetyB(
+        val data = bleCmdRepository.combineData9CCmd(
+            Data.NinetyB(
                 type = type,
                 time = time.toInt(),
                 index = index
@@ -145,7 +145,7 @@ class LockDataUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyC
+                ) as Data.NinetyC
                 result
             }
             .flowOn(Dispatchers.IO)

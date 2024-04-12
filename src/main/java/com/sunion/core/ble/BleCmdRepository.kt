@@ -358,24 +358,24 @@ class BleCmdRepository @Inject constructor(){
         return outputStream.toByteArray()
     }
 
-    fun combineUser96Cmd(user96Cmd: User.NinetySixCmd): ByteArray {
+    fun combineCredential96Cmd(credential96Cmd: Credential.NinetySixCmd): ByteArray {
         val outputStream = ByteArrayOutputStream()
-        outputStream.write(user96Cmd.action)
-        outputStream.write(user96Cmd.userIndex.toLittleEndianByteArrayInt16())
-        if(user96Cmd.credentialDetail != null){
-            outputStream.write(user96Cmd.credentialDetail.index.toLittleEndianByteArrayInt16())
-            outputStream.write(user96Cmd.credentialDetail.status)
-            outputStream.write(user96Cmd.credentialDetail.type)
-            outputStream.write(user96Cmd.credentialDetail.code.extendedByteArray(8))
+        outputStream.write(credential96Cmd.action)
+        outputStream.write(credential96Cmd.userIndex.toLittleEndianByteArrayInt16())
+        if(credential96Cmd.credentialDetail != null){
+            outputStream.write(credential96Cmd.credentialDetail.index.toLittleEndianByteArrayInt16())
+            outputStream.write(credential96Cmd.credentialDetail.status)
+            outputStream.write(credential96Cmd.credentialDetail.type)
+            outputStream.write(credential96Cmd.credentialDetail.code.extendedByteArray(8))
         }
         return outputStream.toByteArray()
     }
 
-    fun combineUser9CCmd(user9BCmd: User.NinetyB): ByteArray {
+    fun combineData9CCmd(data9BCmd: Data.NinetyB): ByteArray {
         val outputStream = ByteArrayOutputStream()
-        outputStream.write(user9BCmd.type)
-        outputStream.write(user9BCmd.time.toLittleEndianByteArray())
-        outputStream.write(user9BCmd.index.toLittleEndianByteArrayInt16())
+        outputStream.write(data9BCmd.type)
+        outputStream.write(data9BCmd.time.toLittleEndianByteArray())
+        outputStream.write(data9BCmd.index.toLittleEndianByteArrayInt16())
         return outputStream.toByteArray()
     }
 
@@ -1017,14 +1017,14 @@ class BleCmdRepository @Inject constructor(){
         return user92
     }
 
-    private fun resolve95(data: ByteArray): User {
+    private fun resolve95(data: ByteArray): Credential {
         val functionName = ::resolve95.name
         val format = data.component1().unSignedInt()
         val index = data.copyOfRange(1, 3).toInt()
-        val user95 = if(format == 0) {
+        val credential95 = if(format == 0) {
             val credentialDetailSize = (data.size - 3) / 12
             if(credentialDetailSize > 0) {
-                User.NinetyFiveCredential(
+                Credential.NinetyFiveCredential(
                     format = format,
                     index = index,
                     userIndex = data.copyOfRange(3, 5).toInt(),
@@ -1033,7 +1033,7 @@ class BleCmdRepository @Inject constructor(){
                     code = data.copyOfRange(7, 15)
                 )
             } else {
-                User.NinetyFiveCredential(
+                Credential.NinetyFiveCredential(
                     format = format,
                     index = index,
                 )
@@ -1052,23 +1052,23 @@ class BleCmdRepository @Inject constructor(){
                         )
                     )
                 }
-                User.NinetyFiveUser(
+                Credential.NinetyFiveUser(
                     format = format,
                     userIndex = index,
                     credentialDetail = credentialDetailList
                 )
             } else {
-                User.NinetyFiveUser(
+                Credential.NinetyFiveUser(
                     format = format,
                     userIndex = index
                 )
             }
         }
-        Timber.d("$functionName: $user95")
-        return user95
+        Timber.d("$functionName: $credential95")
+        return credential95
     }
 
-    private fun resolve97(data: ByteArray): User.NinetySeven {
+    private fun resolve97(data: ByteArray): Credential.NinetySeven {
         val functionName = ::resolve97.name
         val type = data.component1().unSignedInt()
         val state = data.component2().unSignedInt()
@@ -1076,37 +1076,37 @@ class BleCmdRepository @Inject constructor(){
         val status = data.component5().unSignedInt()
         val dataInfo = data.copyOfRange(5, data.size)
         val code = dataInfo.accessByteArrayToString()
-        val user97 = User.NinetySeven(type, state, index, status, dataInfo)
-        Timber.d("$functionName: $user97 codeString: $code")
-        return user97
+        val credential97 = Credential.NinetySeven(type, state, index, status, dataInfo)
+        Timber.d("$functionName: $credential97 codeString: $code")
+        return credential97
     }
 
-    private fun resolve99(data: ByteArray): User.NinetyNine {
+    private fun resolve99(data: ByteArray): Data.NinetyNine {
         val functionName = ::resolve99.name
         val target = data.component1().unSignedInt()
         val sha256 = String(data.copyOfRange(1, 33))
-        val user99 = User.NinetyNine(target, sha256)
-        Timber.d("$functionName: $user99")
-        return user99
+        val data99 = Data.NinetyNine(target, sha256)
+        Timber.d("$functionName: $data99")
+        return data99
     }
 
-    private fun resolve9B(data: ByteArray): User.NinetyB {
+    private fun resolve9B(data: ByteArray): Data.NinetyB {
         val functionName = ::resolve9B.name
         val type = data.component1().unSignedInt()
         val time = data.copyOfRange(1, 5).toInt()
         val index = data.copyOfRange(5, 7).toInt()
-        val user9B = User.NinetyB(type, time, index)
-        Timber.d("$functionName: $user9B")
-        return user9B
+        val data9B = Data.NinetyB(type, time, index)
+        Timber.d("$functionName: $data9B")
+        return data9B
     }
 
-    private fun resolve9C(data: ByteArray): User.NinetyC {
+    private fun resolve9C(data: ByteArray): Data.NinetyC {
         val functionName = ::resolve9C.name
         val isSuccess = data.component1().unSignedInt() == 1
         val hasUnsyncedData = data.component2().unSignedInt()
-        val user9C = User.NinetyC(isSuccess, hasUnsyncedData)
-        Timber.d("$functionName: $user9C")
-        return user9C
+        val data9C = Data.NinetyC(isSuccess, hasUnsyncedData)
+        Timber.d("$functionName: $data9C")
+        return data9C
     }
 
     private fun resolveA0(data: ByteArray): LockConfig.A0 {

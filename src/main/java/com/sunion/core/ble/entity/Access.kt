@@ -58,4 +58,11 @@ sealed class Access: SunionBleNotification() {
         val status: Boolean,
         val data: ByteArray,
     ) : Access()
+
+    enum class Type(val value: Int) {
+        CODE(0),
+        CARD(1),
+        FINGERPRINT(2),
+        FACE(3)
+    }
 }

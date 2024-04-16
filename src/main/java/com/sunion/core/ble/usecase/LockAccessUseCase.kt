@@ -51,10 +51,10 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getAccessCodeArray(): List<Boolean> = getAccessArray(0)
-    suspend fun getAccessCardArray(): List<Boolean> = getAccessArray(1)
-    suspend fun getFingerprintArray(): List<Boolean> = getAccessArray(2)
-    suspend fun getFaceArray(): List<Boolean> = getAccessArray(3)
+    suspend fun getAccessCodeArray(): List<Boolean> = getAccessArray(Access.Type.CODE.value)
+    suspend fun getAccessCardArray(): List<Boolean> = getAccessArray(Access.Type.CARD.value)
+    suspend fun getFingerprintArray(): List<Boolean> = getAccessArray(Access.Type.FINGERPRINT.value)
+    suspend fun getFaceArray(): List<Boolean> = getAccessArray(Access.Type.FACE.value)
 
     private suspend fun getAccess(type: Int, index: Int): Access.A6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -85,12 +85,12 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getAccessCode(index: Int): Access.A6 = getAccess(0, index)
-    suspend fun getAccessCard(index: Int): Access.A6 = getAccess(1, index)
-    suspend fun getFingerprint(index: Int): Access.A6 = getAccess(2, index)
-    suspend fun getFace(index: Int): Access.A6 = getAccess(3, index)
+    suspend fun getAccessCode(index: Int): Access.A6 = getAccess(Access.Type.CODE.value, index)
+    suspend fun getAccessCard(index: Int): Access.A6 = getAccess(Access.Type.CARD.value, index)
+    suspend fun getFingerprint(index: Int): Access.A6 = getAccess(Access.Type.FINGERPRINT.value, index)
+    suspend fun getFace(index: Int): Access.A6 = getAccess(Access.Type.FACE.value, index)
 
-    private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 {
+    private suspend fun addAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::addAccess.name
         val function = 0xA7
@@ -123,7 +123,7 @@ class LockAccessUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ) as Access.A7
-                result
+                result.isSuccess
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
@@ -132,10 +132,10 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.A7 = addAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
-    suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7 = addAccess(1, index, isEnable, scheduleType, name, code)
-    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7 = addAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
-    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7 = addAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = addAccess(Access.Type.CODE.value, index, isEnable, scheduleType, name, code.accessCodeToHex())
+    suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = addAccess(Access.Type.CARD.value, index, isEnable, scheduleType, name, code)
+    suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = addAccess(Access.Type.FINGERPRINT.value, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = addAccess(Access.Type.FACE.value, index, isEnable, scheduleType, name, byteArrayOf())
 
     private suspend fun editAccess(type: Int, index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -179,10 +179,10 @@ class LockAccessUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(0, index, isEnable, scheduleType, name, code.accessCodeToHex())
-    suspend fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = editAccess(1, index, isEnable, scheduleType, name, code)
-    suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(2, index, isEnable, scheduleType, name, byteArrayOf())
-    suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(3, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean = editAccess(Access.Type.CODE.value, index, isEnable, scheduleType, name, code.accessCodeToHex())
+    suspend fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean = editAccess(Access.Type.CARD.value, index, isEnable, scheduleType, name, code)
+    suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(Access.Type.FINGERPRINT.value, index, isEnable, scheduleType, name, byteArrayOf())
+    suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean = editAccess(Access.Type.FACE.value, index, isEnable, scheduleType, name, byteArrayOf())
 
     private suspend fun deviceGetAccess(type:Int, state:Int, index: Int): Access.A9 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
@@ -252,10 +252,10 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    suspend fun deleteAccessCode(index: Int): Boolean = deleteAccess(0, index)
-    suspend fun deleteAccessCard(index: Int): Boolean = deleteAccess(1, index)
-    suspend fun deleteFingerprint(index: Int): Boolean = deleteAccess(2, index)
-    suspend fun deleteFace(index: Int): Boolean = deleteAccess(3, index)
+    suspend fun deleteAccessCode(index: Int): Boolean = deleteAccess(Access.Type.CODE.value, index)
+    suspend fun deleteAccessCard(index: Int): Boolean = deleteAccess(Access.Type.CARD.value, index)
+    suspend fun deleteFingerprint(index: Int): Boolean = deleteAccess(Access.Type.FINGERPRINT.value, index)
+    suspend fun deleteFace(index: Int): Boolean = deleteAccess(Access.Type.FACE.value, index)
 
 }
 

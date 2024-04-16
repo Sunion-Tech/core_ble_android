@@ -1,6 +1,7 @@
 package com.sunion.core.ble.entity
 
 sealed class Access: SunionBleNotification() {
+    object UNKNOWN : Access()
     data class Code(
         val index: Int,
         val isEnable: Boolean,

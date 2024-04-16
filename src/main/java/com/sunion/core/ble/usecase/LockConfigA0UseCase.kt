@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.LockConfig
 import com.sunion.core.ble.exception.LockStatusException
 import com.sunion.core.ble.exception.NotConnectedException
@@ -140,12 +141,25 @@ class LockConfigA0UseCase @Inject constructor(
         }
     }
 
-    suspend fun setSoundValue(soundValue :Int): Boolean {
+    suspend fun setSoundValue(isOn: Boolean, soundValue :Int): Boolean {
         if (getCurrentLockConfigA0().soundType.isSupport()) {
-            val value = when (getCurrentLockConfigA0().soundType) {
-                0x01 -> if (soundValue == 100 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
-                0x02 -> if (soundValue == 100 || soundValue == 50 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
-                else -> soundValue
+            val value = when (getCurrentLockConfigA0().soundType){
+                BleV2Lock.SoundType.ON_OFF.value -> { if (isOn) BleV2Lock.SoundValue.OPEN.value else BleV2Lock.SoundValue.CLOSE.value }
+                BleV2Lock.SoundType.LEVEL.value -> {
+                    if(isOn){
+                        if (soundValue == BleV2Lock.SoundValue.HIGH_VOICE.value) {
+                            BleV2Lock.SoundValue.HIGH_VOICE.value
+                        } else if (soundValue == BleV2Lock.SoundValue.LOW_VOICE.value){
+                            BleV2Lock.SoundValue.LOW_VOICE.value
+                        } else {
+                            throw IllegalArgumentException("Not support sound value.")
+                        }
+                    } else {
+                        BleV2Lock.SoundValue.CLOSE.value
+                    }
+                }
+                BleV2Lock.SoundType.PERCENTAGE.value -> { if (isOn) soundValue else BleV2Lock.SoundValue.CLOSE.value }
+                else -> { if (isOn) BleV2Lock.SoundValue.OPEN.value else BleV2Lock.SoundValue.CLOSE.value }
             }
             return updateConfig(getCurrentLockConfigA0().copy(soundValue = value))
         } else {

@@ -141,12 +141,25 @@ class LockConfig80UseCase @Inject constructor(
         }
     }
 
-    suspend fun setSoundValue(soundValue :Int): Boolean {
+    suspend fun setSoundValue(isOn: Boolean, soundValue :Int): Boolean {
         if (getCurrentLockConfig80().soundType.isSupport()) {
             val value = when (getCurrentLockConfig80().soundType) {
-                0x01 -> if (soundValue == 100 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
-                0x02 -> if (soundValue == 100 || soundValue == 50 || soundValue == 0) soundValue else throw IllegalArgumentException("Not support sound value.")
-                else -> soundValue
+                BleV3Lock.SoundType.ON_OFF.value -> { if (isOn) BleV3Lock.SoundValue.OPEN.value else BleV3Lock.SoundValue.CLOSE.value }
+                BleV3Lock.SoundType.LEVEL.value -> {
+                    if(isOn){
+                        if (soundValue == BleV3Lock.SoundValue.HIGH_VOICE.value) {
+                            BleV3Lock.SoundValue.HIGH_VOICE.value
+                        } else if (soundValue == BleV3Lock.SoundValue.LOW_VOICE.value){
+                            BleV3Lock.SoundValue.LOW_VOICE.value
+                        } else {
+                            throw IllegalArgumentException("Not support sound value.")
+                        }
+                    } else {
+                        BleV3Lock.SoundValue.CLOSE.value
+                    }
+                }
+                BleV3Lock.SoundType.PERCENTAGE.value -> { if (isOn) soundValue else BleV3Lock.SoundValue.CLOSE.value }
+                else -> { if (isOn) BleV3Lock.SoundValue.OPEN.value else BleV3Lock.SoundValue.CLOSE.value }
             }
             return updateConfig(getCurrentLockConfig80().copy(soundValue = value))
         } else {

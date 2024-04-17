@@ -2,6 +2,7 @@ package com.sunion.core.ble.entity
 
 
 sealed class User {
+    object UNKNOWN : User()
     data class Ninety(
         val transferComplete: Int,
         val data: ByteArray

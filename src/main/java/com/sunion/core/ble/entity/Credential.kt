@@ -4,6 +4,7 @@ import com.sunion.core.ble.accessByteArrayToString
 import com.sunion.core.ble.toAsciiString
 
 sealed class Credential: SunionBleNotification() {
+    object UNKNOWN : Credential()
     data class NinetyFiveCredential(
         val format: Int,
         val index: Int,

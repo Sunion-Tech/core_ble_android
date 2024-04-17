@@ -110,7 +110,7 @@ class BleDeviceFeature{
             Triple(TaskCode.GetMcuVersion, "Get MCU version", setOf("3")),
             Triple(TaskCode.Restart, "Restart", setOf("3")),
             Triple(TaskCode.FactoryReset, "Factory reset", setOf("1","2","3")),
-            Triple(TaskCode.FactoryResetNoAdmin, "Factory reset no admin", setOf("2","3")),
+            Triple(TaskCode.FactoryResetNoAdmin, "Factory reset no admin", setOf("3")),
             Triple(TaskCode.Disconnect, "Disconnect", setOf("1","2","3"))
         )
     }

@@ -143,7 +143,7 @@ class BleCmdRepository @Inject constructor(){
     }
 
     enum class Config81(val byte: Int){
-        SIZE(29),
+        SIZE(30),
         LATITUDE_INTEGER (0),
         LATITUDE_DECIMAL (4),
         LONGITUDE_INTEGER (8),

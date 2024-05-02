@@ -66,4 +66,18 @@ sealed class Access: SunionBleNotification() {
         FINGERPRINT(2),
         FACE(3)
     }
+
+    enum class ScheduleType(val value: String) {
+        NONE("N"),
+        PERMANENT("A"),
+        SINGLE_ENTRY("O"),
+        WEEKLY("W"),
+        SCHEDULE("S")
+    }
+
+    enum class State(val value: Int) {
+        EXIT(0),
+        START(1),
+        UPDATE(2)
+    }
 }

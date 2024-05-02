@@ -86,13 +86,11 @@ class LockUserUseCase @Inject constructor(
     }
 
     suspend fun addUser(
-        index: Int,
+        userIndex: Int,
         name: String,
-        uid: Int,
-        status: Int,
-        type: Int,
+        userStatus: Int,
+        userType: Int,
         credentialRule: Int,
-        credentialList: MutableList<BleV3Lock.Credential>? = null,
         weekDayScheduleList: MutableList<BleV3Lock.WeekDaySchedule>? = null,
         yearDayScheduleList: MutableList<BleV3Lock.YearDaySchedule>? = null
     ): Boolean {
@@ -100,14 +98,12 @@ class LockUserUseCase @Inject constructor(
         val functionName = ::addUser.name
         val function = 0x92
         val data = bleCmdRepository.combineUser92Cmd(User.NinetyTwoCmd(
-            action = 0x00,
-            index = index,
+            action = BleV3Lock.Action.CREATE.value,
+            userIndex = userIndex,
             name = name,
-            uid = uid,
-            status = status,
-            type = type,
+            userStatus = userStatus,
+            userType = userType,
             credentialRule = credentialRule,
-            credentialList = credentialList,
             weekDayScheduleList = weekDayScheduleList,
             yearDayScheduleList = yearDayScheduleList
         ))
@@ -136,13 +132,11 @@ class LockUserUseCase @Inject constructor(
     }
 
     suspend fun editUser(
-        index: Int,
+        userIndex: Int,
         name: String,
-        uid: Int,
-        status: Int,
-        type: Int,
+        userStatus: Int,
+        userType: Int,
         credentialRule: Int,
-        credentialList: MutableList<BleV3Lock.Credential>? = null,
         weekDayScheduleList: MutableList<BleV3Lock.WeekDaySchedule>? = null,
         yearDayScheduleList: MutableList<BleV3Lock.YearDaySchedule>? = null
     ): Boolean {
@@ -150,14 +144,12 @@ class LockUserUseCase @Inject constructor(
         val functionName = ::editUser.name
         val function = 0x92
         val data = bleCmdRepository.combineUser92Cmd(User.NinetyTwoCmd(
-            action = 0x01,
-            index = index,
+            action = BleV3Lock.Action.EDIT.value,
+            userIndex = userIndex,
             name = name,
-            uid = uid,
-            status = status,
-            type = type,
+            userStatus = userStatus,
+            userType = userType,
             credentialRule = credentialRule,
-            credentialList = credentialList,
             weekDayScheduleList = weekDayScheduleList,
             yearDayScheduleList = yearDayScheduleList
         ))

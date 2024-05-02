@@ -6,7 +6,7 @@ import com.sunion.core.ble.toAsciiString
 sealed class Credential: SunionBleNotification() {
     object UNKNOWN : Credential()
     data class NinetyFiveCredential(
-        val format: Int,
+        val format: Int = BleV3Lock.CredentialFormat.CREDENTIAL.value,
         val index: Int,
         val userIndex: Int? = null,
         val status: Int? = null,
@@ -16,7 +16,7 @@ sealed class Credential: SunionBleNotification() {
     ) : Credential()
 
     data class NinetyFiveUser(
-        val format: Int,
+        val format: Int = BleV3Lock.CredentialFormat.USER.value,
         val userIndex: Int,
         val credentialDetail: MutableList<BleV3Lock.CredentialDetail>? = null,
     ) : Credential()

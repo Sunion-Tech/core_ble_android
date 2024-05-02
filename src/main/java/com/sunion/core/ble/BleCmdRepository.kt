@@ -221,10 +221,10 @@ class BleCmdRepository @Inject constructor(){
         data: ByteArray = byteArrayOf()
     ): ByteArray {
         return when (function) {
-            0x80, 0x82, 0x85, 0x86, 0x87, 0x90, 0x94, 0x9A, 0x9B, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
+            0x80, 0x82, 0x85, 0x86, 0x87, 0x90, 0x94, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xC9, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
                 cmd(function, key)
             }
-            0x81, 0x92, 0x96, 0x9C, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4-> {
+            0x81, 0x92, 0x96, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4-> {
                 cmd(function, key, data.size, data)
             }
             0x83, 0x84, 0x91, 0x93, 0x98, 0xA3 -> {
@@ -236,7 +236,7 @@ class BleCmdRepository @Inject constructor(){
             0x97, 0xA9, 0xD3 -> {
                 cmd(function, key, 4, data)
             }
-            0x99, 0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE3, 0xE5, 0xEB, 0xEE -> {
+            0x99, 0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE5, 0xEB, 0xEE -> {
                 cmd(function, key, 1, data)
             }
             0xA1 -> {
@@ -332,16 +332,11 @@ class BleCmdRepository @Inject constructor(){
     fun combineUser92Cmd(user92Cmd: User.NinetyTwoCmd): ByteArray {
         val outputStream = ByteArrayOutputStream()
         outputStream.write(user92Cmd.action)
-        outputStream.write(user92Cmd.index.toLittleEndianByteArrayInt16())
+        outputStream.write(user92Cmd.userIndex.toLittleEndianByteArrayInt16())
         outputStream.write(user92Cmd.name.toPaddedByteArray(10))
-        outputStream.write(user92Cmd.uid.toLittleEndianByteArray())
-        outputStream.write(user92Cmd.status)
-        outputStream.write(user92Cmd.type)
+        outputStream.write(user92Cmd.userStatus)
+        outputStream.write(user92Cmd.userType)
         outputStream.write(user92Cmd.credentialRule)
-        user92Cmd.credentialList?.forEach { credential ->
-            outputStream.write(credential.type)
-            outputStream.write(credential.index.toLittleEndianByteArrayInt16())
-        }
         user92Cmd.weekDayScheduleList?.forEach { schedule ->
             outputStream.write(schedule.status)
             outputStream.write(schedule.dayMask)
@@ -368,14 +363,6 @@ class BleCmdRepository @Inject constructor(){
             outputStream.write(credential96Cmd.credentialDetail.type)
             outputStream.write(credential96Cmd.credentialDetail.code.extendedByteArray(8))
         }
-        return outputStream.toByteArray()
-    }
-
-    fun combineData9CCmd(data9BCmd: Data.NinetyB): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        outputStream.write(data9BCmd.type)
-        outputStream.write(data9BCmd.time.toLittleEndianByteArray())
-        outputStream.write(data9BCmd.index.toLittleEndianByteArrayInt16())
         return outputStream.toByteArray()
     }
 
@@ -567,7 +554,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.EightyTwo & 0x83
                         resolve82(byteArrayData)
                     }
-                    0x84, 0x87, 0x9A, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF4 -> {
+                    0x84, 0x87, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF4 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
@@ -606,14 +593,6 @@ class BleCmdRepository @Inject constructor(){
                     0x99 -> {
                         // User.NinetyNine
                         resolve99(byteArrayData)
-                    }
-                    0x9B -> {
-                        // User.NinetyB
-                        resolve9B(byteArrayData)
-                    }
-                    0x9C -> {
-                        // User.NinetyC
-                        resolve9C(byteArrayData)
                     }
                     0xA0 -> {
                         // LockConfig.A0
@@ -667,6 +646,10 @@ class BleCmdRepository @Inject constructor(){
                         // HexString
                         byteArrayData.toHexPrint()
                     }
+                    0xC9 -> {
+                        // BleV3Lock.AdminPosition
+                        resolveC9(byteArrayData)
+                    }
                     0xD0, 0xF0, 0xF2 -> {
                         // String
                         String(byteArrayData)
@@ -683,7 +666,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.D6 & 0xD7
                         resolveD6(byteArrayData)
                     }
-                    0xE1, 0xE3 -> {
+                    0xE1 -> {
                         // EventLog
                         resolveE1(byteArrayData)
                     }
@@ -935,33 +918,16 @@ class BleCmdRepository @Inject constructor(){
         val functionName = ::resolve91.name
         val index = data.copyOfRange(0, 2).toInt()
         val name = String(data.copyOfRange(2, 12))
-        val uid = data.copyOfRange(12, 16).toInt()
-        val status = data[16].unSignedInt()
-        val type = data[17].unSignedInt()
-        val credentialRule = data[18].unSignedInt()
-        val credentialListCount = data[19].unSignedInt()
-        val weekDayScheduleListCount = data[20].unSignedInt()
-        val yearDayScheduleListCount = data[21].unSignedInt()
-        val credentialListData = data.copyOfRange(22, 22 + credentialListCount * 3)
-        val weekDayScheduleListData = data.copyOfRange(
-            22 + credentialListCount * 3,
-            22 + credentialListCount * 3 + weekDayScheduleListCount * 6
-        )
+        val status = data[12].unSignedInt()
+        val type = data[13].unSignedInt()
+        val credentialRule = data[14].unSignedInt()
+        val weekDayScheduleListCount = data[15].unSignedInt()
+        val yearDayScheduleListCount = data[16].unSignedInt()
+        val weekDayScheduleListData = data.copyOfRange(17, 17 + weekDayScheduleListCount * 6)
         val yearDayScheduleListData = data.copyOfRange(
-            22 + credentialListCount * 3 + weekDayScheduleListCount * 6,
-            22 + credentialListCount * 3 + weekDayScheduleListCount * 6 + yearDayScheduleListCount * 9
+            17 + weekDayScheduleListCount * 6,
+            17 + weekDayScheduleListCount * 6 + yearDayScheduleListCount * 9
         )
-        val credentialList:MutableList<BleV3Lock.Credential> = mutableListOf()
-        if(credentialListCount > 0) {
-            for (i in 0 until credentialListCount) {
-                credentialList.add(
-                    BleV3Lock.Credential(
-                        type = credentialListData.copyOfRange(i * 3 + 0, i * 3 + 1).toInt(),
-                        index = credentialListData.copyOfRange(i * 3 + 1, i * 3 + 3).toInt()
-                    )
-                )
-            }
-        }
         val weekDayScheduleList:MutableList<BleV3Lock.WeekDaySchedule> = mutableListOf()
         if(weekDayScheduleListCount > 0) {
             for (i in 0 until weekDayScheduleListCount) {
@@ -990,16 +956,13 @@ class BleCmdRepository @Inject constructor(){
             }
         }
         val user91 = User.NinetyOne(
-            index = index,
+            userIndex = index,
             name = name,
-            uid = uid,
-            status = status,
-            type = type,
+            userStatus = status,
+            userType = type,
             credentialRule = credentialRule,
-            credentialListCount = credentialListCount,
             weekDayScheduleListCount = weekDayScheduleListCount,
             yearDayScheduleListCount = yearDayScheduleListCount,
-            credentialList = credentialList,
             weekDayScheduleList = weekDayScheduleList,
             yearDayScheduleList = yearDayScheduleList,
         )
@@ -1010,7 +973,7 @@ class BleCmdRepository @Inject constructor(){
     private fun resolve92(data: ByteArray): User.NinetyTwo {
         val functionName = ::resolve92.name
         val user92 = User.NinetyTwo(
-            index = data.copyOfRange(0, 2).toInt(),
+            userIndex = data.copyOfRange(0, 2).toInt(),
             isSuccess = data.component3().unSignedInt() == 1,
         )
         Timber.d("$functionName: $user92")
@@ -1088,25 +1051,6 @@ class BleCmdRepository @Inject constructor(){
         val data99 = Data.NinetyNine(target, sha256)
         Timber.d("$functionName: $data99")
         return data99
-    }
-
-    private fun resolve9B(data: ByteArray): Data.NinetyB {
-        val functionName = ::resolve9B.name
-        val type = data.component1().unSignedInt()
-        val time = data.copyOfRange(1, 5).toInt()
-        val index = data.copyOfRange(5, 7).toInt()
-        val data9B = Data.NinetyB(type, time, index)
-        Timber.d("$functionName: $data9B")
-        return data9B
-    }
-
-    private fun resolve9C(data: ByteArray): Data.NinetyC {
-        val functionName = ::resolve9C.name
-        val isSuccess = data.component1().unSignedInt() == 1
-        val hasUnsyncedData = data.component2().unSignedInt()
-        val data9C = Data.NinetyC(isSuccess, hasUnsyncedData)
-        Timber.d("$functionName: $data9C")
-        return data9C
     }
 
     private fun resolveA0(data: ByteArray): LockConfig.A0 {
@@ -1365,13 +1309,17 @@ class BleCmdRepository @Inject constructor(){
 
     private fun resolveB0(data: ByteArray): DeviceStatus.B0 {
         val functionName = ::resolveB0.name
-        val setWifi  = data.component1()
-        val connectWifi  = data.component2()
-        val plugStatus  = data.component3()
+        val mainVersion = data.component1().toInt()
+        val subVersion = data.component2().toInt()
+        val setWifi  = data.component3().toInt()
+        val connectWifi  = data.component4().toInt()
+        val plugStatus  = data.component5().toInt()
         val response = DeviceStatus.B0(
-            setWifi.toInt(),
-            connectWifi.toInt(),
-            plugStatus.toInt(),
+            mainVersion,
+            subVersion,
+            setWifi,
+            connectWifi,
+            plugStatus,
         )
         Timber.d("$functionName: $response")
         return response
@@ -1400,6 +1348,16 @@ class BleCmdRepository @Inject constructor(){
         )
         Timber.d("$functionName: $response")
         return response
+    }
+
+    private fun resolveC9(data: ByteArray): BleV3Lock.AdminPosition {
+        val functionName = ::resolveC9.name
+        val adminPosition = BleV3Lock.AdminPosition(
+            userIndex = data.copyOfRange(0, 2).toInt(),
+            credentialIndex = data.copyOfRange(2, 4).toInt(),
+        )
+        Timber.d("$functionName: $adminPosition")
+        return adminPosition
     }
 
     private fun resolveD4(data: ByteArray): LockConfig.D4 {

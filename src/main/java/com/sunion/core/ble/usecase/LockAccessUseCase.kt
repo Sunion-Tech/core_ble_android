@@ -214,13 +214,13 @@ class LockAccessUseCase @Inject constructor(
             }
             .single()
     }
-    suspend fun deviceGetAccessCard(index: Int): Access.A9 = deviceGetAccess(1, 1, index)
-    suspend fun deviceGetFingerprint(index: Int): Access.A9 = deviceGetAccess(2, 1, index)
-    suspend fun deviceGetFace(index: Int): Access.A9 = deviceGetAccess(3, 1 ,index)
+    suspend fun deviceGetAccessCard(index: Int): Access.A9 = deviceGetAccess(Access.Type.CARD.value, Access.State.START.value, index)
+    suspend fun deviceGetFingerprint(index: Int): Access.A9 = deviceGetAccess(Access.Type.FINGERPRINT.value, Access.State.START.value, index)
+    suspend fun deviceGetFace(index: Int): Access.A9 = deviceGetAccess(Access.Type.FACE.value, Access.State.START.value ,index)
 
-    suspend fun deviceExitAccessCard(index: Int): Access.A9 = deviceGetAccess(1, 0, index)
-    suspend fun deviceExitFingerprint(index: Int): Access.A9 = deviceGetAccess(2, 0, index)
-    suspend fun deviceExitFace(index: Int): Access.A9 = deviceGetAccess(3, 0 ,index)
+    suspend fun deviceExitAccessCard(index: Int): Access.A9 = deviceGetAccess(Access.Type.CARD.value, Access.State.EXIT.value, index)
+    suspend fun deviceExitFingerprint(index: Int): Access.A9 = deviceGetAccess(Access.Type.FINGERPRINT.value, Access.State.EXIT.value, index)
+    suspend fun deviceExitFace(index: Int): Access.A9 = deviceGetAccess(Access.Type.FACE.value, Access.State.EXIT.value, index)
 
     private suspend fun deleteAccess(type: Int, index: Int): Boolean {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()

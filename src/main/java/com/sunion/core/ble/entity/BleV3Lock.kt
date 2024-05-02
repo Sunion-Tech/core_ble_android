@@ -148,12 +148,14 @@ data class BleV3Lock(
 
     enum class PhoneticLanguage(val value: Int) {
         ENGLISH(0x00),
+        SPANISH(0x01),
+        FRENCH(0x02),
+        CHINESE(0x03),
         NOT_SUPPORT(0xFF)
     }
 
     enum class SupportPhoneticLanguage(val value: Int) {
-        ENGLISH(0b00000001),
-        NOT_SUPPORT(0b00000000)
+        NOT_SUPPORT(0)
     }
 
     enum class VersionType(val value: Int) {
@@ -200,17 +202,15 @@ data class BleV3Lock(
         UNKNOWN(6)
     }
 
+    enum class CredentialState(val value: Int) {
+        EXIT(0),
+        START(1),
+        UPDATE(2)
+    }
+
     enum class CredentialFormat(val value: Int) {
         CREDENTIAL(0),
         USER(1)
-    }
-
-    enum class UnsyncedDataType(val value: Int) {
-        CREDENTIAL(0),
-        USER(1),
-        LOG(2),
-        TOKEN(3),
-        SETTING(4),
     }
 
     enum class ScheduleStatus(val value: Int) {
@@ -290,32 +290,32 @@ data class BleV3Lock(
         val subVersion: Int,
     )
 
-    data class Credential(
-        val type: Int,
-        val index: Int
-    )
-
     data class CredentialDetail(
         val index: Int,
-        val status: Int,
+        val status: Int = UserStatus.OCCUPIED_ENABLED.value,
         val type: Int,
         val code: ByteArray,
         val codeString: String = if(type == CredentialType.PIN.value) code.toAsciiString() else code.accessByteArrayToString()
     )
 
     data class WeekDaySchedule(
-        val status: Int,
+        val status: Int = ScheduleStatus.AVAILABLE.value,
         val dayMask: Int,
-        val startHour: Int,
-        val startMinute: Int,
-        val endHour: Int,
-        val endMinute: Int
+        val startHour: Int, // 0-23
+        val startMinute: Int, // 0-59
+        val endHour: Int, // 0-23
+        val endMinute: Int // 0-59
     )
 
     data class YearDaySchedule(
-        val status: Int,
+        val status: Int = ScheduleStatus.AVAILABLE.value,
         val start: Long,
         val end: Long
+    )
+
+    data class AdminPosition(
+        val userIndex: Int,
+        val credentialIndex: Int
     )
 
 }

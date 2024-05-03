@@ -5,6 +5,7 @@ import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MAX
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MIN
+import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.exception.NotConnectedException
 import com.sunion.core.ble.hexToByteArray
 import com.sunion.core.ble.unSignedInt
@@ -116,6 +117,36 @@ class AdminCodeUseCase @Inject constructor(
                     notification
                 )
                 result as Boolean
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun getAdminCodePosition(): BleV3Lock.AdminPosition {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::getAdminCodePosition.name
+        val function = 0xC9
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as BleV3Lock.AdminPosition
+                result
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->

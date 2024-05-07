@@ -6,11 +6,11 @@
 ## Install
 * Git clone core_ble_android as sub-module of your app project.
 * In settings.gradle, add:
-```
+```gradle=
 include ':core_ble_android'
 ```
 * In app/build.gradle, add:
-```
+```gradle=
 plugins {
     ...
     id 'kotlin-kapt'
@@ -39,7 +39,7 @@ dependencies {
 }
 ```
 * Define required dependencies version in project build.gradle:
-```
+```gradle=
 buildscript {
     ...
     ext {
@@ -64,7 +64,7 @@ plugins {
 ## Setup the SDK
 ### Permissions
 In your app's AndroidManifest.xml file, add following permissions:
-```
+```xml=
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.BLUETOOTH" />
 <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" tools:node="replace" />
@@ -72,7 +72,7 @@ In your app's AndroidManifest.xml file, add following permissions:
 ```
 ### Hilt
 It's recommended to use Hilt dependency injection library in your project. Following examples use Hilt to inject dependencies into Android classes. Creating a module class BleModule in your project with following content:
-```
+```kotlin=
 import android.content.Context
 import com.polidea.rxandroidble2.RxBleClient
 import com.polidea.rxandroidble2.internal.RxBleLog
@@ -108,7 +108,7 @@ object BleModule {
 }
 ```
 * Creating a module class AppModule in your project with following content:
-```
+```kotlin=
 import com.sunion.core.ble.AppSchedulers
 import com.sunion.core.ble.Scheduler
 import dagger.Binds
@@ -128,7 +128,7 @@ object AppModule {
 }
 ```
 * Creating a Application class HiltApplication in your project with following content:
-```
+```kotlin=
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -145,8 +145,7 @@ class HiltApplication: Application(){
 }
 ```
 * In MainActivity, add:
-```
-...
+```kotlin=
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -156,7 +155,7 @@ class MainActivity : ComponentActivity() {
 }
 ```
 * In AndroidManifest, add:
-```
+```kotlin=
 <application
     android:name=".HiltApplication"
     ...
@@ -165,11 +164,9 @@ class MainActivity : ComponentActivity() {
 ## Quick start
 ### Pairing with lock
 To pair with lock, you can get lock connection information by scanning QR code of lock. The content of QR code is encryted with BARCODE_KEY, you can decrypt the contet with the following example code:
-```
-/*
- * content: QR code content (base64 encoded string)
- * _barcodeKey: decryption key
- * /
+```kotlin=
+// content: QR code content (base64 encoded string)
+// _barcodeKey: decryption key
 val qrCodeContent =
     runCatching { lockQRCodeUseCase.parseQRCodeContent(_barcodeKey, content) }.getOrNull()
         ?: runCatching { lockQRCodeUseCase.parseWifiQRCodeContent(_barcodeKey, content) }.getOrNull()
@@ -179,7 +176,7 @@ if (qrCodeContent == null) {
 }
 ```
 Before connecting to the lock, you can setup connection state observer:
-```
+```kotlin=
 private var _bleConnectionStateListener: Job? = null
 // Setup BLE connection state observer
 _bleConnectionStateListener?.cancel()
@@ -196,12 +193,10 @@ _bleConnectionStateListener = statefulConnection.connState
                         unless(
                             event.data != null
                         ) {
-                            /*
-                             * Possible errors:
-                             *     BleDisconnectedException
-                             *     IllegalTokenException
-                             *     DeviceRefusedException
-                             * /
+                             // Possible errors:
+                             //     BleDisconnectedException
+                             //     IllegalTokenException
+                             //     DeviceRefusedException
                         }
                     }
                 }
@@ -224,7 +219,7 @@ _bleConnectionStateListener = statefulConnection.connState
     .launchIn(viewModelScope)
 ```
 Connecting to lock
-```
+```kotlin=
 statefulConnection.establishConnection(
     macAddress = macAddress,     // get from QR code
     keyOne = keyOne,             // get from QR code
@@ -235,7 +230,7 @@ statefulConnection.establishConnection(
 ```
 ### Connecting to paired lock
 To connect to paired lock, you should use the saved LockConnectionInfo to connect to lock.
-```
+```kotlin=
 statefulConnection.establishConnection(
     macAddress = _lockConnectionInfo!!.macAddress!!,
     keyOne = _lockConnectionInfo!!.keyOne!!,
@@ -247,20 +242,18 @@ statefulConnection.establishConnection(
 ## UseCases
 ### IncomingSunionBleNotificationUseCase
 IncomingSunionBleNotificationUseCase collects device status notified by lock. You can setup the observer when lock connection is ready:
-```
+```kotlin=
 private var _bleDeviceStatusListener: Job? = null
 // Setup incoming device status observer
 _bleSunionBleNotificationListener?.cancel()
 _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
     .map { sunionBleNotification ->
         when (sunionBleNotification) {
-            is DeviceStatus.D6 -> {
+            is DeviceStatus -> {
             }
-            is DeviceStatus.A2 -> {
+            is Alert -> {
             }
-            is Alert.AF -> {
-            }
-            is Access.A9 -> {             
+            is Access -> {            
             }
             else -> { 
                 _currentDeviceStatus = DeviceStatus.UNKNOWN 
@@ -274,12 +267,12 @@ _bleSunionBleNotificationListener = IncomingSunionBleNotificationUseCase()
 ```
 ### DeviceStatusD6UseCase
 #### Query device status from lock
-```
-operator fun invoke(): Flow<DeviceStatus.D6>
+```kotlin=
+suspend operator fun invoke(): DeviceStatus.D6
 ```
 Example
-```
-deviceStatusD6UseCase()
+```kotlin=
+flow { emit(deviceStatusD6UseCase()) }
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -296,8 +289,8 @@ Exceptions
 
 #### Set LockState
 You should determine LockDirection before setting LockState. Please refer to LockDirectionUseCase.
-```
-setLockState(desiredState: Int): Flow<DeviceStatus.D6>
+```kotlin=
+suspend fun setLockState(desiredState: Int): DeviceStatus.D6
 ```
 Parameter
 
@@ -307,8 +300,8 @@ Parameter
 | desiredState     | Int     | 0: Unlocked ,<BR> 1: Locked     |
 
 Example
-```
-deviceStatusD6UseCase.setLockState(desiredState)
+```kotlin=
+flow { emit(deviceStatusD6UseCase.setLockState(desiredState)) }
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -327,12 +320,12 @@ Exceptions
 
 ### DeviceStatusA2UseCase
 #### Query device status from lock
-```
-operator fun invoke(): Flow<DeviceStatus.A2>
+```kotlin=
+suspend operator fun invoke(): DeviceStatus.A2
 ```
 Example
-```
-deviceStatusA2UseCase()
+```kotlin=
+flow { emit(deviceStatusA2UseCase()) }
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -348,8 +341,8 @@ Exceptions
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Set LockState
-```
-setLockState(state: Int): Flow<DeviceStatus.A2>
+```kotlin=
+suspend fun setLockState(state: Int): DeviceStatus.A2
 ```
 Parameter
 
@@ -359,8 +352,8 @@ Parameter
 | state     | Int     | 0: Unlocked ,<BR> 1: Locked     |
 
 Example
-```
-deviceStatusA2UseCase.setLockState(state)
+```kotlin=
+flow { emit(deviceStatusA2UseCase.setLockState(state)) }
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -378,8 +371,8 @@ Exceptions
 | IllegalArgumentException     | Unknown desired lock state.     |
 
 #### Set SecurityBolt
-```
-setSecurityBolt(state: Int): Flow<DeviceStatus.A2>
+```kotlin=
+suspend fun setSecurityBolt(state: Int): DeviceStatus.A2
 ```
 Parameter
 
@@ -389,8 +382,8 @@ Parameter
 | state     | Int     | 0: NotProtrue ,<BR> 1: Protrude     |
 
 Example
-```
-deviceStatusA2UseCase.setSecurityBolt(state)
+```kotlin=
+flow { emit(deviceStatusA2UseCase.setSecurityBolt(state)) }
     .map { deviceStatus ->
         updateStatus(deviceStatus)
     }
@@ -408,12 +401,12 @@ Exceptions
 
 ### AdminCodeUseCase
 #### Check if admin code has been set
-```
-isAdminCodeExists(): Flow<Boolean>
+```kotlin=
+suspend fun isAdminCodeExists(): Boolean
 ```
 Example
-```
-adminCodeUseCase.isAdminCodeExists()
+```kotlin=
+flow { emit(adminCodeUseCase.isAdminCodeExists()) }
     .map { result ->
         // result = true when admin code exists
     }
@@ -427,8 +420,8 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
 #### Create admin code
-```
-createAdminCode(code: String): Flow<Boolean>
+```kotlin=
+suspend fun createAdminCode(code: String): Boolean
 ```
 Parameter
 | Parameter | Type | Description |
@@ -436,8 +429,8 @@ Parameter
 | code     | String     | The admin code you want to create.    |
 
 Example
-```
-adminCodeUseCase.createAdminCode("0000")
+```kotlin=
+flow { emit(adminCodeUseCase.createAdminCode(code)) }
     .map { result ->
         // result = true when succeed
     }
@@ -453,8 +446,8 @@ Exceptions
 | IllegalArgumentException     | Admin code must be 4-8 digits.     |
 
 #### Update admin code
-```
-updateAdminCode(oldCode: String, newCode: String): Flow<Boolean>
+```kotlin=
+suspend fun updateAdminCode(oldCode: String, newCode: String):Boolean
 ```
 
 Parameters
@@ -464,8 +457,8 @@ Parameters
 | newCode     | String     | The new admin code.    |
 
 Example
-```
-adminCodeUseCase.updateAdminCode(oldCode, newCode)
+```kotlin=
+ flow { emit(adminCodeUseCase.updateAdminCode(oldCode, newCode)) }
     .map { result ->
         // result = true when succeed
     }
@@ -482,13 +475,13 @@ Exceptions
 
 ### LockDirectionUseCase
 LockDirectionUseCase requests lock to determine LockDirection.
-```
-operator fun invoke(): Flow<DeviceStatus.DeviceStatus>
+```kotlin=
+suspend operator fun invoke(): DeviceStatus
 ```
 
 Example
-```
-lockDirectionUseCase()
+```kotlin=
+flow { emit(lockDirectionUseCase()) }
     .map { deviceStatus ->
         when (deviceStatus) {
             is DeviceStatus.D6 -> {
@@ -516,13 +509,13 @@ Exceptions
 
 ### LockTimeUseCase
 #### Get time of lock
-```
-getTime(): Flow<Int>
+```kotlin=
+suspend fun getTime(): Int
 ```
 
 Example
-```
-lockTimeUseCase.getTime()
+```kotlin=
+flow { emit(lockTimeUseCase.getTime()) }
     .map { timeStamp ->
         // return unix time stamp
     }
@@ -537,8 +530,8 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
 #### Set time of lock
-```
-setTime(timeStamp: Long): Flow<Boolean>
+```kotlin=
+suspend fun setTime(timeStamp: Long): Boolean
 ```
 
 Parameter
@@ -547,10 +540,9 @@ Parameter
 | timeStamp     | Long     | Unix time stamp    |
 
 Example
-```
+```kotlin=
 // Set lock time to now
-lockTimeUseCase.setTime(Instant.now().atZone(ZoneId.systemDefault()).toEpochSecond())
-    .map { result ->
+flow { emit(lockTimeUseCase.setTime(Instant.now().atZone(ZoneId.systemDefault()).toEpochSecond())) }
         // result = true when succeed
     }
     .flowOn(Dispatchers.IO)
@@ -564,8 +556,8 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
 #### Set timezone of lock
-```
-setTimeZone(timeZone: String): Flow<Boolean>
+```kotlin=
+suspend fun setTimeZone(timezone: String): Boolean
 ```
 
 Parameter
@@ -574,9 +566,9 @@ Parameter
 | timezone     | String     | Time-zone ID, such as Asia/Taipei.    |
 
 Example
-```
+```kotlin=
 // Set timezone to system default
-lockTimeUseCase.setTimeZone(ZoneId.systemDefault().id)
+flow { emit(lockTimeUseCase.setTimeZone(ZoneId.systemDefault().id)) }
     .map { result ->
         // result = true when succeed
     }
@@ -594,13 +586,13 @@ Exception
 
 ### LockNameUsecase
 #### Get lock name
-```
-getName(): Flow<String>
+```kotlin=
+suspend fun getName():String
 ```
 
 Example
-```
-lockNameUseCase.getName()
+```kotlin=
+flow { emit(lockNameUseCase.getName()) }
     .map { name ->
         // return lock name
     }
@@ -615,8 +607,8 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
 #### Set lock name
-```
-setName(name: String): Flow<Boolean>
+```kotlin=
+suspend fun setName(name: String): Boolean
 ```
 
 Parameter
@@ -625,8 +617,8 @@ Parameter
 | name     | String     | Lock name    |
 
 Example
-```
-lockNameUseCase.setName(name)
+```kotlin=
+flow { emit(lockNameUseCase.setName(name)) }
     .map { result ->
         // result = true when succeed
     }
@@ -645,13 +637,13 @@ Exception
 #### Query lock config
 Please refer to [LockConfigD4](###LockConfigD4)
 
-```
-query(): Flow<LockConfig.D4>
+```kotlin=
+suspend fun query(): LockConfig.D4
 ```
 
 Example
-```
-lockConfigD4UseCase.query()
+```kotlin=
+flow { emit(lockConfigD4UseCase.query()) }
     .map { lockConfig ->
         // return lock config
     }
@@ -668,8 +660,8 @@ Exception
 
 
 #### Turn on/off key press beep
-```
-setKeyPressBeep(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setKeyPressBeep(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -678,8 +670,8 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-lockConfigD4UseCase.setKeyPressBeep(isSoundOn)
+```kotlin=
+flow { emit(lockConfigD4UseCase.setKeyPressBeep(isSoundOn)) }
     .map { result ->
         // return true when succeed
     }
@@ -695,8 +687,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Turn on/off vacation mode
-```
-setVactionMode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setVacationMode(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -705,8 +697,8 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-lockConfigD4UseCase.setVactionMode(isVacationModeOn)
+```kotlin=
+flow { emit(lockConfigD4UseCase.setVacationMode(isVacationModeOn)) }
     .map { result ->
         // return true when succeed
     }
@@ -722,8 +714,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Turn on/off guiding code
-```
-setGuidingCode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setGuidingCode(isOn: Boolean):Boolean
 ```
 
 Parameter
@@ -732,8 +724,8 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-lockConfigD4UseCase.setGuidingCode(isGuidingCodeOn)
+```kotlin=
+flow { emit(lockConfigD4UseCase.setGuidingCode(isGuidingCodeOn)) }
     .map { result ->
         // return true when succeed
     }
@@ -749,8 +741,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Turn on/off auto lock
-```
-setAutoLock(isOn: Boolean, autoLockTime: Int): Flow<Boolean>
+```kotlin=
+suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean
 ```
 
 Parameter
@@ -760,8 +752,8 @@ Parameter
 | autoLockTime     | Int     | Auto lock delay time, 1 for 10s.    |
 
 Example
-```
-lockConfigD4UseCase.setAutoLock(isAutoLock, autoLockTime)
+```kotlin=
+flow { emit(lockConfigD4UseCase.setAutoLock(isAutoLock, autoLockTime)) }
     .map { result ->
         // return true when succeed
     }
@@ -778,8 +770,8 @@ Exception
 | IllegalArgumentException     | Auto lock time should be 1 ~ 90.     |
 
 #### Set lock location
-```
-setLocation(latitude: Double, longitude: Double): Flow<Boolean>
+```kotlin=
+suspend fun setLocation(latitude: Double, longitude: Double): Boolean
 ```
 
 Parameter
@@ -789,8 +781,8 @@ Parameter
 | longitude    | Double     | Longitude of lock location   |
 
 Example
-```
-lockConfigD4UseCase.setLocation(latitude = latitude, longitude = longitude)
+```kotlin=
+flow { emit(lockConfigD4UseCase.setLocation(latitude = latitude, longitude = longitude)) }
     .map { result ->
         // return true when succeed
     }
@@ -809,13 +801,13 @@ Exception
 #### Query lock config
 Please refer to [LockConfigA0](###LockConfigA0)
 
-```
-query(): Flow<LockConfig.A0>
+```kotlin=
+suspend fun query(): LockConfig.A0
 ```
 
 Example
-```
-lockConfigA0UseCase.query()
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
     .map { lockConfig ->
         // return lock config
     }
@@ -831,8 +823,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Set lock location
-```
-setLocation(latitude: Double, longitude: Double): Flow<Boolean>
+```kotlin=
+suspend fun setLocation(latitude: Double, longitude: Double): Boolean
 ```
 
 Parameter
@@ -842,8 +834,8 @@ Parameter
 | longitude    | Double     | Longitude of lock location   |
 
 Example
-```
-lockConfigA0UseCase.setLocation(latitude = latitude, longitude = longitude)
+```kotlin=
+flow { emit(lockConfigA0UseCase.setLocation(latitude = latitude, longitude = longitude)) }
     .map { result ->
         // return true when succeed
     }
@@ -859,8 +851,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Turn on/off guiding code
-```
-setGuidingCode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setGuidingCode(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -869,19 +861,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.guidingCode != BleV2Lock.GuidingCode.NOT_SUPPORT.value) {
-    val isGuidingCodeOn = configA0.guidingCode == BleV2Lock.GuidingCode.CLOSE.value
-        lockConfigA0UseCase.setGuidingCode(isGuidingCodeOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isGuidingCodeOn = lockConfig.guidingCode == BleV2Lock.GuidingCode.CLOSE.value
+        val result = lockConfigA0UseCase.setGuidingCode(isGuidingCodeOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -892,8 +882,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off virtual code
-```
-setVirtualCode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setVirtualCode(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -902,19 +892,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.virtualCode != BleV2Lock.VirtualCode.NOT_SUPPORT.value) {
-    val isVirtualCodeOn = configA0.virtualCode == BleV2Lock.VirtualCode.CLOSE.value
-        lockConfigA0UseCase.setVirtualCode(isVirtualCodeOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isVirtualCodeOn = lockConfig.virtualCode == BleV2Lock.VirtualCode.CLOSE.value
+        val result = lockConfigA0UseCase.setVirtualCode(isVirtualCodeOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -925,8 +913,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off 2FA
-```
-setTwoFA(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setTwoFA(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -935,19 +923,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.twoFA != BleV2Lock.TwoFA.NOT_SUPPORT.value) {
-    val isTwoFAOn = configA0.twoFA == BleV2Lock.TwoFA.CLOSE.value
-        lockConfigA0UseCase.setTwoFA(isTwoFAOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isTwoFAOn = lockConfig.twoFA == BleV2Lock.TwoFA.CLOSE.value
+        val result = lockConfigA0UseCase.setTwoFA(isTwoFAOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -958,8 +944,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off vacation mode
-```
-setVacationMode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setVacationMode(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -968,19 +954,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.vacationMode != BleV2Lock.VacationMode.NOT_SUPPORT.value) {
-    val isVacationModeOn = configA0.vacationMode == BleV2Lock.VacationMode.CLOSE.value
-    lockConfigA0UseCase.setVacationMode(isVacationModeOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isVacationModeOn = lockConfig.vacationMode == BleV2Lock.VacationMode.CLOSE.value
+        val result = lockConfigA0UseCase.setVacationMode(isVacationModeOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -991,8 +975,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off auto lock
-```
-setAutoLock(isOn: Boolean, autoLockTime: Int): Flow<Boolean>
+```kotlin=
+suspend fun setAutoLock(isOn: Boolean, autoLockTime: Int): Boolean
 ```
 
 Parameter
@@ -1002,22 +986,17 @@ Parameter
 | autoLockTime     | Int     | Auto lock delay time, between autoLockTimeUpperLimit and autoLockTimeLowerLimit. <br>0xFFFF: Not support |
 
 Example
-```
-if (configA0.autoLock != BleV2Lock.AutoLock.NOT_SUPPORT.value) {
-    val isAutoLock = configA0.autoLock == BleV2Lock.AutoLock.CLOSE.value
-    if (autoLockTime < configA0.autoLockTimeUpperLimit || autoLockTime > configA0.autoLockTimeLowerLimit) {
-        Timer.d("Set auto lock will fail because autoLockTime is not support value")
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isAutoLock = lockConfig.autoLock == BleV2Lock.AutoLock.CLOSE.value
+        val result = lockConfigA0UseCase.setAutoLock(isAutoLock, autoLockTime)
+        result
     }
-    lockConfigA0UseCase.setAutoLock(isAutoLock, autoLockTime)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -1029,8 +1008,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off operating sound
-```
-setOperatingSound(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setOperatingSound(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -1039,19 +1018,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.operatingSound != BleV2Lock.OperatingSound.NOT_SUPPORT.value) {
-    val isOperatingSoundOn = configA0.operatingSound == BleV2Lock.OperatingSound.CLOSE.value
-        lockConfigA0UseCase.setOperatingSound(isOperatingSoundOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isOperatingSoundOn = lockConfig.operatingSound == BleV2Lock.OperatingSound.CLOSE.value
+        val result = lockConfigA0UseCase.setOperatingSound(isOperatingSoundOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -1062,8 +1039,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off key press beep
-```
-setSoundValue(soundType: Int): Flow<Boolean>
+```kotlin=
+suspend fun setSoundValue(soundValue :Int): Boolean
 ```
 
 Parameter
@@ -1073,18 +1050,21 @@ Parameter
 
 
 Example
-```
-if (configA0.soundType != BleV2Lock.SoundType.NOT_SUPPORT.value) {
-    lockConfigA0UseCase.setSoundValue(configA0.soundType)
-        .map { result ->
-            // return true when succeed
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val value = when (lockConfig.soundType) {
+            0x01 -> if(lockConfig.soundValue == 100) 0 else 100
+            0x02 -> if(lockConfig.soundValue == 100) 50 else if(lockConfig.soundValue == 50) 0 else 100
+            else -> soundValue
         }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+        val result = lockConfigA0UseCase.setSoundValue(value)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -1095,8 +1075,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Turn on/off show fast track mode
-```
-setShowFastTrackMode(isOn: Boolean): Flow<Boolean>
+```kotlin=
+suspend fun setShowFastTrackMode(isOn: Boolean): Boolean
 ```
 
 Parameter
@@ -1105,19 +1085,17 @@ Parameter
 | isOn     | Boolean     | true<br>false    |
 
 Example
-```
-if (configA0.showFastTrackMode != BleV2Lock.ShowFastTrackMode.NOT_SUPPORT.value) {
-    val isShowFastTrackModeOn = configA0.showFastTrackMode == BleV2Lock.ShowFastTrackMode.CLOSE.value
-        lockConfigA0UseCase.setShowFastTrackMode(isShowFastTrackModeOn)
-        .map { result ->
-            // return true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
-}
+```kotlin=
+flow { emit(lockConfigA0UseCase.query()) }
+    .catch { Timer.e(it) }
+    .map { lockConfig ->
+        val isShowFastTrackModeOn = lockConfig.showFastTrackMode == BleV2Lock.ShowFastTrackMode.CLOSE.value
+        val result = lockConfigA0UseCase.setShowFastTrackMode(isShowFastTrackModeOn)
+        result
+    }
+    .catch { Timer.e(it) }
+    .flowOn(Dispatchers.IO)
+    .launchIn(viewModelScope)
 ```
 
 Exception
@@ -1129,8 +1107,8 @@ Exception
 
 ### LockUtilityUseCase
 #### Factory reset
-```
-factoryReset(adminCode: String): Flow<Boolean>
+```kotlin=
+suspend fun factoryReset(adminCode: String): Boolean
 ```
 
 Parameter
@@ -1139,8 +1117,8 @@ Parameter
 | adminCode     | String     | Admin code    |
 
 Example
-```
-lockUtilityUseCase.factoryReset(adminCode)
+```kotlin=
+flow { emit(lockUtilityUseCase.factoryReset(adminCode)) }
     .map { result ->
         // result = true when succeed
     }
@@ -1156,13 +1134,13 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Get firmware version
-```
-getFirmwareVersion(): Flow<String>
+```kotlin=
+suspend fun getFirmwareVersion(): String
 ```
 
 Example
-```
-lockUtilityUseCase.getFirmwareVersion()
+```kotlin=
+flow { emit(lockUtilityUseCase.getFirmwareVersion()) }
     .map { version ->
         // return version code
     }
@@ -1177,13 +1155,13 @@ Exception
 | NotConnectedException     | Mobile APP is not connected with lock.     |
 
 #### Get lock supported unlock types
-```
-getLockSupportedUnlockTypes(): Flow<BleV2Lock.SupportedUnlockType>
+```kotlin=
+suspend fun getLockSupportedUnlockTypes(): BleV2Lock.SupportedUnlockType
 ```
 
 Example
-```
-lockUtilityUseCase.getLockSupportedUnlockTypes()
+```kotlin=
+flow { emit(lockUtilityUseCase.getLockSupportedUnlockTypes()) }
     .map { result ->
         // supported unlock type
     }
@@ -1200,13 +1178,13 @@ Exception
 
 ### LockTokenUseCase
 #### Query token array
-```
-queryTokenArray(): Flow<List<Int>>
+```kotlin=
+suspend fun queryTokenArray(): List<Int>
 ```
 
 Example
-```
-lockTokenUseCase.queryTokenArray()
+```kotlin=
+flow { emit(lockTokenUseCase.queryTokenArray()) }
     .map { tokenArray ->
         // return useful token array index
     }
@@ -1222,8 +1200,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Query token
-```
-queryToken(index: Int): Flow<DeviceToken.PermanentToken>
+```kotlin=
+suspend fun queryToken(index: Int): DeviceToken.PermanentToken
 ```
 
 Parameter
@@ -1232,8 +1210,8 @@ Parameter
 | index     | Int     | Query token at index in array    |
 
 Example
-```
-lockTokenUseCase.queryToken(index)
+```kotlin=
+flow { emit(lockTokenUseCase.queryToken(index)) }
     .map { deviceToken ->
         if(deviceToken.isPermanent){
             // return permanent token
@@ -1253,8 +1231,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add one time token
-```
-addOneTimeToken(permission: String, name: String): Flow<AddUserResponse>
+```kotlin=
+suspend fun addOneTimeToken(permission: String, name: String): AddUserResponse
 ```
 
 Parameter
@@ -1264,8 +1242,8 @@ Parameter
 | name       | String     | Token name    |
 
 Example
-```
-lockTokenUseCase.addOneTimeToken(permission, name)
+```kotlin=
+flow { emit(lockTokenUseCase.addOneTimeToken(permission,name)) }
     .map { result ->
         // return add user response
     }
@@ -1281,8 +1259,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Edit token
-```
-editToken(index: Int, permission: String, name: String): Flow<Boolean>
+```kotlin=
+suspend fun editToken(index: Int, permission: String, name: String): Boolean
 ```
 
 Parameter
@@ -1293,8 +1271,8 @@ Parameter
 | name       | String     | Token name    |
 
 Example
-```
-lockTokenUseCase.editToken(index, permission, name)
+```kotlin=
+flow { emit(lockTokenUseCase.editToken(index, permission, name)) }
     .map { result ->
         result = true when succeed
     }
@@ -1310,8 +1288,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Delete token
-```
-deleteToken(index: Int, code: String = ""): Flow<Boolean>
+```kotlin=
+suspend fun deleteToken(index: Int, code: String = ""): Boolean
 ```
 
 Parameter
@@ -1321,8 +1299,8 @@ Parameter
 | code     | String  | Only delete permanent token need admin code    |
 
 Example
-```
-lockTokenUseCase.deleteToken(index, code)
+```kotlin=
+flow { emit(lockTokenUseCase.deleteToken(index, code)) }
     .map { result ->
         result = true when succeed
     }
@@ -1339,13 +1317,13 @@ Exception
 
 ### LockAccessCodeUseCase
 #### Get access code array
-```
-getAccessCodeArray(): Flow<List<Boolean>>
+```kotlin=
+suspend fun getAccessCodeArray(): List<Boolean>
 ```
 
 Example
-```
-lockAccessCodeUseCase.getAccessCodeArray()
+```kotlin=
+flow { emit(lockAccessCodeUseCase.getAccessCodeArray()) }
     .map { accessCodeArray ->
         // return accessCodeArray
     }
@@ -1361,8 +1339,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Query access code
-```
-queryAccessCode(index: Int): Flow<AccessCode>
+```kotlin=
+suspend fun queryAccessCode(index: Int): Access.Code
 ```
 
 Parameter
@@ -1371,8 +1349,8 @@ Parameter
 | index     | Int     | Query access code at index in array     |
 
 Example
-```
-lockAccessCodeUseCase.queryAccessCode(index)
+```kotlin=
+flow { emit(lockAccessCodeUseCase.queryAccessCode(index)) }
     .map { accessCode ->
         // return accessCode info
     }
@@ -1388,8 +1366,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add access code
-```
-addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean>
+```kotlin=
+suspend fun addAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean
 ```
 
 Parameter
@@ -1402,8 +1380,8 @@ Parameter
 | scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType) |
 
 Example
-```
-lockAccessCodeUseCase.addAccessCode(index, isEnabled, name, code, scheduleType)
+```kotlin=
+flow { emit(lockAccessCodeUseCase.addAccessCode(index, isEnabled, name, code, scheduleType)) }
     .map { result ->
         result = true when succeed
     }
@@ -1419,8 +1397,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Edit access code
-```
-editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Flow<Boolean>
+```kotlin=
+suspend fun editAccessCode(index: Int, isEnabled: Boolean, name: String, code: String, scheduleType: AccessScheduleType): Boolean {
 ```
 
 Parameter
@@ -1433,8 +1411,8 @@ Parameter
 | scheduleType | AccessScheduleType  | Please refer to [AccessScheduleType](###AccessScheduleType)|
 
 Example
-```
-lockAccessCodeUseCase.editAccessCode(index, isEnabled, name, code, scheduleType)
+```kotlin=
+flow { emit(lockAccessCodeUseCase.editAccessCode(index, isEnabled, name, code, scheduleType)) }
     .map { result ->
         result = true when succeed
     }
@@ -1450,8 +1428,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Delete access code
-```
-deleteAccessCode(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteAccessCode(index: Int): Boolean
 ```
 
 Parameter
@@ -1460,8 +1438,8 @@ Parameter
 | index    | Int     | Delete access code at index in array    |
 
 Example
-```
-lockAccessCodeUseCase.deleteAccessCode(index)
+```kotlin=
+flow { emit(lockAccessCodeUseCase.deleteAccessCode(index)) }
     .map { result ->
         result = true when succeed
     }
@@ -1478,22 +1456,19 @@ Exception
 
 ### LockAccessUseCase
 #### Get access code array
-```
-getAccessCodeArray(): Flow<List<Boolean>>
+```kotlin=
+suspend fun getAccessCodeArray(): List<Boolean>
 ```
 
 Example
-```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.getAccessCodeArray()
-        .map { accessCodeArray ->
-            // return accessCodeArray
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.getAccessCodeArray()) }
+    .map { accessCodeArray ->
+        // return accessCodeArray
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1505,8 +1480,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Query access code
-```
-queryAccessCode(index: Int): Flow<Access.A6>
+```kotlin=
+suspend fun queryAccessCode(index: Int): Access.A6
 ```
 
 Parameter
@@ -1515,8 +1490,8 @@ Parameter
 | index     | Int     | Query access code at index in array     |
 
 Example
-```
-lockAccessUseCase.queryAccessCode(index)
+```kotlin=
+flow { emit(lockAccessUseCase.queryAccessCode(index)) }
     .map { accessCode ->
         // return accessCode info
     }
@@ -1532,8 +1507,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add access code
-```
-addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
+```kotlin=
+suspend fun addAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Access.A7
 ```
 
 Parameter
@@ -1546,17 +1521,14 @@ Parameter
 | code         | String                  | Access code   |
 
 Example
-```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.addAccessCode(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = Access.A7
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.addAccessCode(index, isEnabled, scheduleType, name, code)) }
+    .map { result ->
+        result = Access.A7
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1568,8 +1540,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Edit access code
-```
-editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```kotlin=
+suspend fun editAccessCode(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Boolean
 ```
 
 Parameter
@@ -1582,17 +1554,14 @@ Parameter
 | code         | String                  | Access code   |
 
 Example
-```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.editAccessCode(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.editAccessCode(index, isEnabled, scheduleType, name, code)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1604,8 +1573,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Delete access code
-```
-deleteAccessCode(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteAccessCode(index: Int): Boolean
 ```
 
 Parameter
@@ -1614,17 +1583,14 @@ Parameter
 | index    | Int     | Delete access code at index in array    |
 
 Example
-```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCodeQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.deleteAccessCode(index)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deleteAccessCode(index)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1636,22 +1602,19 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Get access card array
-```
-getAccessCardArray(): Flow<List<Boolean>>
+```kotlin=
+suspend fun getAccessCardArray(): List<Boolean>
 ```
 
 Example
-```
-if(lockSupportedTypes.accessCodeQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.getAccessCardArray()
-        .map { accessCardArray ->
-            // return accessCardArray
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.getAccessCardArray()) }
+    .map { accessCardArray ->
+        // return accessCardArray
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1663,8 +1626,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Query access card
-```
-queryAccessCard(index: Int): Flow<Access.A6>
+```kotlin=
+suspend fun queryAccessCard(index: Int): Access.A6
 ```
 
 Parameter
@@ -1673,8 +1636,8 @@ Parameter
 | index     | Int     | Query access card at index in array     |
 
 Example
-```
-lockAccessUseCase.queryAccessCard(index)
+```kotlin=
+flow { emit(lockAccessUseCase.queryAccessCard(index)) }
     .map { accessCard ->
         // return accessCard info
     }
@@ -1690,8 +1653,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add access card
-```
-addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
+```kotlin=
+suspend fun addAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Access.A7
 ```
 
 Parameter
@@ -1704,17 +1667,14 @@ Parameter
 | code         | String                  | Access card   |
 
 Example
-```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.addAccessCard(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = Access.A7
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.addAccessCard(index, isEnabled, scheduleType, name, code)) }
+    .map { result ->
+        result = Access.A7
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1726,8 +1686,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Edit access card
-```
-editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```kotlin=
+suspend fun editAccessCard(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: ByteArray): Boolean
 ```
 
 Parameter
@@ -1740,17 +1700,14 @@ Parameter
 | code         | String                  | Access code   |
 
 Example
-```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.editAccessCard(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.editAccessCard(index, isEnabled, scheduleType, name, code)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1762,8 +1719,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Delete access card
-```
-deleteAccessCode(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteAccessCard(index: Int): Boolean
 ```
 
 Parameter
@@ -1772,17 +1729,14 @@ Parameter
 | index    | Int     | Delete access code at index in array    |
 
 Example
-```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.deleteAccessCard(index)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deleteAccessCard(index)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1794,8 +1748,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Device get access card
-```
-deviceGetAccessCard(state:Int, index: Int): Flow<Access.A9>
+```kotlin=
+suspend fun deviceGetAccessCard(index: Int): Access.A9
 ```
 
 Parameter
@@ -1805,17 +1759,14 @@ Parameter
 | index    | Int     | Read access card code index    |
 
 Example
-```
-if(lockSupportedTypes.accessCardQuantity != BleV2Lock.AccessCardQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.deviceGetAccessCard(state, index)
-        .map { result ->
-            result = Access.A9
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deviceGetAccessCard(index)) }
+    .map { result ->
+        result = Access.A9
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1827,22 +1778,19 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Get fingerprint array
-```
-getFingerprintArray(): Flow<List<Boolean>>
+```kotlin=
+suspend fun getFingerprintArray(): List<Boolean>
 ```
 
 Example
-```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.getFingerprintArray()
-        .map { fingerprintArray ->
-            // return fingerprintArray
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.getFingerprintArray()) }
+    .map { fingerprintArray ->
+        // return fingerprintArray
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1854,8 +1802,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Query fingerprint
-```
-queryFingerprint(index: Int): Flow<Access.A6>
+```kotlin=
+suspend fun queryFingerprint(index: Int): Access.A6
 ```
 
 Parameter
@@ -1864,8 +1812,8 @@ Parameter
 | index     | Int     | Query fingerprint at index in array     |
 
 Example
-```
-lockAccessUseCase.queryFingerprint(index)
+```kotlin=
+flow { emit(lockAccessUseCase.queryFingerprint(index)) }
     .map { fingerprint ->
         // return fingerprint info
     }
@@ -1881,8 +1829,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add fingerprint
-```
-addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
+```kotlin=
+suspend fun addFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7
 ```
 
 Parameter
@@ -1895,17 +1843,14 @@ Parameter
 | code         | String                  | Fingerprint   |
 
 Example
-```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.addFingerprint(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = Access.A7
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.addFingerprint(index, isEnabled, scheduleType, name)) }
+    .map { result ->
+        result = Access.A7
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1917,8 +1862,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Edit fingerprint
-```
-editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```kotlin=
+suspend fun editFingerprint(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean
 ```
 
 Parameter
@@ -1931,17 +1876,14 @@ Parameter
 | code         | String                  | Fingerprint   |
 
 Example
-```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.editFingerprint(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.editFingerprint(index, isEnabled, scheduleType, name)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1953,8 +1895,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Delete fingerprint
-```
-deleteFingerprint(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteFingerprint(index: Int): Boolean
 ```
 
 Parameter
@@ -1963,17 +1905,14 @@ Parameter
 | index    | Int     | Delete fingerprint at index in array    |
 
 Example
-```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.deleteFingerprint(index)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deleteFingerprint(index)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -1985,8 +1924,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Device get fingerprint
-```
-deviceGetFingerprint(state:Int, index: Int): Flow<Access.A9>
+```kotlin=
+suspend fun deviceGetFingerprint(index: Int): Access.A9
 ```
 
 Parameter
@@ -1996,17 +1935,14 @@ Parameter
 | index    | Int     | Read fingerprint code index    |
 
 Example
-```
-if(lockSupportedTypes.fingerprintQuantity != BleV2Lock.FingerprintQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.deviceGetFingerprint(state, index)
-        .map { result ->
-            result = Access.A9
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deviceGetFingerprint(index)) }
+    .map { result ->
+        result = Access.A9
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2018,22 +1954,19 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Get face array
-```
-getFaceArray(): Flow<List<Boolean>>
+```kotlin=
+suspend fun getFaceArray(): List<Boolean>
 ```
 
 Example
-```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.getFaceArray()
-        .map { faceArray ->
-            // return faceArray
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.getFaceArray()) }
+    .map { faceArray ->
+        // return faceArray
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2045,8 +1978,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Query face
-```
-queryFace(index: Int): Flow<Access.A6>
+```kotlin=
+suspend fun queryFace(index: Int): Access.A6
 ```
 
 Parameter
@@ -2055,8 +1988,8 @@ Parameter
 | index     | Int     | Query face at index in array     |
 
 Example
-```
-lockAccessUseCase.queryFace(index)
+```kotlin=
+flow { emit(lockAccessUseCase.queryFace(index)) }
     .map { face ->
         // return face info
     }
@@ -2072,8 +2005,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Add face
-```
-addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Access.A7>
+```kotlin=
+suspend fun addFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Access.A7
 ```
 
 Parameter
@@ -2086,17 +2019,14 @@ Parameter
 | code         | String                  | Face   |
 
 Example
-```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.addFace(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = Access.A7
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.addFace(index, isEnabled, scheduleType, name)) }
+    .map { result ->
+        result = Access.A7
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2108,8 +2038,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Edit face
-```
-editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String, code: String): Flow<Boolean>
+```kotlin=
+suspend fun editFace(index: Int, isEnable: Boolean, scheduleType: AccessScheduleType, name: String): Boolean
 ```
 
 Parameter
@@ -2122,17 +2052,14 @@ Parameter
 | code         | String                  | Face   |
 
 Example
-```
-if(lockSupportedTypes.faceQuantity != BleV2Lock.FaceQuantity.NOT_SUPPORT.value) {
-    lockAccessUseCase.editFace(index, isEnabled, scheduleType, name, code)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.editFace(index, isEnabled, scheduleType, name)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2144,8 +2071,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Delete face
-```
-deleteFace(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteFace(index: Int): Boolean
 ```
 
 Parameter
@@ -2154,17 +2081,14 @@ Parameter
 | index    | Int     | Delete face at index in array    |
 
 Example
-```
-if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
-    lockAccessUseCase.deleteFace(index)
-        .map { result ->
-            result = true when succeed
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deleteFace(index)) }
+    .map { result ->
+        result = true when succeed
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2176,8 +2100,8 @@ Exception
 | LockFunctionNotSupportException | Lock function not support.|
 
 #### Device get face
-```
-deviceGetFace(state:Int, index: Int): Flow<Access.A9>
+```kotlin=
+suspend fun deviceGetFace(index: Int): Access.A9
 ```
 
 Parameter
@@ -2187,17 +2111,14 @@ Parameter
 | index    | Int     | Read face code index    |
 
 Example
-```
-if(lockSupportedTypes.face != BleV2Lock.Face.NOT_SUPPORT.value) {
-    lockAccessUseCase.deviceGetFace(state, index)
-        .map { result ->
-            result = Access.A9
-        }
-        .flowOn(Dispatchers.IO)
-        .catch { Timer.e(it) }
-        .launchIn(viewModelScope)
-} else {
-    throw LockStatusException.LockFunctionNotSupportException()
+```kotlin=
+flow { emit(lockAccessUseCase.deviceGetFace(index)) }
+    .map { result ->
+        result = Access.A9
+    }
+    .flowOn(Dispatchers.IO)
+    .catch { Timer.e(it) }
+    .launchIn(viewModelScope)
 }
 ```
 
@@ -2210,13 +2131,13 @@ Exception
 
 ### LockEventLogUseCase
 #### Get event quantity
-```
-getEventQuantity(): Flow<Int>
+```kotlin=
+suspend fun getEventQuantity(): Int
 ```
 
 Example
-```
-lockEventLogUseCase.getEventQuantity()
+```kotlin=
+flow { emit(lockEventLogUseCase.getEventQuantity()) }
     .map { result ->
         // return event quantity
     }
@@ -2232,8 +2153,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Get event
-```
-getEvent(index: Int): Flow<EventLog>
+```kotlin=
+suspend fun getEvent(index: Int): EventLog
 ```
 
 Parameter
@@ -2242,8 +2163,8 @@ Parameter
 | index     | Int     | Get event log at index in array |
 
 Example
-```
-lockEventLogUseCase.getEvent(index)
+```kotlin=
+flow { emit(lockEventLogUseCase.getEvent(index)) }
     .map{ eventLog ->
         // return eventLog
     }
@@ -2259,8 +2180,8 @@ Exception
 | AdminCodeNotSetException     | Admin code has not been set.     |
 
 #### Delete Event
-```
-deleteEvent(index: Int): Flow<Boolean>
+```kotlin=
+suspend fun deleteEvent(index: Int): Boolean
 ```
 
 Parameter
@@ -2269,8 +2190,8 @@ Parameter
 | index    | Int     | Delete event log at index in array |
 
 Example
-```
-lockEventLogUseCase.deleteEvent(index)
+```kotlin=
+flow { emit(lockEventLogUseCase.deleteEvent(index)) }
     .map { result ->
         result = true when succeed
     }

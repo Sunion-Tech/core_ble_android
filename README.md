@@ -161,6 +161,8 @@ class MainActivity : ComponentActivity() {
     ...
     >
 ```
+## SDK add lock flow (Android)
+![](https://i.imgur.com/OUfyDD7.jpg)
 ## Quick start
 ### Pairing with lock
 To pair with lock, you can get lock connection information by scanning QR code of lock. The content of QR code is encryted with BARCODE_KEY, you can decrypt the contet with the following example code:

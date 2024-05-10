@@ -48,7 +48,13 @@ fun ByteArray.accessByteArrayToString(): String{
 }
 
 fun ByteArray.toAsciiString(): String {
-    return this.toString(Charsets.US_ASCII)
+    val filteredBytes = this.filter { it != 0.toByte() }.toByteArray()
+    return filteredBytes.toString(Charsets.US_ASCII)
+}
+
+fun ByteArray.nameToString(): String {
+    val filteredBytes = this.filter { it != 0.toByte() }.toByteArray()
+    return String(filteredBytes)
 }
 
 fun ByteArray.extendedByteArray(length: Int): ByteArray {

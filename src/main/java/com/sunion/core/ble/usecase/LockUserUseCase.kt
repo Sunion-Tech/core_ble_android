@@ -57,7 +57,7 @@ class LockUserUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun getUser(index: Int): User.NinetyOne {
+    suspend fun getUser(index: Int): User {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::getUser.name
         val function = 0x91
@@ -77,7 +77,7 @@ class LockUserUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyOne
+                ) as User
                 result
             }
             .flowOn(Dispatchers.IO)

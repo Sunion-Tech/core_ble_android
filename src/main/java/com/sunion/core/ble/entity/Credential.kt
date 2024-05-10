@@ -9,10 +9,10 @@ sealed class Credential: SunionBleNotification() {
         val format: Int = BleV3Lock.CredentialFormat.CREDENTIAL.value,
         val index: Int,
         val userIndex: Int? = null,
-        val status: Int? = null,
+        val status: Int? = BleV3Lock.UserStatus.OCCUPIED_ENABLED.value,
         val type: Int? = null,
         val code: ByteArray? = null,
-        val codeString: String? = if(type == BleV3Lock.CredentialType.PIN.value) code?.toAsciiString() else code?.accessByteArrayToString()
+        val codeString: String? = code?.accessByteArrayToString()
     ) : Credential()
 
     data class NinetyFiveUser(
@@ -25,6 +25,11 @@ sealed class Credential: SunionBleNotification() {
         val action: Int,
         val userIndex: Int,
         val credentialDetail: BleV3Lock.CredentialDetail? = null,
+    ) : Credential()
+
+    data class NinetySix(
+        val index: Int,
+        val isSuccess: Boolean,
     ) : Credential()
 
     data class NinetySeven(

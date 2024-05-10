@@ -346,9 +346,10 @@ class BleCmdRepository @Inject constructor(){
             outputStream.write(schedule.endMinute)
         }
         user92Cmd.yearDayScheduleList?.forEach { schedule ->
+            Timber.d("ValidTimeRange status: ${schedule.status}, start: ${schedule.start}, end: ${schedule.end}")
             outputStream.write(schedule.status)
-            outputStream.write(schedule.start.toLittleEndianByteArrayInt32())
-            outputStream.write(schedule.end.toLittleEndianByteArrayInt32())
+            outputStream.write(schedule.start.limitValidTimeRange().toLittleEndianByteArrayInt32())
+            outputStream.write(schedule.end.limitValidTimeRange().toLittleEndianByteArrayInt32())
         }
         return outputStream.toByteArray()
     }
@@ -578,13 +579,17 @@ class BleCmdRepository @Inject constructor(){
                         // User.NinetyOne
                         resolve91(byteArrayData)
                     }
-                    0x92, 0x93, 0x96, 0x98 -> {
+                    0x92, 0x93 -> {
                         // User.NinetyTwo
                         resolve92(byteArrayData)
                     }
                     0x95 -> {
                         // User.NinetyFive
                         resolve95(byteArrayData)
+                    }
+                    0x96, 0x98 -> {
+                        // Credential.NinetySix
+                        resolve96(byteArrayData)
                     }
                     0x97 -> {
                         // User.NinetySeven
@@ -917,7 +922,7 @@ class BleCmdRepository @Inject constructor(){
     private fun resolve91(data: ByteArray): User.NinetyOne {
         val functionName = ::resolve91.name
         val index = data.copyOfRange(0, 2).toInt()
-        val name = String(data.copyOfRange(2, 12))
+        val name = data.copyOfRange(2, 12).nameToString()
         val status = data[12].unSignedInt()
         val type = data[13].unSignedInt()
         val credentialRule = data[14].unSignedInt()
@@ -993,7 +998,7 @@ class BleCmdRepository @Inject constructor(){
                     userIndex = data.copyOfRange(3, 5).toInt(),
                     status = data.copyOfRange(5, 6).toInt(),
                     type = data.copyOfRange(6, 7).toInt(),
-                    code = data.copyOfRange(7, 15)
+                    code = if(data.copyOfRange(6, 7).toInt() == BleV3Lock.CredentialType.PIN.value) data.copyOfRange(7, 15).toAsciiString().accessCodeToHex() else data.copyOfRange(7, 15)
                 )
             } else {
                 Credential.NinetyFiveCredential(
@@ -1011,7 +1016,7 @@ class BleCmdRepository @Inject constructor(){
                             index = data.copyOfRange(3 + i * 12, 5 + i * 12).toInt(),
                             status = data.copyOfRange(5 + i * 12, 6 + i * 12).toInt(),
                             type = data.copyOfRange(6 + i * 12, 7 + i * 12).toInt(),
-                            code = data.copyOfRange(7 + i * 12, 15 + i * 12)
+                            code = if(data.copyOfRange(6, 7).toInt() == BleV3Lock.CredentialType.PIN.value) data.copyOfRange(7 + i * 12, 15 + i * 12).toAsciiString().accessCodeToHex() else data.copyOfRange(7 + i * 12, 15 + i * 12)
                         )
                     )
                 }
@@ -1029,6 +1034,16 @@ class BleCmdRepository @Inject constructor(){
         }
         Timber.d("$functionName: $credential95")
         return credential95
+    }
+
+    private fun resolve96(data: ByteArray): Credential.NinetySix {
+        val functionName = ::resolve96.name
+        val credential96 = Credential.NinetySix(
+            index = data.copyOfRange(0, 2).toInt(),
+            isSuccess = data.component3().unSignedInt() == 1,
+        )
+        Timber.d("$functionName: $credential96")
+        return credential96
     }
 
     private fun resolve97(data: ByteArray): Credential.NinetySeven {

@@ -127,7 +127,7 @@ class LockCredentialUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyTwo
+                ) as Credential.NinetySix
                 result.isSuccess
             }
             .flowOn(Dispatchers.IO)
@@ -170,7 +170,7 @@ class LockCredentialUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyTwo
+                ) as Credential.NinetySix
                 result.isSuccess
             }
             .flowOn(Dispatchers.IO)
@@ -237,7 +237,7 @@ class LockCredentialUseCase @Inject constructor(
                     function,
                     statefulConnection.key(),
                     notification
-                ) as User.NinetyTwo
+                ) as Credential.NinetySix
                 result.isSuccess
             }
             .flowOn(Dispatchers.IO)

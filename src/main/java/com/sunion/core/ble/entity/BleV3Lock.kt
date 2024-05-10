@@ -291,16 +291,16 @@ data class BleV3Lock(
     )
 
     data class CredentialDetail(
-        val index: Int,
+        val index: Int = 0xFFFF,
         val status: Int = UserStatus.OCCUPIED_ENABLED.value,
         val type: Int,
         val code: ByteArray,
-        val codeString: String = if(type == CredentialType.PIN.value) code.toAsciiString() else code.accessByteArrayToString()
+        val codeString: String = code.accessByteArrayToString()
     )
 
     data class WeekDaySchedule(
         val status: Int = ScheduleStatus.AVAILABLE.value,
-        val dayMask: Int,
+        val dayMask: Int, // matter:1day for 1 schedule ,not matter:7day for 1 schedule
         val startHour: Int, // 0-23
         val startMinute: Int, // 0-59
         val endHour: Int, // 0-23

@@ -22,6 +22,117 @@ class LockUserUseCase @Inject constructor(
     private val statefulConnection: ReactiveStatefulConnection
 ) {
     private val className = this::class.simpleName ?: "LockUserUseCase"
+    private var userAbility: BleV3Lock.UserAbility? = null
+    private var userCount: BleV3Lock.UserCount? = null
+
+    suspend fun getUserAbility(): BleV3Lock.UserAbility {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::getUserAbility.name
+        if(userAbility != null) {
+            return userAbility as BleV3Lock.UserAbility
+        } else {
+            val function = 0x85
+            val sendCmd = bleCmdRepository.createCommand(
+                function = function,
+                key = statefulConnection.key(),
+            )
+            return userAbility ?: statefulConnection
+                .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+                .filter { notification ->
+                    bleCmdRepository.isValidNotification(
+                        statefulConnection.key(),
+                        notification,
+                        function
+                    )
+                }
+                .take(1)
+                .map { notification ->
+                    val result = bleCmdRepository.resolve(
+                        function,
+                        statefulConnection.key(),
+                        notification
+                    ) as BleV3Lock.UserAbility
+                    userAbility = result
+                    result
+                }
+                .flowOn(Dispatchers.IO)
+                .catch { e ->
+                    Timber.e("$functionName exception $e")
+                    throw e
+                }
+                .single()
+        }
+    }
+
+    suspend fun getUserCount(): BleV3Lock.UserCount {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::getUserCount.name
+        if(userCount != null) {
+            return userCount as BleV3Lock.UserCount
+        } else {
+            val function = 0x86
+            val sendCmd = bleCmdRepository.createCommand(
+                function = function,
+                key = statefulConnection.key(),
+            )
+            return statefulConnection
+                .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+                .filter { notification ->
+                    bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+                }
+                .take(1)
+                .map { notification ->
+                    val result = bleCmdRepository.resolve(
+                        function,
+                        statefulConnection.key(),
+                        notification
+                    ) as BleV3Lock.UserCount
+                    userCount = result
+                    result
+                }
+                .flowOn(Dispatchers.IO)
+                .catch { e ->
+                    Timber.e("$functionName exception $e")
+                    throw e
+                }
+                .single()
+        }
+    }
+
+    suspend fun isMatterDevice(): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::isMatterDevice.name
+        val function = 0x87
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    fun clearUser() {
+        userAbility = null
+        userCount = null
+    }
 
     suspend fun getUserArray(): List<Boolean> {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()

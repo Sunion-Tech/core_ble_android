@@ -17,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class BleScanUseCase @Inject constructor(
     private val rxBleClient: RxBleClient,
+    private val powerManager: PowerManager,
 ) : UseCase.Execute<Unit, Observable<ScanResult>> {
 
     override fun invoke(input: Unit): Observable<ScanResult> {
@@ -66,5 +67,28 @@ class BleScanUseCase @Inject constructor(
                 manufacturerData != null && manufacturerData.isNotEmpty() && manufacturerData.copyOfRange(0, 8).toHexString() == uuid
             }
 
+    }
+
+    fun longScan(macAddress: String? = null, uuid: String? = null): Observable<ScanResult> {
+        if(macAddress.isNullOrBlank() && uuid.isNullOrBlank()){
+            throw IllegalArgumentException("Either macAddress or uuid must be provided")
+        }
+        val scanSettings = if(powerManager.isInteractive) {
+            ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build()
+        } else {
+            ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                .build()
+        }
+        val scanFilter = if(uuid?.isNotBlank() == true) {
+            Timber.d("Scanning of Lock uuid: $uuid started, the device screen isInteractive: ${powerManager.isInteractive}")
+            ScanFilter.Builder().setManufacturerData(0x0CE3, uuid.hexToByteArray()).build()
+        } else {
+            Timber.d("Scanning of Lock macAddress: $macAddress started, the device screen isInteractive: ${powerManager.isInteractive}")
+            ScanFilter.Builder().setDeviceAddress(macAddress).build()
+        }
+        return rxBleClient.scanBleDevices(scanSettings, scanFilter)
     }
 }

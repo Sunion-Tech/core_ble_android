@@ -221,23 +221,23 @@ class BleCmdRepository @Inject constructor(){
         data: ByteArray = byteArrayOf()
     ): ByteArray {
         return when (function) {
-            0x80, 0x82, 0x85, 0x86, 0x87, 0x90, 0x94, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xC9, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
+            0x80, 0x82, 0x85, 0x86, 0x87, 0x8A, 0x90, 0x94, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xC9, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF -> {
                 cmd(function, key)
             }
-            0x81, 0x92, 0x96, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4-> {
+            0x81, 0x8C, 0x8D, 0x8E, 0x92, 0x96, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4-> {
                 cmd(function, key, data.size, data)
             }
             0x83, 0x84, 0x91, 0x93, 0x98, 0xA3 -> {
                 cmd(function, key, 2, data)
+            }
+            0x8B, 0x99, 0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE5, 0xEB, 0xEE -> {
+                cmd(function, key, 1, data)
             }
             0x95, 0xA6, 0xAA -> {
                 cmd(function, key, 3, data)
             }
             0x97, 0xA9, 0xD3 -> {
                 cmd(function, key, 4, data)
-            }
-            0x99, 0xA5, 0xB1, 0xC2, 0xD7, 0xE1, 0xE2, 0xE5, 0xEB, 0xEE -> {
-                cmd(function, key, 1, data)
             }
             0xA1 -> {
                 cmd(function, key, 28, data)
@@ -555,7 +555,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.EightyTwo & 0x83
                         resolve82(byteArrayData)
                     }
-                    0x84, 0x87, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF4 -> {
+                    0x84, 0x87, 0x8D, 0X8E, 0x9D, 0xA1, 0xC7, 0xC8, 0xCB, 0xCE, 0xCF, 0xD1, 0xD3, 0xD5, 0xD9, 0xE2, 0xE8, 0xEC, 0xED, 0xEE, 0xEF, 0xF4 -> {
                         // Boolean
                         when (booleanData) {
                             0x01 -> true
@@ -570,6 +570,14 @@ class BleCmdRepository @Inject constructor(){
                     0x86 -> {
                         // BleV3Lock.UserCount
                         resolve86(byteArrayData)
+                    }
+                    0x8A, 0xC0, 0xC1, 0xD8, 0xE4, 0xEA -> {
+                        // ByteArray
+                        byteArrayData
+                    }
+                    0x8B -> {
+                        // DeviceToken.PermanentToken
+                        resolve8B(byteArrayData)
                     }
                     0x90, 0x94 -> {
                         // User.Ninety
@@ -635,10 +643,6 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceStatus.B0 & 0xB1
                         resolveB0(byteArrayData)
                     }
-                    0xC0, 0xC1, 0xD8, 0xE4, 0xEA -> {
-                        // ByteArray
-                        byteArrayData
-                    }
                     0xC2 -> {
                         // BleV3Lock.LockVersion
                         resolveC2(byteArrayData)
@@ -679,7 +683,7 @@ class BleCmdRepository @Inject constructor(){
                         // DeviceToken.PermanentToken
                         resolveE5(byteArrayData)
                     }
-                    0xE6 -> {
+                    0xE6, 0x8C -> {
                         // AddUserResponse
                         resolveE6(byteArrayData)
                     }
@@ -908,6 +912,25 @@ class BleCmdRepository @Inject constructor(){
         )
         Timber.d("$functionName: $response")
         return response
+    }
+
+    private fun resolve8B(data: ByteArray): DeviceToken.PermanentToken {
+        val functionName = ::resolve8B.name
+        val nameLen = data.copyOfRange(12, 13).toInt()
+        val identityLen = data.copyOfRange(13, 14).toInt()
+        val bleUser = DeviceToken.PermanentToken(
+            isValid = data.component1().unSignedInt() == 1,
+            isPermanent = data.component2().unSignedInt() == 1,
+            isOwner = data.component3().unSignedInt() == 1,
+            permission = String(data.copyOfRange(3, 4)),
+            token = data.copyOfRange(4, 12).toHexString(),
+            nameLen = nameLen,
+            identityLen = identityLen,
+            name = String(data.copyOfRange(14, 14 + nameLen)),
+            identity = String(data.copyOfRange(14 + nameLen, 14 + nameLen + identityLen))
+        )
+        Timber.d("$functionName: $bleUser")
+        return bleUser
     }
 
     private fun resolve90(data: ByteArray): User.Ninety {

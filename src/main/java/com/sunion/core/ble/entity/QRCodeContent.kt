@@ -10,4 +10,5 @@ data class QRCodeContent(
     @SerializedName("S") val s: String?,
     @SerializedName("F") val f: String?,
     @SerializedName("L") val l: String?,
+    @SerializedName("U") val u: String?,
 )

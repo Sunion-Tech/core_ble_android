@@ -6,7 +6,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.sunion.core.ble.exception.NotConnectedException
 import com.jakewharton.rx.ReplayingShare
-import com.polidea.rxandroidble2.BuildConfig
 import com.polidea.rxandroidble2.NotificationSetupMode
 import com.polidea.rxandroidble2.RxBleClient
 import com.polidea.rxandroidble2.RxBleConnection
@@ -20,7 +19,6 @@ import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.exceptions.UndeliverableException
-import io.reactivex.functions.BiFunction
 import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.subjects.PublishSubject
 import kotlinx.coroutines.*
@@ -78,7 +76,7 @@ class ReactiveStatefulConnection @Inject constructor(
         get() = _lockConnectionInfo
 
     var keyTwo: String = ""
-    var rxDeviceToken = DeviceToken.PermanentToken(
+    private var rxDeviceToken = DeviceToken.PermanentToken(
         isValid = false,
         isPermanent = false,
         isOwner = false,
@@ -122,11 +120,11 @@ class ReactiveStatefulConnection @Inject constructor(
             }
             EventState.SUCCESS -> {
                 if (event?.status == EventState.SUCCESS && event.data?.first == true) {
-                    this.keyTwo = _lockConnectionInfo.keyTwo ?: bleHandShakeUseCase.keyTwoString
-                    this.macAddress = _lockConnectionInfo.macAddress
+                    this.keyTwo = lockConnectionInfo.keyTwo ?: bleHandShakeUseCase.keyTwoString
+                    this.macAddress = lockConnectionInfo.macAddress
                     this.rxDeviceToken = this.rxDeviceToken.copy(
-                        permission = _lockConnectionInfo.permission ?: bleHandShakeUseCase.permission,
-                        token = _lockConnectionInfo.permanentToken ?: bleHandShakeUseCase.permanentTokenString,
+                        permission = lockConnectionInfo.permission ?: bleHandShakeUseCase.permission,
+                        token = lockConnectionInfo.permanentToken ?: bleHandShakeUseCase.permanentTokenString,
                     )
                     _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTED) }
                 }
@@ -170,6 +168,7 @@ class ReactiveStatefulConnection @Inject constructor(
         keyOne: String,
         oneTimeToken: String,
         permanentToken: String?,
+        model: String,
         isSilentlyFail: Boolean
     ): Disposable {
         close()
@@ -189,6 +188,7 @@ class ReactiveStatefulConnection @Inject constructor(
             keyOne = keyOne,
             oneTimeToken = oneTimeToken,
             permanentToken = permanentToken,
+            model = model,
             keyTwo = null,
             permission = null
         )
@@ -255,12 +255,12 @@ class ReactiveStatefulConnection @Inject constructor(
         unless(permission.isNotBlank()) {
             connectionTimer.cancel()
             Timber.d("action after device token exchanged: connected with device: ${device.macAddress}, and the stateful connection has been shared: $connection")
-            _lockConnectionInfo = _lockConnectionInfo.copy(
+            _lockConnectionInfo = lockConnectionInfo.copy(
                 permission = permission,
                 keyTwo = bleHandShakeUseCase.keyTwoString,
                 permanentToken = bleHandShakeUseCase.permanentTokenString
             )
-            Timber.d("_lockConnectionInfo: $_lockConnectionInfo")
+            Timber.d("lockConnectionInfo: $lockConnectionInfo")
             // after token exchange, update successfully, and connection object had been shared,
             // the E5, D6 notification will emit to downstream
             // the E5 had been intercepted and had been stored in Room database,
@@ -317,7 +317,7 @@ class ReactiveStatefulConnection @Inject constructor(
                     .andThen(rxConnection.queue(discoverServicesCustomOp))
                     .flatMap {
                         _connectionState.postValue(Event.ready(Pair(true, "")))
-                        bleHandShakeUseCase.invoke(_lockConnectionInfo, device, rxConnection)
+                        bleHandShakeUseCase.invoke(lockConnectionInfo, device, rxConnection)
                     }
             }
     }
@@ -330,11 +330,10 @@ class ReactiveStatefulConnection @Inject constructor(
                     NotificationSetupMode.DEFAULT
                 )
                     .flatMap { notification -> notification },
-                rxConnection.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, bytes).toObservable(),
-                BiFunction { notification: ByteArray, _: ByteArray ->
-                    notification
-                }
-            )
+                rxConnection.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, bytes).toObservable()
+            ) { notification: ByteArray, _: ByteArray ->
+                notification
+            }
         }
     }
 
@@ -353,19 +352,19 @@ class ReactiveStatefulConnection @Inject constructor(
         command: ByteArray,
         functionName: String
     ): Flow<ByteArray> {
-        return rxBleConnection!!
+        return rxBleConnection
             .setupNotification(NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
             .asFlow()
             .onStart {
                 _lockScope.launch(Dispatchers.IO) {
                     delay(200)
-                    rxBleConnection!!.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, command).toObservable()
+                    rxBleConnection.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, command).toObservable()
                         .asFlow().single()
                 }
             }
-            .onEach { notification ->
-                bleCmdRepository.decrypt(_lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
+            .onEach {
+                bleCmdRepository.decrypt(lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
                     ?.let {
                         Timber.d("cmd: ${it.toHexPrint()} by $functionName")
                     }
@@ -434,11 +433,11 @@ class ReactiveStatefulConnection @Inject constructor(
                     Observable.empty<Void>().delay(200, TimeUnit.MILLISECONDS)
                 }
             } catch (e: NoSuchMethodException) {
-                Observable.error<Void>(e)
+                Observable.error(e)
             } catch (e: IllegalAccessException) {
-                Observable.error<Void>(e)
+                Observable.error(e)
             } catch (e: InvocationTargetException) {
-                Observable.error<Void>(e)
+                Observable.error(e)
             }
         }
 

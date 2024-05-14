@@ -23,5 +23,8 @@ sealed class DeviceToken {
         val permission: String = PERMISSION_NONE,
         val token: String,
         val name: String,
+        val nameLen: Int = name.length,
+        val identity: String? = null,
+        val identityLen: Int? = identity?.length,
     ) : DeviceToken()
 }

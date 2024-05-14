@@ -44,7 +44,7 @@ interface StatefulConnection {
 
     fun isConnectedWithDevice(): Boolean
 
-    fun establishConnection(macAddress: String, keyOne: String, oneTimeToken: String, permanentToken: String?, isSilentlyFail: Boolean): Disposable
+    fun establishConnection(macAddress: String, keyOne: String, oneTimeToken: String, permanentToken: String?, model: String, isSilentlyFail: Boolean): Disposable
 
     fun establishBleConnectionAndRequestMtu(device: RxBleDevice): Observable<RxBleConnection>
 

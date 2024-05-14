@@ -32,6 +32,7 @@ class BleHandShakeUseCase @Inject constructor(
         val keyOne = input1.keyOne.hexToByteArray()
         val connectionToken = if (input1.permanentToken.isNullOrBlank()) input1.oneTimeToken.hexToByteArray() else input1.permanentToken!!.hexToByteArray()
         return bleHandshake(
+            lockInfo = input1,
             connection = input3,
             keyOne = keyOne,
             token = connectionToken
@@ -39,6 +40,7 @@ class BleHandShakeUseCase @Inject constructor(
     }
 
     fun bleHandshake(
+        lockInfo: LockConnectionInfo,
         connection: RxBleConnection,
         keyOne: ByteArray,
         token: ByteArray
@@ -52,7 +54,15 @@ class BleHandShakeUseCase @Inject constructor(
                     .flatMap { stateAndPermission ->
                         when (stateAndPermission.first) {
                             DeviceToken.ONE_TIME_TOKEN -> {
-                                waitForE5(connection, keyTwo)
+                                when(lockInfo.model){
+                                    "KD01" -> {
+                                        waitFor(connection, keyTwo, 0x8B)
+                                    }
+                                    else -> {
+                                        waitFor(connection, keyTwo, 0xE5)
+                                    }
+                                }
+
                             }
                             VALID_TOKEN -> {
                                 permanentTokenString = token.toHexString()
@@ -66,10 +76,10 @@ class BleHandShakeUseCase @Inject constructor(
             }
     }
 
-        private fun waitForE5(
+        private fun waitFor(
             connection: RxBleConnection,
             keyTwo: ByteArray,
-            function: Int = 0xE5
+            function: Int
         ): Observable<String> {
             return connection
                 .setupNotification(

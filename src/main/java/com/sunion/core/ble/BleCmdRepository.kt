@@ -818,6 +818,9 @@ class BleCmdRepository @Inject constructor(){
             },
             phoneticLanguage = when (data[Config80.PHONETIC_LANGUAGE.byte].unSignedInt()) {
                 0 -> BleV3Lock.PhoneticLanguage.ENGLISH.value
+                1 -> BleV3Lock.PhoneticLanguage.SPANISH.value
+                2 -> BleV3Lock.PhoneticLanguage.FRENCH.value
+                3 -> BleV3Lock.PhoneticLanguage.CHINESE.value
                 else -> BleV3Lock.PhoneticLanguage.NOT_SUPPORT.value
             },
             supportPhoneticLanguage = when (data[Config80.SUPPORT_PHONETIC_LANGUAGE.byte].unSignedInt()) {

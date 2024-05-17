@@ -336,37 +336,4 @@ class LockWifiUseCase @Inject constructor(
             .single()
     }
 
-    suspend fun autoUnlockSecurityBolt(state: Int, identityId:String): Boolean {
-        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::autoUnlockSecurityBolt.name
-        val function = 0xF4
-        if (state.isNotSupport()) throw IllegalArgumentException("$functionName not support.")
-        val securityBoltState = if (state == BleV3Lock.SecurityBolt.PROTRUDE.value) byteArrayOf(0x01) else return false
-        val data = byteArrayOf(BleV3Lock.LockStateAction.SECURITY_BOLT.value.toByte()) + securityBoltState + identityId.toByteArray()
-        val sendCmd = bleCmdRepository.createCommand(
-            function = function,
-            key = statefulConnection.key(),
-            data = data
-        )
-        return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
-            .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
-            }
-            .take(1)
-            .map { notification ->
-                val result = bleCmdRepository.resolve(
-                    function,
-                    statefulConnection.key(),
-                    notification
-                ) as Boolean
-                result
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("$functionName exception $e")
-                throw e
-            }
-            .single()
-    }
 }

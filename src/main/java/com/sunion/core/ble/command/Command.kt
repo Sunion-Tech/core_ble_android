@@ -7,10 +7,9 @@ import com.sunion.core.ble.unSignedInt
 import timber.log.Timber
 
 interface BleCommand<I, R> {
-    val function: Int
-    fun create(key: String, data: I): ByteArray
-    fun parseResult(key: String, data: ByteArray): R
-    fun match(key: String, data: ByteArray): Boolean
+    fun create(function:Int, key: String, data: I): ByteArray
+    fun parseResult(function:Int, key: String, data: ByteArray): R
+    fun match(function:Int, key: String, data: ByteArray): Boolean
 
     companion object {
         const val CMD_LIST_WIFI = "L"
@@ -22,7 +21,7 @@ interface BleCommand<I, R> {
 
 abstract class BaseCommand<I, R>(private val bleCmdRepository: BleCmdRepository) :
     BleCommand<I, R> {
-    override fun match(key: String, data: ByteArray): Boolean {
+    override fun match(function:Int, key: String, data: ByteArray): Boolean {
         val decrypted = bleCmdRepository.decrypt(key.hexToByteArray(), data)!!
         val match = decrypted.component3().unSignedInt() == function
         Timber.d("match:$match (${decrypted.toHexPrint()})")

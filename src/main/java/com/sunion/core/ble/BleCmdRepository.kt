@@ -571,7 +571,7 @@ class BleCmdRepository @Inject constructor(){
                         // BleV3Lock.UserCount
                         resolve86(byteArrayData)
                     }
-                    0x8A, 0xC0, 0xC1, 0xD8, 0xE4, 0xEA -> {
+                    0x8A, 0xC0, 0xC1, 0xD8, 0xE4, 0xEA, 0xF0, 0xF2 -> {
                         // ByteArray
                         byteArrayData
                     }
@@ -659,7 +659,7 @@ class BleCmdRepository @Inject constructor(){
                         // BleV3Lock.AdminPosition
                         resolveC9(byteArrayData)
                     }
-                    0xD0, 0xF0, 0xF2 -> {
+                    0xD0 -> {
                         // String
                         String(byteArrayData)
                     }

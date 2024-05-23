@@ -15,10 +15,9 @@ class WifiConnectCommand @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
 ) :
     BaseCommand<Unit, WifiConnectState>(bleCmdRepository) {
-    override val function: Int = 0xF0
     val connectWifiState = mutableListOf<String>()
 
-    override fun create(key: String, data: Unit): ByteArray {
+    override fun create(function: Int, key: String, data: Unit): ByteArray {
         return bleCmdRepository.createCommand(
             function = function,
             key = key.hexToByteArray(),
@@ -26,7 +25,7 @@ class WifiConnectCommand @Inject constructor(
         )
     }
 
-    override fun parseResult(key: String, data: ByteArray): WifiConnectState {
+    override fun parseResult(function: Int, key: String, data: ByteArray): WifiConnectState {
         val response = bleCmdRepository.resolve(
             function = function,
             key = key.hexToByteArray(),
@@ -44,7 +43,7 @@ class WifiConnectCommand @Inject constructor(
         }
     }
 
-    override fun match(key: String, data: ByteArray): Boolean {
+    override fun match(function: Int, key: String, data: ByteArray): Boolean {
         val decrypted = bleCmdRepository.decrypt(key.hexToByteArray(), data)!!
         val responseFirstChar =
             String(decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())).first().toString()

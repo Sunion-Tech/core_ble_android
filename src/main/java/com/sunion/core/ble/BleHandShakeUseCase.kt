@@ -55,7 +55,7 @@ class BleHandShakeUseCase @Inject constructor(
                         when (stateAndPermission.first) {
                             DeviceToken.ONE_TIME_TOKEN -> {
                                 when(lockInfo.model){
-                                    "KD01", "TNRFp01" -> {
+                                    "KD01", "TNRFp01", "PWG01"  -> {
                                         waitFor(connection, keyTwo, 0x8B)
                                     }
                                     else -> {

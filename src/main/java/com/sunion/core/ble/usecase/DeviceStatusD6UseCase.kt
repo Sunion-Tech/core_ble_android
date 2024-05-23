@@ -22,16 +22,18 @@ class DeviceStatusD6UseCase @Inject constructor(
     suspend operator fun invoke(): DeviceStatus.D6 {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val command = DeviceStatusD6Command(bleCmdRepository)
+        val function = 0xD6
         val sendCmd = command.create(
+            function = function,
             key = statefulConnection.lockConnectionInfo.keyTwo!!,
             data = Unit
         )
         return statefulConnection
             .setupSingleNotificationThenSendCommand(sendCmd, className)
-            .filter { notification -> command.match(statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
+            .filter { notification -> command.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
             .take(1)
             .map { notification ->
-                val result = command.parseResult(statefulConnection.lockConnectionInfo.keyTwo!!, notification)
+                val result = command.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification)
                 result
             }
             .flowOn(Dispatchers.IO)

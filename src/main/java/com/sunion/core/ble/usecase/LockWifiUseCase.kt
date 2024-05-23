@@ -11,7 +11,6 @@ import com.sunion.core.ble.command.WifiListCommand
 import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.DeviceStatus
-import com.sunion.core.ble.entity.LockState
 import com.sunion.core.ble.entity.WifiConnectState
 import com.sunion.core.ble.entity.WifiList
 import com.sunion.core.ble.exception.NotConnectedException
@@ -45,21 +44,23 @@ class LockWifiUseCase @Inject constructor(
     private var lockScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun collectWifiList(): Flow<WifiList> = run {
-        statefulConnection.rxBleConnection!!
+        val function = 0xF0
+        statefulConnection.rxBleConnection
             .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, NotificationSetupMode.DEFAULT)
             .flatMap { it }
             .asFlow()
-            .filter { wifiListCommand.match(statefulConnection.lockConnectionInfo.keyTwo!!, it) }
+            .filter { wifiListCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
             .map { notification ->
-                val result = wifiListCommand.parseResult(statefulConnection.lockConnectionInfo.keyTwo!!, notification)
+                val result = wifiListCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification)
                 Timber.d("cmdResponse:$result")
                 result
             }
     }
 
-    suspend fun scanWifi() {
-        val command = wifiListCommand.create(statefulConnection.lockConnectionInfo.keyTwo!!, Unit)
-        statefulConnection.rxBleConnection!!
+    fun scanWifi() {
+        val function = 0xF0
+        val command = wifiListCommand.create(function, statefulConnection.lockConnectionInfo.keyTwo!!, Unit)
+        statefulConnection.rxBleConnection
             .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, command).toObservable().asFlow()
             .flowOn(Dispatchers.IO)
             .onEach { Timber.d("scanWifi start") }
@@ -67,19 +68,23 @@ class LockWifiUseCase @Inject constructor(
             .launchIn(lockScope)
     }
 
-    fun collectConnectToWifiState(): Flow<WifiConnectState> =
-        statefulConnection.rxBleConnection!!
+    fun collectConnectToWifiState(): Flow<WifiConnectState> {
+        val function = 0xF0
+        return statefulConnection.rxBleConnection
             .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
             .asFlow()
-            .filter { wifiConnectCommand.match(statefulConnection.lockConnectionInfo.keyTwo!!, it) }
-            .map { notification -> wifiConnectCommand.parseResult(statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
+            .filter { wifiConnectCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
+            .map { notification -> wifiConnectCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
+    }
+
 
     suspend fun connectToWifi(ssid: String, password: String): Boolean {
-        val connection = statefulConnection.rxBleConnection!!
-        val commandSetSsid = setSSID(ssid)
-        val commandSetPassword = setPassword(password)
-        val commandConnect = connect()
+        val function = 0xF0
+        val connection = statefulConnection.rxBleConnection
+        val commandSetSsid = setSSID(function, ssid)
+        val commandSetPassword = setPassword(function, password)
+        val commandConnect = connect(function)
         connection
             .writeCharacteristic(
                 BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid
@@ -102,62 +107,92 @@ class LockWifiUseCase @Inject constructor(
         return true
     }
 
-    private fun setSSID(ssid: String): ByteArray {
+    fun collectWifiList3(): Flow<WifiList> = run {
+        val function = 0xF2
+        statefulConnection.rxBleConnection
+            .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, NotificationSetupMode.DEFAULT)
+            .flatMap { it }
+            .asFlow()
+            .filter { wifiListCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
+            .map { notification ->
+                val result = wifiListCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification)
+                Timber.d("cmdResponse:$result")
+                result
+            }
+    }
+
+    fun scanWifi3() {
+        val function = 0xF2
+        val command = wifiListCommand.create(function, statefulConnection.lockConnectionInfo.keyTwo!!, Unit)
+        statefulConnection.rxBleConnection
+            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, command).toObservable().asFlow()
+            .flowOn(Dispatchers.IO)
+            .onEach { Timber.d("scanWifi start") }
+            .catch { Timber.e(it) }
+            .launchIn(lockScope)
+    }
+
+    fun collectConnectToWifiState3(): Flow<WifiConnectState> {
+        val function = 0xF2
+        return statefulConnection.rxBleConnection
+            .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC)
+            .flatMap { it }
+            .asFlow()
+            .filter { wifiConnectCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
+            .map { notification -> wifiConnectCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
+    }
+
+
+    suspend fun connectToWifi3(ssid: String, password: String): Boolean {
+        val function = 0xF2
+        val connection = statefulConnection.rxBleConnection
+        val commandSetSsid = setSSID(function, ssid)
+        val commandSetPassword = setPassword(function, password)
+        val commandConnect = connect(function)
+        connection
+            .writeCharacteristic(
+                BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid
+            )
+            .flatMap {
+                connection
+                    .writeCharacteristic(
+                        BleCmdRepository.NOTIFICATION_CHARACTERISTIC,
+                        commandSetPassword
+                    )
+            }
+            .flatMap {
+                connection
+                    .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandConnect)
+            }
+            .toObservable()
+            .asFlow()
+            .onCompletion { wifiConnectCommand.connectWifiState.clear() }
+            .single()
+        return true
+    }
+
+    private fun setSSID(function: Int, ssid: String): ByteArray {
         return bleCmdRepository.createCommand(
-            function = 0xF0,
+            function = function,
             key = statefulConnection.key(),
             data = (CMD_SET_SSID_PREFIX + ssid).toByteArray()
         )
     }
 
-    private fun setPassword(password: String): ByteArray {
+    private fun setPassword(function: Int, password: String): ByteArray {
         return bleCmdRepository.createCommand(
-            function = 0xF0,
+            function = function,
             key = statefulConnection.key(),
             data = (CMD_SET_PASSWORD_PREFIX + password).toByteArray()
         )
     }
 
-    private fun connect(): ByteArray {
+    private fun connect(function: Int): ByteArray {
         return bleCmdRepository.createCommand(
-            function = 0xF0,
+            function = function,
             key = statefulConnection.key(),
             data = CMD_CONNECT.toByteArray()
         )
-    }
-
-    suspend fun setLockStateD6(state: Int, identityId:String): DeviceStatus.D6 {
-        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
-        val functionName = ::setLockStateD6.name
-        val function = 0xF1
-        val resolveFunction = 0xD6
-        if (state!= LockState.LOCKED && state!= LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
-        val data = (if (state == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)) + identityId.toByteArray()
-        val sendCmd = bleCmdRepository.createCommand(
-            function = function,
-            key = statefulConnection.key(),
-            data = data
-        )
-        return statefulConnection
-            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
-            .filter { notification ->
-                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, resolveFunction)
-            }
-            .take(1)
-            .map { notification ->
-                val result = bleCmdRepository.resolve(
-                    resolveFunction,
-                    statefulConnection.key(),
-                    notification
-                ) as DeviceStatus.D6
-                result
-            }
-            .flowOn(Dispatchers.IO)
-            .catch { e ->
-                Timber.e("$functionName exception $e")
-                throw e
-            }
-            .single()
     }
 
     suspend fun setLockStateA2(state: Int, identityId:String): DeviceStatus.A2 {

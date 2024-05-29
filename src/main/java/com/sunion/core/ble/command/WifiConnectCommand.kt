@@ -30,11 +30,11 @@ class WifiConnectCommand @Inject constructor(
             function = function,
             key = key.hexToByteArray(),
             notification = data
-        ) as String
-        Timber.d("response: $response")
-        connectWifiState.add(response)
-        Timber.d(response)
-        return when (response) {
+        ) as ByteArray
+        val responseString = String(response)
+        Timber.d("responseString: $responseString")
+        connectWifiState.add(responseString)
+        return when (responseString) {
             "CWiFi Succ" -> WifiConnectState.ConnectWifiSuccess
             "CWiFi Fail" -> WifiConnectState.ConnectWifiFail
             "CMQTT Succ" -> WifiConnectState.ConnectAwsSuccess

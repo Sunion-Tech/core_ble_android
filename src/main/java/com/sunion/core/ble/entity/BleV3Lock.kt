@@ -208,6 +208,12 @@ data class BleV3Lock(
         UPDATE(2)
     }
 
+    enum class CredentialStatus(val value: Int) {
+        FAIL(0),
+        SUCCESS(1),
+        FULL_FAIL(2)
+    }
+
     enum class CredentialFormat(val value: Int) {
         CREDENTIAL(0),
         USER(1)

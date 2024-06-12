@@ -2,6 +2,7 @@ package com.sunion.core.ble.entity
 
 import com.sunion.core.ble.colonMac
 import com.sunion.core.ble.noColonMac
+import java.util.Locale
 
 data class LockConnectionInfo(
     var oneTimeToken: String = "",
@@ -35,7 +36,7 @@ data class LockConnectionInfo(
             workOrderNumber = productionGetResponse.workOrderNumber,
             code = productionGetResponse.code,
             model = productionGetResponse.model,
-            uuid = productionGetResponse.uuid,
+            uuid = productionGetResponse.uuid?.uppercase(Locale.getDefault()),
             oneTimeToken = productionGetResponse.token,
             gatewayToken = productionGetResponse.gatewayToken,
             keyOne = productionGetResponse.key,

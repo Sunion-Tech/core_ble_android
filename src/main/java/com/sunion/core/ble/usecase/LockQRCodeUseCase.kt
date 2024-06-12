@@ -12,6 +12,7 @@ import com.sunion.core.ble.colonMac
 import com.sunion.core.ble.entity.QRCodeContent
 import com.sunion.core.ble.exception.GenerateBarcodeException
 import timber.log.Timber
+import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
@@ -29,7 +30,7 @@ class LockQRCodeUseCase @Inject constructor(
         val decode = decryptV2(data, barcodeKey.toByteArray())
         val decodeString = String(decode!!)
         val qrCodeContent = gson.fromJson(decodeString, QRCodeContent::class.java)!!
-        return qrCodeContent.copy(a = qrCodeContent.a.colonMac())
+        return qrCodeContent.copy(a = qrCodeContent.a.colonMac(), u = qrCodeContent.u?.uppercase(Locale.getDefault()))
     }
 
     fun parseQRCodeContent(barcodeKey: String, content: String): QRCodeContent {
@@ -37,7 +38,7 @@ class LockQRCodeUseCase @Inject constructor(
         val decode = decryptV1(data, barcodeKey.toByteArray())
         val decodeString = String(decode!!)
         val qrCodeContent = gson.fromJson(decodeString, QRCodeContent::class.java)!!
-        return qrCodeContent
+        return qrCodeContent.copy(a = qrCodeContent.a.colonMac(), u = qrCodeContent.u?.uppercase(Locale.getDefault()))
     }
 
     fun encryptQRCodeContent(barcodeKey: String, qrCodeContent: QRCodeContent): String {

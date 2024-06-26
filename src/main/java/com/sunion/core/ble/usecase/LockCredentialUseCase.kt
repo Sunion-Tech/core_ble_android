@@ -94,8 +94,8 @@ class LockCredentialUseCase @Inject constructor(
 
     suspend fun addCredentialCode(index: Int, userIndex:Int, code: String): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.PIN.value, code = code.toAsciiByteArray()))
     suspend fun addCredentialCard(index: Int, userIndex:Int, code: ByteArray): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.RFID.value, code = code))
-    suspend fun addCredentialFingerPrint(index: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FINGERPRINT.value, code = byteArrayOf()))
-    suspend fun addCredentialFace(index: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FACE.value, code = byteArrayOf()))
+    suspend fun addCredentialFingerPrint(index: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FINGERPRINT.value, code = index.toLittleEndianByteArrayInt16()))
+    suspend fun addCredentialFace(index: Int, userIndex:Int): Boolean = addCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FACE.value, code = index.toLittleEndianByteArrayInt16()))
 
     private suspend fun addCredential(
         userIndex: Int,
@@ -137,8 +137,8 @@ class LockCredentialUseCase @Inject constructor(
 
     suspend fun editCredentialCode(index: Int, userIndex:Int, code: String): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.PIN.value, code = code.toAsciiByteArray()))
     suspend fun editCredentialCard(index: Int, userIndex:Int, code: ByteArray): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.RFID.value, code = code))
-    suspend fun editCredentialFingerPrint(index: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FINGERPRINT.value, code = byteArrayOf()))
-    suspend fun editCredentialFace(index: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FACE.value, code = byteArrayOf()))
+    suspend fun editCredentialFingerPrint(index: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FINGERPRINT.value, code = index.toLittleEndianByteArrayInt16()))
+    suspend fun editCredentialFace(index: Int, userIndex:Int): Boolean = editCredential(userIndex, BleV3Lock.CredentialDetail(index, type = BleV3Lock.CredentialType.FACE.value, code = index.toLittleEndianByteArrayInt16()))
 
     private suspend fun editCredential(
         userIndex: Int,

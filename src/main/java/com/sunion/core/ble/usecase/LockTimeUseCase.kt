@@ -150,4 +150,71 @@ class LockTimeUseCase @Inject constructor(
             }
             .single()
     }
+
+    suspend fun getWiFiTimeZone(): String {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::getWiFiTimeZone.name
+        val function = 0xF5
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as ByteArray
+                val offsetSeconds = result.copyOfRange(0, 4).toInt()
+                val timezone = result.copyOfRange(4, result.size).toString(Charsets.UTF_8)
+                timezone
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun setWiFiTimeZone(timezone: String): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setWiFiTimeZone.name
+        val function = 0xF6
+        val zonedDateTime = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of(timezone))
+        val offsetSeconds = zonedDateTime.offset.totalSeconds
+        val offsetByte = offsetSeconds.toLittleEndianByteArray()
+        val bytes = offsetByte + timezone.toByteArray()
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+            data = bytes
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
 }

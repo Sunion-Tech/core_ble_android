@@ -73,15 +73,10 @@ class BleScanUseCase @Inject constructor(
         if(macAddress.isNullOrBlank() && uuid.isNullOrBlank()){
             throw IllegalArgumentException("Either macAddress or uuid must be provided")
         }
-        val scanSettings = if(powerManager.isInteractive) {
-            ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build()
-        } else {
-            ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
-                .build()
-        }
+        val scanSettings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+
         val scanFilter = if(uuid?.isNotBlank() == true) {
             Timber.d("Scanning of Lock uuid: $uuid started, the device screen isInteractive: ${powerManager.isInteractive}")
             ScanFilter.Builder().setManufacturerData(0x0CE3, uuid.hexToByteArray()).build()

@@ -46,9 +46,12 @@ class LockQRCodeUseCase @Inject constructor(
         content.addProperty("T", qrCodeContent.t)
         content.addProperty("K", qrCodeContent.k)
         content.addProperty("A", qrCodeContent.a)
-        content.addProperty("F", qrCodeContent.f)
-        content.addProperty("L", qrCodeContent.l)
         content.addProperty("M", qrCodeContent.m)
+        qrCodeContent.s?.let { content.addProperty("S", it) }
+        qrCodeContent.f?.let { content.addProperty("F", it) }
+        qrCodeContent.l?.let { content.addProperty("L", it) }
+        qrCodeContent.u?.let { content.addProperty("U", it) }
+        Timber.d("generateBarcode content: $content")
         val barcodeContent =  bleCmdRepository.encrypt(
             barcodeKey.toByteArray(),
             bleCmdRepository.pad(content.toString().toByteArray(), true)

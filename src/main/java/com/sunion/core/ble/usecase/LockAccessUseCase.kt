@@ -100,7 +100,7 @@ class LockAccessUseCase @Inject constructor(
                 index = index,
                 isEnable = isEnable,
                 scheduleType = scheduleType,
-                nameLen = name.length,
+                nameLen = name.byteLength(),
                 name = name,
                 code = code
             )
@@ -147,7 +147,7 @@ class LockAccessUseCase @Inject constructor(
                 index = index,
                 isEnable = isEnable,
                 scheduleType = scheduleType,
-                nameLen = name.length,
+                nameLen = name.byteLength(),
                 name = name,
                 code = code
             )

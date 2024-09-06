@@ -119,6 +119,10 @@ fun String.toAsciiByteArray(): ByteArray {
     return this.toByteArray(Charsets.US_ASCII)
 }
 
+fun String.byteLength(): Int {
+    return this.toByteArray(Charsets.UTF_8).size
+}
+
 //Int
 fun Int.toLittleEndianByteArray(): ByteArray {
     val byteArray = ByteArray(4)

@@ -2,6 +2,7 @@ package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
 import com.sunion.core.ble.ReactiveStatefulConnection
+import com.sunion.core.ble.byteLength
 import com.sunion.core.ble.entity.AddUserResponse
 import com.sunion.core.ble.entity.DeviceToken
 import com.sunion.core.ble.exception.NotConnectedException
@@ -102,7 +103,7 @@ class LockBleUserUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::addOneTimeBleUser.name
         val function = 0x8C
-        val bytes = permission.toByteArray() + name.length.toByte() + identity.length.toByte() + name.toByteArray() + identity.toByteArray()
+        val bytes = permission.toByteArray() + name.byteLength().toByte() + identity.length.toByte() + name.toByteArray() + identity.toByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
@@ -138,7 +139,7 @@ class LockBleUserUseCase @Inject constructor(
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val functionName = ::editBleUser.name
         val function = 0x8D
-        val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.length.toByte() + identity.length.toByte() + name.toByteArray() + identity.toByteArray()
+        val bytes = byteArrayOf(index.toByte()) + permission.toByteArray() + name.byteLength().toByte() + identity.length.toByte() + name.toByteArray() + identity.toByteArray()
         val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),

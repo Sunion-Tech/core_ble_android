@@ -1,5 +1,7 @@
 package com.sunion.core.ble.entity
 
+import com.sunion.core.ble.byteLength
+
 sealed class DeviceToken {
 
     companion object State {
@@ -23,7 +25,7 @@ sealed class DeviceToken {
         val permission: String = PERMISSION_NONE,
         val token: String,
         val name: String,
-        val nameLen: Int = name.length,
+        val nameLen: Int = name.byteLength(),
         val identity: String? = null,
         val identityLen: Int? = identity?.length,
     ) : DeviceToken()

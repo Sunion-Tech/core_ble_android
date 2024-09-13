@@ -11,6 +11,7 @@ import com.sunion.core.ble.command.WifiListCommand
 import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.entity.DeviceStatus
+import com.sunion.core.ble.entity.Endpoint
 import com.sunion.core.ble.entity.WifiConnectState
 import com.sunion.core.ble.entity.WifiList
 import com.sunion.core.ble.exception.NotConnectedException
@@ -361,6 +362,38 @@ class LockWifiUseCase @Inject constructor(
                     statefulConnection.key(),
                     notification
                 ) as Boolean
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun setEndpoint(endpoint: Endpoint): Endpoint {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setEndpoint.name
+        val function = 0xF7
+        val data = byteArrayOf(endpoint.type.toByte()) + endpoint.data
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = statefulConnection.key(),
+            data = data
+        )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                ) as Endpoint
                 result
             }
             .flowOn(Dispatchers.IO)

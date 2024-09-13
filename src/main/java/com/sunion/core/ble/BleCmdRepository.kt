@@ -224,7 +224,7 @@ class BleCmdRepository @Inject constructor(){
             0x80, 0x82, 0x85, 0x86, 0x87, 0x8A, 0x90, 0x94, 0x9D, 0xA0, 0xA2, 0xA4, 0xB0, 0xC9, 0xCB, 0xCC, 0xCF, 0xD0, 0xD2, 0xD4, 0xD6, 0xD8, 0xE0, 0xE4, 0xEA, 0xEF, 0xF5 -> {
                 cmd(function, key)
             }
-            0x81, 0x8C, 0x8D, 0x8E, 0x92, 0x96, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF6 -> {
+            0x81, 0x8C, 0x8D, 0x8E, 0x92, 0x96, 0xA7, 0xA8, 0xC3, 0xC4, 0xC7, 0xC8, 0xCE, 0xD1, 0xD9, 0xE6, 0xE7, 0xE8, 0xEC, 0xED, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF6, 0xF7 -> {
                 cmd(function, key, data.size, data)
             }
             0x83, 0x84, 0x91, 0x93, 0x98, 0xA3 -> {
@@ -694,6 +694,10 @@ class BleCmdRepository @Inject constructor(){
                     0xEB -> {
                         // Access.Code
                         resolveEB(byteArrayData, index)
+                    }
+                    0xF7 -> {
+                        // Endpoint
+                        resolveF7(byteArrayData)
                     }
                     else -> throw IllegalArgumentException("Unknown function byte")
                 }
@@ -1567,6 +1571,16 @@ class BleCmdRepository @Inject constructor(){
         )
         Timber.d("$functionName: $userCode")
         return userCode
+    }
+
+    private fun resolveF7(data: ByteArray): Endpoint {
+        val functionName = ::resolveF7.name
+        val endpoint = Endpoint(
+            type = data.component1().unSignedInt(),
+            data = data.copyOfRange(1, data.size),
+        )
+        Timber.d("$functionName: $endpoint")
+        return endpoint
     }
 
     fun isValidNotification(key:ByteArray, notification: ByteArray, function:Int): Boolean {

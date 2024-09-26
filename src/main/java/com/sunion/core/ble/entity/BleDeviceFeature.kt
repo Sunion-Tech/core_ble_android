@@ -16,6 +16,7 @@ class BleDeviceFeature{
             "TNRFp00" to setOf("2"),
             "KD01" to setOf("3"),
             "TNRFp01" to setOf("3"),
+            "KDFa01" to setOf("3"),
         )
 
         val taskList: Array<Triple<TaskCode, String, Set<String>>> = arrayOf(

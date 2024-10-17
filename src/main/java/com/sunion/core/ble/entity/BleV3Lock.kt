@@ -219,6 +219,11 @@ data class BleV3Lock(
         USER(1)
     }
 
+    enum class HashFormat(val value: Int) {
+        USER_CREDENTIAL(0),
+        BLE_USER(1)
+    }
+
     enum class ScheduleStatus(val value: Int) {
         AVAILABLE(0x00), // 可用
         OCCUPIED_ENABLED(0x01), // 已使用, 目前啟用

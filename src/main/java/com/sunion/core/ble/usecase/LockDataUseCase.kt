@@ -21,8 +21,8 @@ class LockDataUseCase @Inject constructor(
 ) {
     private val className = this::class.simpleName ?: "LockDataUseCase"
 
-    suspend fun getCredentialHash(): Data.NinetyNine = getHash(BleV3Lock.CredentialFormat.CREDENTIAL.value)
-    suspend fun getUserHash(): Data.NinetyNine = getHash(BleV3Lock.CredentialFormat.USER.value)
+    suspend fun getUserCredentialHash(): Data.NinetyNine = getHash(BleV3Lock.HashFormat.USER_CREDENTIAL.value)
+    suspend fun getBleUserHash(): Data.NinetyNine = getHash(BleV3Lock.HashFormat.BLE_USER.value)
 
     private suspend fun getHash(index: Int): Data.NinetyNine {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()

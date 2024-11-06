@@ -2,13 +2,11 @@ package com.sunion.core.ble
 
 import androidx.annotation.VisibleForTesting
 import com.sunion.core.ble.exception.ConnectionTokenException
-import com.sunion.core.ble.entity.DeviceToken.State.VALID_TOKEN
 import com.polidea.rxandroidble2.NotificationSetupMode
 import com.polidea.rxandroidble2.RxBleConnection
 import com.polidea.rxandroidble2.RxBleDevice
 import com.sunion.core.ble.BleCmdRepository.Companion.NOTIFICATION_CHARACTERISTIC
 import com.sunion.core.ble.entity.*
-import com.sunion.core.ble.exception.NotConnectedException
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
 import javax.inject.Inject
@@ -39,7 +37,7 @@ class BleHandShakeUseCase @Inject constructor(
         )
     }
 
-    fun bleHandshake(
+    private fun bleHandshake(
         lockInfo: LockConnectionInfo,
         connection: RxBleConnection,
         keyOne: ByteArray,
@@ -50,12 +48,12 @@ class BleHandShakeUseCase @Inject constructor(
                 keyTwoString = keyTwo.toHexString()
                 sendC1(connection, keyTwo, token)
                     .take(1)
-                    .filter { it.first == DeviceToken.ONE_TIME_TOKEN || it.first == VALID_TOKEN }
+                    .filter { it.first == DeviceToken.ONE_TIME_TOKEN || it.first == DeviceToken.VALID_TOKEN }
                     .flatMap { stateAndPermission ->
                         when (stateAndPermission.first) {
                             DeviceToken.ONE_TIME_TOKEN -> {
                                 when(lockInfo.model){
-                                    "KDW01", "KD01", "TNRFp01", "KDFa01", "PWG01"  -> {
+                                    in BleDeviceFeature.modelVersions.filter { it.value.contains("3") }.keys.toList()  -> {
                                         waitFor(connection, keyTwo, 0x8B)
                                     }
                                     else -> {
@@ -64,7 +62,7 @@ class BleHandShakeUseCase @Inject constructor(
                                 }
 
                             }
-                            VALID_TOKEN -> {
+                            DeviceToken.VALID_TOKEN -> {
                                 permanentTokenString = token.toHexString()
                                 Observable.just(stateAndPermission.second)
                             }

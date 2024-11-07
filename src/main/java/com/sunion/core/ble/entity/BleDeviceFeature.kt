@@ -17,6 +17,8 @@ class BleDeviceFeature{
             "KD01" to setOf("3"),
             "TNRFp01" to setOf("3"),
             "KDFa01" to setOf("3"),
+            "TD01" to setOf("3"),
+            "TDW01" to setOf("3"),
             "PWG01" to setOf("3")
         )
 

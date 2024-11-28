@@ -78,6 +78,13 @@ fun String.hexToByteArray(): ByteArray {
     return rawData
 }
 
+fun String.hexStringToByteArray(): ByteArray {
+    val hexString = if (this.length % 2 != 0) "0$this" else this
+    return hexString.chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+}
+
 fun String.colonMac(): String {
     return if (":" in this) this.toUpperCaseMac() else this.uppercase(Locale.getDefault()).chunked(2).joinToString(":")
 }

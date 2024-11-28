@@ -1083,7 +1083,7 @@ class BleCmdRepository @Inject constructor(){
         val index = data.copyOfRange(2, 4).toInt()
         val status = data.component5().unSignedInt()
         val dataInfo = data.copyOfRange(5, data.size)
-        val code = dataInfo.accessByteArrayToString()
+        val code = if(type == BleV3Lock.CredentialType.RFID.value) dataInfo.toHexString() else dataInfo.accessByteArrayToString()
         val credential97 = Credential.NinetySeven(type, state, index, status, dataInfo)
         Timber.d("$functionName: $credential97 codeString: $code")
         return credential97

@@ -126,11 +126,14 @@ class ReactiveStatefulConnection @Inject constructor(
                         permission = lockConnectionInfo.permission ?: bleHandShakeUseCase.permission,
                         token = lockConnectionInfo.permanentToken ?: bleHandShakeUseCase.permanentTokenString,
                     )
-                    _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTED) }
+                    _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECT_SUCCESS) }
                 }
             }
             EventState.LOADING -> {
                 _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTING) }
+            }
+            EventState.READY -> {
+                _lockScope.launch { _bluetoothConnectState.emit(BluetoothConnectState.CONNECTED) }
             }
             else -> {}
         }

@@ -1,5 +1,5 @@
 package com.sunion.core.ble.entity
 
 enum class BluetoothConnectState {
-    CONNECTING, CONNECTED, DISCONNECTED, DISCONNECTING
+    CONNECTING, CONNECTED, CONNECT_SUCCESS, DISCONNECTED
 }

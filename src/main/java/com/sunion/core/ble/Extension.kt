@@ -113,12 +113,12 @@ fun String.isDeviceUuid(): Boolean {
 
 fun String.toPaddedByteArray(length: Int, charset: Charset = Charsets.UTF_8): ByteArray {
     val byteArray = this.toByteArray(charset)
-    return if (byteArray.size >= length) {
-        throw Exception("Name must be less than or equal to $length bytes")
-    } else {
-        val paddedByteArray = ByteArray(length) { 0x00 }
-        System.arraycopy(byteArray, 0, paddedByteArray, 0, byteArray.size)
-        paddedByteArray
+    return when {
+        byteArray.size > length -> throw Exception("Name must be less than or equal to $length bytes")
+        byteArray.size == length -> byteArray
+        else -> ByteArray(length) { 0x00 }.apply {
+            System.arraycopy(byteArray, 0, this, 0, byteArray.size)
+        }
     }
 }
 

@@ -87,7 +87,7 @@ class LockUtilityUseCase @Inject constructor(
     suspend fun getFirmwareVersion(): String {
         if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
         val versionByteArray = runCatching {
-            statefulConnection.rxBleConnection.readCharacteristic(UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb")).toObservable().asFlow().single()
+            statefulConnection.rxBleConnection?.readCharacteristic(UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb"))?.toObservable()?.asFlow()?.single()
         }.getOrNull() ?: throw IllegalStateException("null version")
         return String(versionByteArray)
     }

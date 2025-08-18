@@ -68,8 +68,8 @@ class ReactiveStatefulConnection @Inject constructor(
     private val connectionTimer = CountDownTimer(30000, 1000)
 
     private var _rxBleConnection: RxBleConnection? = null
-    override val rxBleConnection: RxBleConnection
-        get() = _rxBleConnection ?: throw NotConnectedException()
+    override val rxBleConnection: RxBleConnection?
+        get() = _rxBleConnection
 
     private var _lockConnectionInfo: LockConnectionInfo = LockConnectionInfo()
     override val lockConnectionInfo
@@ -355,24 +355,41 @@ class ReactiveStatefulConnection @Inject constructor(
         command: ByteArray,
         functionName: String
     ): Flow<ByteArray> {
-        return rxBleConnection
-            .setupNotification(NOTIFICATION_CHARACTERISTIC)
-            .flatMap { it }
-            .asFlow()
-            .onStart {
-                _lockScope.launch(Dispatchers.IO) {
-                    delay(200)
-                    rxBleConnection.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, command).toObservable()
-                        .asFlow().single()
-                }
-            }
-            .onEach {
-                bleCmdRepository.decrypt(lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
-                    ?.let {
-                        Timber.d("cmd: ${it.toHexPrint()} by $functionName")
-                    }
+        val connection = rxBleConnection
 
+        return if (connection == null) {
+            flow {
+                emit(ByteArray(0))
+            }.onCompletion {
+                Timber.e("BLE not connected: cannot execute $functionName")
             }
+        } else {
+            connection
+                .setupNotification(NOTIFICATION_CHARACTERISTIC)
+                .flatMap { it }
+                .asFlow()
+                .onStart {
+                    _lockScope.launch(Dispatchers.IO) {
+                        delay(200)
+                        try {
+                            connection.writeCharacteristic(NOTIFICATION_CHARACTERISTIC, command)
+                                .toObservable()
+                                .asFlow()
+                                .single()
+                        } catch (e: Exception) {
+                            Timber.e(e, "Write failed in $functionName")
+                        }
+                    }
+                }
+                .onEach {
+                    bleCmdRepository.decrypt(lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
+                        ?.let { Timber.d("cmd: ${it.toHexPrint()} by $functionName") }
+                }
+                .catch { e ->
+                    Timber.e(e, "BLE flow error in $functionName")
+                    emit(ByteArray(0))
+                }
+        }
     }
 
     override fun addDisposable(disposable: Disposable): Boolean {

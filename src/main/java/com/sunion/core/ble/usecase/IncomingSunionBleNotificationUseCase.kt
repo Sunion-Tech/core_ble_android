@@ -11,6 +11,7 @@ import com.sunion.core.ble.entity.SunionBleNotification
 import com.sunion.core.ble.unSignedInt
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.rx2.asFlow
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,83 +20,42 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
     private val statefulConnection: ReactiveStatefulConnection
 ) {
-    operator fun invoke(): Flow<SunionBleNotification> {
-        return statefulConnection.rxBleConnection
+    operator fun invoke(): Flow<SunionBleNotification> = flow {
+        val connection = statefulConnection.rxBleConnection
+            ?: run {
+                Timber.e("BLE not connected: cannot execute SunionBleNotification")
+                emit(SunionBleNotification.UNKNOWN)
+                return@flow
+            }
+
+        connection
             .setupNotification(NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
             .asFlow()
-            .filter { notification ->
-                if (!statefulConnection.lockConnectionInfo.keyTwo.isNullOrEmpty()) {
-                    bleCmdRepository.decrypt(
-                        statefulConnection.key(), notification
-                    )?.let { decrypted ->
-                        when(decrypted.component3().unSignedInt()){
-                            0x82, 0x97, 0xA2, 0xA9, 0xAF, 0xB0, 0xD6 -> true
-                            else -> false
-                        }
-                    } ?: false
-                } else
-                    false
-            }
-            .map { notification ->
-                var result: SunionBleNotification = SunionBleNotification.UNKNOWN
-                bleCmdRepository.decrypt(
-                    statefulConnection.key(), notification
-                )?.let { decrypted ->
-                    when (val function = decrypted.component3().unSignedInt()) {
-                        0x82 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as DeviceStatus.EightTwo
-                        }
-                        0x97 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as Credential.NinetySeven
-                        }
-                        0xA2 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as DeviceStatus.A2
-                        }
-                        0xA9 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as Access.A9
-                        }
-                        0xAF -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as Alert.AF
-                        }
-                        0xB0 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as DeviceStatus.B0
-                        }
-                        0xD6 -> {
-                            result = bleCmdRepository.resolve(
-                                function,
-                                statefulConnection.key(),
-                                notification
-                            ) as DeviceStatus.D6
-                        }
-                        else -> {}
-                    }
+            .collect { notification ->
+                val decrypted = statefulConnection.key().let { key ->
+                    bleCmdRepository.decrypt(key, notification)
                 }
-                result
+
+                val functionCode = decrypted?.component3()?.unSignedInt()
+
+                val result = when (functionCode) {
+                    0x82 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as DeviceStatus.EightTwo
+                    0x97 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as Credential.NinetySeven
+                    0xA2 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as DeviceStatus.A2
+                    0xA9 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as Access.A9
+                    0xAF -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as Alert.AF
+                    0xB0 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as DeviceStatus.B0
+                    0xD6 -> bleCmdRepository.resolve(functionCode, statefulConnection.key(), notification) as DeviceStatus.D6
+                    else -> SunionBleNotification.UNKNOWN
+                }
+
+                if (functionCode in setOf(0x82, 0x97, 0xA2, 0xA9, 0xAF, 0xB0, 0xD6)) {
+                    emit(result)
+                }
             }
+    }.catch { e ->
+        Timber.e("Error receiving SunionBleNotification")
+        emit(SunionBleNotification.UNKNOWN)
     }
 }

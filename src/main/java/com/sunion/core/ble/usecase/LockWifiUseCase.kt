@@ -16,12 +16,14 @@ import com.sunion.core.ble.entity.WifiConnectState
 import com.sunion.core.ble.entity.WifiList
 import com.sunion.core.ble.exception.NotConnectedException
 import com.sunion.core.ble.isNotSupport
+import com.sunion.core.ble.toHexString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -44,9 +46,14 @@ class LockWifiUseCase @Inject constructor(
     private val className = this::class.simpleName ?: "LockWifiUseCase"
     private var lockScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    fun collectWifiList(): Flow<WifiList> = run {
-        val function = 0xF0
-        statefulConnection.rxBleConnection
+    private fun collectWifiListInternal(function: Int): Flow<WifiList> {
+        val connection = statefulConnection.rxBleConnection ?: return flow {
+            emit(WifiList.End)
+        }.onCompletion {
+            Timber.e("BLE not connected: cannot execute collectWifiList")
+        }
+
+        return connection
             .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, NotificationSetupMode.DEFAULT)
             .flatMap { it }
             .asFlow()
@@ -58,119 +65,71 @@ class LockWifiUseCase @Inject constructor(
             }
     }
 
-    fun scanWifi() {
-        val function = 0xF0
+    fun collectWifiList(): Flow<WifiList> = collectWifiListInternal(0xF0)
+    fun collectWifiList3(): Flow<WifiList> = collectWifiListInternal(0xF2)
+
+    private fun scanWifiInternal(function: Int) {
+        val connection = statefulConnection.rxBleConnection ?: return
+
         val command = wifiListCommand.create(function, statefulConnection.lockConnectionInfo.keyTwo!!, Unit)
-        statefulConnection.rxBleConnection
-            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, command).toObservable().asFlow()
+        connection
+            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, command)
+            .toObservable()
+            .asFlow()
             .flowOn(Dispatchers.IO)
-            .onEach { Timber.d("scanWifi start") }
+            .onEach { Timber.d("scanWifi[${function.toHexString()}] start") }
             .catch { Timber.e(it) }
             .launchIn(lockScope)
     }
 
-    fun collectConnectToWifiState(): Flow<WifiConnectState> {
-        val function = 0xF0
-        return statefulConnection.rxBleConnection
+    fun scanWifi() = scanWifiInternal(0xF0)
+    fun scanWifi3() = scanWifiInternal(0xF2)
+
+    private fun collectConnectToWifiStateInternal(function: Int): Flow<WifiConnectState> {
+        val connection = statefulConnection.rxBleConnection ?: return flow {
+            emit(WifiConnectState.Failed)
+        }.onCompletion {
+            Timber.e("BLE not connected: cannot execute collectConnectToWifiState")
+        }
+
+        return connection
             .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC)
             .flatMap { it }
             .asFlow()
             .filter { wifiConnectCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
-            .map { notification -> wifiConnectCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
-    }
-
-
-    suspend fun connectToWifi(ssid: String, password: String): Boolean {
-        val function = 0xF0
-        val connection = statefulConnection.rxBleConnection
-        val commandSetSsid = setSSID(function, ssid)
-        val commandSetPassword = setPassword(function, password)
-        val commandConnect = connect(function)
-        connection
-            .writeCharacteristic(
-                BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid
-            )
-            .flatMap {
-                connection
-                    .writeCharacteristic(
-                        BleCmdRepository.NOTIFICATION_CHARACTERISTIC,
-                        commandSetPassword
-                    )
-            }
-            .flatMap {
-                connection
-                    .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandConnect)
-            }
-            .toObservable()
-            .asFlow()
-            .onCompletion { wifiConnectCommand.connectWifiState.clear() }
-            .single()
-        return true
-    }
-
-    fun collectWifiList3(): Flow<WifiList> = run {
-        val function = 0xF2
-        statefulConnection.rxBleConnection
-            .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, NotificationSetupMode.DEFAULT)
-            .flatMap { it }
-            .asFlow()
-            .filter { wifiListCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
             .map { notification ->
-                val result = wifiListCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification)
-                Timber.d("cmdResponse:$result")
-                result
+                wifiConnectCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification)
             }
     }
 
-    fun scanWifi3() {
-        val function = 0xF2
-        val command = wifiListCommand.create(function, statefulConnection.lockConnectionInfo.keyTwo!!, Unit)
-        statefulConnection.rxBleConnection
-            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, command).toObservable().asFlow()
-            .flowOn(Dispatchers.IO)
-            .onEach { Timber.d("scanWifi start") }
-            .catch { Timber.e(it) }
-            .launchIn(lockScope)
-    }
+    fun collectConnectToWifiState(): Flow<WifiConnectState> = collectConnectToWifiStateInternal(0xF0)
+    fun collectConnectToWifiState3(): Flow<WifiConnectState> = collectConnectToWifiStateInternal(0xF2)
 
-    fun collectConnectToWifiState3(): Flow<WifiConnectState> {
-        val function = 0xF2
-        return statefulConnection.rxBleConnection
-            .setupNotification(BleCmdRepository.NOTIFICATION_CHARACTERISTIC)
-            .flatMap { it }
-            .asFlow()
-            .filter { wifiConnectCommand.match(function, statefulConnection.lockConnectionInfo.keyTwo!!, it) }
-            .map { notification -> wifiConnectCommand.parseResult(function, statefulConnection.lockConnectionInfo.keyTwo!!, notification) }
-    }
+    private suspend fun connectToWifiInternal(function: Int, ssid: String, password: String): Boolean {
+        val connection = statefulConnection.rxBleConnection ?: return false
 
-
-    suspend fun connectToWifi3(ssid: String, password: String): Boolean {
-        val function = 0xF2
-        val connection = statefulConnection.rxBleConnection
         val commandSetSsid = setSSID(function, ssid)
         val commandSetPassword = setPassword(function, password)
         val commandConnect = connect(function)
+
         connection
-            .writeCharacteristic(
-                BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid
-            )
+            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid)
             .flatMap {
-                connection
-                    .writeCharacteristic(
-                        BleCmdRepository.NOTIFICATION_CHARACTERISTIC,
-                        commandSetPassword
-                    )
+                connection.writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetPassword)
             }
             .flatMap {
-                connection
-                    .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandConnect)
+                connection.writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandConnect)
             }
             .toObservable()
             .asFlow()
             .onCompletion { wifiConnectCommand.connectWifiState.clear() }
             .single()
+
         return true
     }
+
+    suspend fun connectToWifi(ssid: String, password: String): Boolean = connectToWifiInternal(0xF0, ssid, password)
+    suspend fun connectToWifi3(ssid: String, password: String): Boolean = connectToWifiInternal(0xF2, ssid, password)
 
     private fun setSSID(function: Int, ssid: String): ByteArray {
         return bleCmdRepository.createCommand(

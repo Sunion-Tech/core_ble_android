@@ -168,7 +168,7 @@ fun Int.isNotSupport2Byte(): Boolean {
 }
 
 fun Int.toHexString(): String {
-    return this.toString(16).uppercase(Locale.getDefault())
+    return String.format("%02X", this)
 }
 
 fun Int.toSupportPhoneticLanguageList(): List<Int> {

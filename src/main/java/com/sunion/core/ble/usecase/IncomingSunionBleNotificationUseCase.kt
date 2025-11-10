@@ -55,7 +55,7 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
                 }
             }
     }.catch { e ->
-        Timber.e("Error receiving SunionBleNotification")
+        Timber.e("Error receiving SunionBleNotification: $e")
         emit(SunionBleNotification.UNKNOWN)
     }
 }

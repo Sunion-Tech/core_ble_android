@@ -476,6 +476,6 @@ class ReactiveStatefulConnection @Inject constructor(
         }
 
     fun key(): ByteArray {
-        return lockConnectionInfo.keyTwo!!.hexToByteArray()
+        return lockConnectionInfo.keyTwo?.hexToByteArray() ?: ByteArray(0)
     }
 }

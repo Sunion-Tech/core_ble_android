@@ -269,16 +269,16 @@ class BleCmdRepository @Inject constructor(){
         sendByte[0] = function.toByte()
         if(function == 0xC0 && dataSize != null){
             sendByte[1] = dataSize.toByte()
-            Timber.d("$functionName[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize")
+            Timber.d("$functionName[${function.toHexString()}]: ${serial.toHexPrint()}, ${sendByte[0].unSignedInt().toHexString()}, $dataSize")
             return encrypt(key, pad(serial + sendByte + generateRandomBytes(dataSize)))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         } else if(data != null && dataSize != null){
             sendByte[1] = dataSize.toByte()
-            Timber.d("$functionName[${function.toHexString()}]: ${sendByte[0].unSignedInt().toHexString()}, $dataSize, ${data.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${serial.toHexPrint()}, ${sendByte[0].unSignedInt().toHexString()}, $dataSize, ${data.toHexPrint()}")
             return encrypt(key, pad(serial + sendByte + data))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         }else {
-            Timber.d("$functionName[${function.toHexString()}]: ${sendByte.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${serial.toHexPrint()}, ${sendByte.toHexPrint()}")
             return encrypt(key, pad(serial + sendByte))
                 ?: throw IllegalArgumentException("bytes cannot be null")
         }
@@ -537,10 +537,11 @@ class BleCmdRepository @Inject constructor(){
     fun resolve(function: Int, key: ByteArray, notification: ByteArray, index: Int = 0): Any {
         return decrypt(key, notification)?.let { decrypted ->
             val functionName = ::resolve.name
+            val serialNumber = decrypted.copyOfRange(0, 2)
             val checkFunction = decrypted.component3().unSignedInt()
             val byteArrayData = decrypted.copyOfRange(4, 4 + decrypted.component4().unSignedInt())
             val booleanData = decrypted.component5().unSignedInt()
-            Timber.d("$functionName[${function.toHexString()}]: ${checkFunction.toHexString()}, ${byteArrayData.size}, ${byteArrayData.toHexPrint()}")
+            Timber.d("$functionName[${function.toHexString()}]: ${serialNumber.toHexPrint()}, ${checkFunction.toHexString()}, ${byteArrayData.size}, ${byteArrayData.toHexPrint()}")
             if (checkFunction == function) {
                 when (function) {
                     0x80 -> {

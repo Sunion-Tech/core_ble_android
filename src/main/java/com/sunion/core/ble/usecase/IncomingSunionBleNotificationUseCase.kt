@@ -33,6 +33,11 @@ class IncomingSunionBleNotificationUseCase @Inject constructor(
             .flatMap { it }
             .asFlow()
             .collect { notification ->
+                if (statefulConnection.key().isEmpty()) {
+                    Timber.d("keyTwo is empty — skip decrypt")
+                    return@collect
+                }
+
                 val decrypted = statefulConnection.key().let { key ->
                     bleCmdRepository.decrypt(key, notification)
                 }

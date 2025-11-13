@@ -382,8 +382,12 @@ class ReactiveStatefulConnection @Inject constructor(
                     }
                 }
                 .onEach {
-                    bleCmdRepository.decrypt(lockConnectionInfo.keyTwo!!.hexToByteArray(), command)
-                        ?.let { Timber.d("cmd: ${it.toHexPrint()} by $functionName") }
+                    lockConnectionInfo.keyTwo
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { key ->
+                            bleCmdRepository.decrypt(key.hexToByteArray(), command)
+                                ?.let { Timber.d("cmd: ${it.toHexPrint()} by $functionName") }
+                        }
                 }
                 .catch { e ->
                     Timber.e(e, "BLE flow error in $functionName")

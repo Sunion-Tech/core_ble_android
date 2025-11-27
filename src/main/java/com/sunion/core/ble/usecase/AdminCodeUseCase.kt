@@ -1,6 +1,8 @@
 package com.sunion.core.ble.usecase
 
+import com.example.ble.connection.MultiStatefulConnection
 import com.sunion.core.ble.BleCmdRepository
+import com.sunion.core.ble.MultiReactiveStatefulConnection
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.command.AccessCodeCommand.Companion.ACCESSCODE_LENGTH_MAX
@@ -18,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class AdminCodeUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
-    private val statefulConnection: ReactiveStatefulConnection
+    private val statefulConnection: ReactiveStatefulConnection,
+    private val multiStatefulConnection: MultiReactiveStatefulConnection
 ) {
     private val className = this::class.simpleName ?: "AdminCodeUseCase"
 
@@ -78,6 +81,40 @@ class AdminCodeUseCase @Inject constructor(
                 val result = bleCmdRepository.resolve(
                     function,
                     statefulConnection.key(),
+                    notification
+                )
+                result as Boolean
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun createAdminCode2(code: String, mac: String): Boolean {
+        if (!multiStatefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::createAdminCode.name
+        val function = 0xC7
+        if (!(code.all { char -> char.isDigit() }) || code.length < ACCESSCODE_LENGTH_MIN || code.length > ACCESSCODE_LENGTH_MAX) throw IllegalArgumentException("Admin code must be 4-8 digits.")
+        val adminCode = code.accessCodeToHex()
+        val data = byteArrayOf(adminCode.size.toByte()) + adminCode
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = multiStatefulConnection.key(mac),
+            data = data
+        )
+        return multiStatefulConnection
+            .setupSingleNotificationThenSendCommand(mac, sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(multiStatefulConnection.key(mac), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    multiStatefulConnection.key(mac),
                     notification
                 )
                 result as Boolean

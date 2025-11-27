@@ -1,6 +1,7 @@
 package com.sunion.core.ble.usecase
 
 import com.sunion.core.ble.BleCmdRepository
+import com.sunion.core.ble.MultiReactiveStatefulConnection
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.command.DeviceStatusD6Command
 import com.sunion.core.ble.entity.DeviceStatus
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class DeviceStatusD6UseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
-    private val statefulConnection: ReactiveStatefulConnection
+    private val statefulConnection: ReactiveStatefulConnection,
+    private val multiStatefulConnection: MultiReactiveStatefulConnection
 ) {
     private val className = this::class.simpleName ?: "DeviceStatusD6UseCase"
 
@@ -65,6 +67,39 @@ class DeviceStatusD6UseCase @Inject constructor(
                 val result = bleCmdRepository.resolve(
                     resolveFunction,
                     statefulConnection.key(),
+                    notification
+                )
+                result as DeviceStatus.D6
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun setLockState2(desiredState: Int, mac: String): DeviceStatus.D6 {
+        if (!multiStatefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = ::setLockState.name
+        val function = 0xD7
+        val resolveFunction = 0xD6
+        if (desiredState!=LockState.LOCKED && desiredState!=LockState.UNLOCKED) throw IllegalArgumentException("Unknown desired lock state.")
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = multiStatefulConnection.key(mac),
+            if (desiredState == LockState.UNLOCKED) byteArrayOf(0x00) else byteArrayOf(0x01)
+        )
+        return multiStatefulConnection
+            .setupSingleNotificationThenSendCommand(mac, sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(multiStatefulConnection.key(mac), notification, resolveFunction)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    resolveFunction,
+                    multiStatefulConnection.key(mac),
                     notification
                 )
                 result as DeviceStatus.D6

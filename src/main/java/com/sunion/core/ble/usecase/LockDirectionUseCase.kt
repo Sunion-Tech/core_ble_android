@@ -1,6 +1,8 @@
 package com.sunion.core.ble.usecase
 
+import com.example.ble.connection.MultiStatefulConnection
 import com.sunion.core.ble.BleCmdRepository
+import com.sunion.core.ble.MultiReactiveStatefulConnection
 import com.sunion.core.ble.ReactiveStatefulConnection
 import com.sunion.core.ble.entity.DeviceStatus
 import com.sunion.core.ble.exception.LockStatusException
@@ -15,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class LockDirectionUseCase @Inject constructor(
     private val bleCmdRepository: BleCmdRepository,
-    private val statefulConnection: ReactiveStatefulConnection
+    private val statefulConnection: ReactiveStatefulConnection,
+    private val multiStatefulConnection: MultiReactiveStatefulConnection
 ) {
     private val className = this::class.simpleName ?: "LockDirectionUseCase"
 
@@ -64,6 +67,67 @@ class LockDirectionUseCase @Inject constructor(
                             result = bleCmdRepository.resolve(
                                 resolveFunction,
                                 statefulConnection.key(),
+                                notification
+                            ) as DeviceStatus.D6
+                        }
+                        else -> {}
+                    }
+                }
+                result
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$className exception $e")
+                throw e
+            }
+            .single()
+    }
+
+    suspend fun invoke2(mac: String): DeviceStatus {
+        if (!multiStatefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val function = 0xCC
+        val sendCmd = bleCmdRepository.createCommand(
+            function = function,
+            key = multiStatefulConnection.key(mac)
+        )
+        return multiStatefulConnection
+            .setupSingleNotificationThenSendCommand(mac, sendCmd, className)
+            .filter { notification ->
+                bleCmdRepository.decrypt(
+                    multiStatefulConnection.key(mac), notification
+                )?.let { decrypted ->
+                    when(decrypted.component3().unSignedInt()){
+                        0x82, 0xA2, 0xD6 -> true
+                        0xEF -> throw LockStatusException.AdminCodeNotSetException()
+                        else -> false
+                    }
+                } ?: false
+            }
+            .take(1)
+            .map { notification ->
+                var result: DeviceStatus = DeviceStatus.UNKNOWN
+                bleCmdRepository.decrypt(
+                    multiStatefulConnection.key(mac), notification
+                )?.let { decrypted ->
+                    when (val resolveFunction = decrypted.component3().unSignedInt()) {
+                        0x82 -> {
+                            result = bleCmdRepository.resolve(
+                                resolveFunction,
+                                multiStatefulConnection.key(mac),
+                                notification
+                            ) as DeviceStatus.EightTwo
+                        }
+                        0xA2 -> {
+                            result = bleCmdRepository.resolve(
+                                resolveFunction,
+                                multiStatefulConnection.key(mac),
+                                notification
+                            ) as DeviceStatus.A2
+                        }
+                        0xD6 -> {
+                            result = bleCmdRepository.resolve(
+                                resolveFunction,
+                                multiStatefulConnection.key(mac),
                                 notification
                             ) as DeviceStatus.D6
                         }

@@ -27,6 +27,7 @@ class BleDeviceFeature{
 
         val taskList: Array<Triple<TaskCode, String, Set<String>>> = arrayOf(
             Triple(TaskCode.Connect, "Connect", setOf("1","2","3")),
+            Triple(TaskCode.AutoTest, "AutoTest", setOf("1","2","3")),
             Triple(TaskCode.GetDeviceStatus, "Get deviceStatus", setOf("1","2","3")),
             Triple(TaskCode.ToggleLockState, "Toggle lock state", setOf("1","2","3")),
             Triple(TaskCode.IsAdminCodeExists, "Is admin code exists", setOf("1","2","3")),
@@ -56,7 +57,6 @@ class BleDeviceFeature{
             Triple(TaskCode.TogglePhoneticLanguage, "Toggle phonetic language", setOf("3")),
             Triple(TaskCode.GetEventQuantity, "Get event quantity", setOf("1","2","3")),
             Triple(TaskCode.GetEvent, "Get event", setOf("1","2","3")),
-            Triple(TaskCode.GetEventByAddress, "Get event by address", setOf("3")),
             Triple(TaskCode.DeleteEvent, "Delete event", setOf("1","2","3")),
             Triple(TaskCode.GetTokenArray, "Get token array", setOf("1","2","3")),
             Triple(TaskCode.GetToken, "Get token", setOf("1","2","3")),
@@ -119,6 +119,7 @@ class BleDeviceFeature{
 
     enum class TaskCode {
         Connect,
+        AutoTest,
         GetDeviceStatus,
         ToggleLockState,
         IsAdminCodeExists,
@@ -148,7 +149,6 @@ class BleDeviceFeature{
         TogglePhoneticLanguage,
         GetEventQuantity,
         GetEvent,
-        GetEventByAddress,
         DeleteEvent,
         GetTokenArray,
         GetToken,

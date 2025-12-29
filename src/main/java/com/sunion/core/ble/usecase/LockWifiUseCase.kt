@@ -106,53 +106,108 @@ class LockWifiUseCase @Inject constructor(
     fun collectConnectToWifiState3(): Flow<WifiConnectState> = collectConnectToWifiStateInternal(0xF2)
 
     private suspend fun connectToWifiInternal(function: Int, ssid: String, password: String): Boolean {
-        val connection = statefulConnection.rxBleConnection ?: return false
+        statefulConnection.rxBleConnection ?: return false
 
-        val commandSetSsid = setSSID(function, ssid)
-        val commandSetPassword = setPassword(function, password)
-        val commandConnect = connect(function)
+        setSSID(function, ssid)
 
-        connection
-            .writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetSsid)
-            .flatMap {
-                connection.writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandSetPassword)
-            }
-            .flatMap {
-                connection.writeCharacteristic(BleCmdRepository.NOTIFICATION_CHARACTERISTIC, commandConnect)
-            }
-            .toObservable()
-            .asFlow()
-            .onCompletion { wifiConnectCommand.connectWifiState.clear() }
-            .single()
+        setPassword(function, password)
 
-        return true
+        wifiConnectCommand.connectWifiState.clear()
+
+        val connectResult = connect(function)
+
+        return connectResult
     }
 
     suspend fun connectToWifi(ssid: String, password: String): Boolean = connectToWifiInternal(0xF0, ssid, password)
     suspend fun connectToWifi3(ssid: String, password: String): Boolean = connectToWifiInternal(0xF2, ssid, password)
 
-    private fun setSSID(function: Int, ssid: String): ByteArray {
-        return bleCmdRepository.createCommand(
+    private suspend fun setSSID(function: Int, ssid: String) {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = "setSSID"
+        val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
             data = (CMD_SET_SSID_PREFIX + ssid).toByteArray()
         )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                )
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
     }
 
-    private fun setPassword(function: Int, password: String): ByteArray {
-        return bleCmdRepository.createCommand(
+    private suspend fun setPassword(function: Int, password: String) {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = "setPassword"
+        val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
             data = (CMD_SET_PASSWORD_PREFIX + password).toByteArray()
         )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                )
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
     }
 
-    private fun connect(function: Int): ByteArray {
-        return bleCmdRepository.createCommand(
+    private suspend fun connect(function: Int): Boolean {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val functionName = "connect"
+        val sendCmd = bleCmdRepository.createCommand(
             function = function,
             key = statefulConnection.key(),
             data = CMD_CONNECT.toByteArray()
         )
+        return statefulConnection
+            .setupSingleNotificationThenSendCommand(sendCmd, "$className.$functionName")
+            .filter { notification ->
+                bleCmdRepository.isValidNotification(statefulConnection.key(), notification, function)
+            }
+            .take(1)
+            .map { notification ->
+                val result = bleCmdRepository.resolve(
+                    function,
+                    statefulConnection.key(),
+                    notification
+                )
+                true
+            }
+            .flowOn(Dispatchers.IO)
+            .catch { e ->
+                Timber.e("$functionName exception $e")
+                throw e
+            }
+            .single()
     }
 
     suspend fun setLockStateA2(state: Int, identityId:String): DeviceStatus.A2 {

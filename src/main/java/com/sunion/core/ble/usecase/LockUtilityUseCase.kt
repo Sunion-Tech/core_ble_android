@@ -6,6 +6,8 @@ import com.sunion.core.ble.accessCodeToHex
 import com.sunion.core.ble.entity.BleV2Lock
 import com.sunion.core.ble.entity.BleV3Lock
 import com.sunion.core.ble.exception.NotConnectedException
+import com.sunion.core.ble.toCString
+import com.sunion.core.ble.toHexString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.rx2.asFlow
@@ -90,6 +92,16 @@ class LockUtilityUseCase @Inject constructor(
             statefulConnection.rxBleConnection?.readCharacteristic(UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb"))?.toObservable()?.asFlow()?.single()
         }.getOrNull() ?: throw IllegalStateException("null version")
         return String(versionByteArray)
+    }
+
+    suspend fun getFirmwareModel(): String {
+        if (!statefulConnection.isConnectedWithDevice()) throw NotConnectedException()
+        val modelByteArray = runCatching {
+            statefulConnection.rxBleConnection?.readCharacteristic(UUID.fromString("00002a24-0000-1000-8000-00805f9b34fb"))?.toObservable()?.asFlow()?.single()
+        }.getOrNull() ?: throw IllegalStateException("null model")
+        Timber.d("modelByteArray: ${modelByteArray.toHexString()}, model: ${modelByteArray.toCString()}")
+        return modelByteArray.toCString()
+
     }
 
     suspend fun getLockSupportedUnlockTypes(): BleV2Lock.SupportedUnlockType {

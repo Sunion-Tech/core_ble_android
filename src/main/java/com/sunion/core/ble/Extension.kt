@@ -63,6 +63,18 @@ fun ByteArray.extendedByteArray(length: Int): ByteArray {
     return extendedByteArray
 }
 
+fun ByteArray.toCString(): String {
+    // 找出第一個 0x00 的位置
+    val nullIndex = this.indexOf(0.toByte())
+    return if (nullIndex == -1) {
+        // 如果沒有 0x00，就直接轉整個
+        String(this, Charsets.UTF_8)
+    } else {
+        // 只轉 0x00 之前的部分
+        String(this, 0, nullIndex, Charsets.UTF_8)
+    }
+}
+
 //String
 fun String.hexToByteArray(): ByteArray {
     val hex: CharArray = this.toCharArray()
